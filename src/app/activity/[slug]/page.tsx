@@ -8,6 +8,7 @@ import { DetailHero } from "@/components/activity/detail-hero";
 import { SessionTable } from "@/components/activity/session-table";
 import { PriceTable } from "@/components/activity/price-table";
 import { ReportModal } from "@/components/activity/report-modal";
+import { ShareButton } from "@/components/activity/share-button";
 import { PlannerStub } from "./planner-stub";
 
 export const dynamic = "force-dynamic";
@@ -54,6 +55,10 @@ export default async function ActivityDetailPage({ params }: ActivityDetailPageP
         )}
         <FavoriteButton activityId={activity.id} initialFavorited={isFavorited} />
         <PlannerStub />
+        <ShareButton
+          title={activity.name}
+          url={`${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/activity/${activity.slug}`}
+        />
       </div>
 
       {/* Description */}
