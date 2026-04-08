@@ -44,7 +44,7 @@ export function LoginForm() {
   return (
     <div className="w-full max-w-sm">
       <h1 className="font-serif text-3xl mb-2">Welcome back</h1>
-      <p className="text-stone mb-8">Sign in to your KidPlan account</p>
+      <p className="text-stone mb-8">Sign in to your Kidtinerary account</p>
 
       <button
         onClick={handleGoogleLogin}

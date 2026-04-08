@@ -47,7 +47,7 @@ export function SignupForm() {
   return (
     <div className="w-full max-w-sm">
       <h1 className="font-serif text-3xl mb-2">Plan your kid&apos;s next adventure</h1>
-      <p className="text-stone mb-8">Create your KidPlan account</p>
+      <p className="text-stone mb-8">Create your Kidtinerary account</p>
 
       <button
         onClick={handleGoogleLogin}
