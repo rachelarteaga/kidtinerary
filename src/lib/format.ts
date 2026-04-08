@@ -77,3 +77,51 @@ export function categoryLabel(cat: string): string {
   };
   return labels[cat] ?? cat;
 }
+
+/** Returns the Monday of the week containing `date`. */
+export function getWeekStart(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  // Sunday=0, shift to Monday-based
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/** Returns a unique string key for a week: "2026-W15" ISO format. */
+export function getWeekKey(date: Date): string {
+  const start = getWeekStart(date);
+  const yearStart = new Date(start.getFullYear(), 0, 1);
+  const dayOfYear = Math.floor(
+    (start.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24)
+  );
+  const weekNum = Math.ceil((dayOfYear + yearStart.getDay() + 1) / 7);
+  return `${start.getFullYear()}-W${String(weekNum).padStart(2, "0")}`;
+}
+
+/** Generates an array of week-start Mondays from `from` to `to`. */
+export function generateWeeks(from: Date, to: Date): Date[] {
+  const weeks: Date[] = [];
+  const current = getWeekStart(new Date(from));
+  const end = new Date(to);
+  while (current <= end) {
+    weeks.push(new Date(current));
+    current.setDate(current.getDate() + 7);
+  }
+  return weeks;
+}
+
+/** Formats a week start date as "Apr 7 – 11" or "Apr 28 – May 2" if cross-month. */
+export function formatWeekRange(weekStart: Date): string {
+  const end = new Date(weekStart);
+  end.setDate(end.getDate() + 4); // Friday
+  const sMonth = weekStart.toLocaleDateString("en-US", { month: "short" });
+  const eMonth = end.toLocaleDateString("en-US", { month: "short" });
+  const sDay = weekStart.getDate();
+  const eDay = end.getDate();
+  if (sMonth === eMonth) {
+    return `${sMonth} ${sDay} – ${eDay}`;
+  }
+  return `${sMonth} ${sDay} – ${eMonth} ${eDay}`;
+}

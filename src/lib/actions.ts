@@ -200,3 +200,166 @@ export async function deleteChild(childId: string) {
   revalidatePath("/kids");
   return { success: true };
 }
+
+export async function addPlannerEntry(
+  childId: string,
+  sessionId: string,
+  sortOrder: number
+) {
+  const supabase = (await createClient()) as any;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  // Check for duplicate
+  const { data: existing } = await supabase
+    .from("planner_entries")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("child_id", childId)
+    .eq("session_id", sessionId)
+    .neq("status", "cancelled")
+    .maybeSingle();
+
+  if (existing) {
+    return { error: "This session is already in the planner" };
+  }
+
+  const { data, error } = await supabase
+    .from("planner_entries")
+    .insert({
+      user_id: user.id,
+      child_id: childId,
+      session_id: sessionId,
+      status: "penciled_in",
+      sort_order: sortOrder,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    console.error("addPlannerEntry error:", error);
+    return { error: "Failed to add to planner" };
+  }
+
+  revalidatePath("/planner");
+  return { success: true, id: data.id };
+}
+
+export async function updatePlannerEntryStatus(
+  entryId: string,
+  status: "penciled_in" | "locked_in" | "cancelled"
+) {
+  const supabase = (await createClient()) as any;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const { error } = await supabase
+    .from("planner_entries")
+    .update({ status })
+    .eq("id", entryId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("updatePlannerEntryStatus error:", error);
+    return { error: "Failed to update status" };
+  }
+
+  revalidatePath("/planner");
+  return { success: true };
+}
+
+export async function updatePlannerEntryNotes(
+  entryId: string,
+  notes: string
+) {
+  const supabase = (await createClient()) as any;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const { error } = await supabase
+    .from("planner_entries")
+    .update({ notes: notes || null })
+    .eq("id", entryId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("updatePlannerEntryNotes error:", error);
+    return { error: "Failed to update notes" };
+  }
+
+  revalidatePath("/planner");
+  return { success: true };
+}
+
+export async function updatePlannerEntrySortOrder(
+  entryId: string,
+  sortOrder: number
+) {
+  const supabase = (await createClient()) as any;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const { error } = await supabase
+    .from("planner_entries")
+    .update({ sort_order: sortOrder })
+    .eq("id", entryId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("updatePlannerEntrySortOrder error:", error);
+    return { error: "Failed to reorder" };
+  }
+
+  revalidatePath("/planner");
+  return { success: true };
+}
+
+export async function removePlannerEntry(entryId: string) {
+  const supabase = (await createClient()) as any;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const { error } = await supabase
+    .from("planner_entries")
+    .update({ status: "cancelled" })
+    .eq("id", entryId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("removePlannerEntry error:", error);
+    return { error: "Failed to remove entry" };
+  }
+
+  revalidatePath("/planner");
+  return { success: true };
+}

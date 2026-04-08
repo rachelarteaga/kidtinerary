@@ -7,6 +7,10 @@ import {
   formatTime,
   formatAgeRange,
   categoryLabel,
+  getWeekStart,
+  getWeekKey,
+  generateWeeks,
+  formatWeekRange,
 } from "@/lib/format";
 
 describe("formatPrice", () => {
@@ -82,5 +86,100 @@ describe("categoryLabel", () => {
   });
   it("returns raw string for unknown category", () => {
     expect(categoryLabel("unknown")).toBe("unknown");
+  });
+});
+
+describe("getWeekStart", () => {
+  it("returns Monday for a Wednesday", () => {
+    // 2026-04-08 is a Wednesday
+    const result = getWeekStart(new Date("2026-04-08T12:00:00"));
+    expect(result.getDay()).toBe(1); // Monday
+    expect(result.getDate()).toBe(6); // Apr 6
+    expect(result.getMonth()).toBe(3); // April (0-indexed)
+  });
+
+  it("returns Monday for a Monday (no change)", () => {
+    // 2026-04-06 is a Monday
+    const result = getWeekStart(new Date("2026-04-06T00:00:00"));
+    expect(result.getDay()).toBe(1);
+    expect(result.getDate()).toBe(6);
+  });
+
+  it("returns the prior Monday for a Sunday", () => {
+    // 2026-04-12 is a Sunday
+    const result = getWeekStart(new Date("2026-04-12T00:00:00"));
+    expect(result.getDay()).toBe(1);
+    expect(result.getDate()).toBe(6); // Apr 6
+  });
+
+  it("resets time to midnight", () => {
+    const result = getWeekStart(new Date("2026-04-08T15:30:00"));
+    expect(result.getHours()).toBe(0);
+    expect(result.getMinutes()).toBe(0);
+    expect(result.getSeconds()).toBe(0);
+  });
+});
+
+describe("getWeekKey", () => {
+  it("returns a string in YYYY-Www format", () => {
+    const key = getWeekKey(new Date("2026-04-08T00:00:00"));
+    expect(key).toMatch(/^\d{4}-W\d{2}$/);
+  });
+
+  it("returns the same key for different days in the same week", () => {
+    const keyWed = getWeekKey(new Date("2026-04-08T00:00:00"));
+    const keyFri = getWeekKey(new Date("2026-04-10T00:00:00"));
+    expect(keyWed).toBe(keyFri);
+  });
+
+  it("returns different keys for different weeks", () => {
+    const keyWeek1 = getWeekKey(new Date("2026-04-06T00:00:00"));
+    const keyWeek2 = getWeekKey(new Date("2026-04-13T00:00:00"));
+    expect(keyWeek1).not.toBe(keyWeek2);
+  });
+});
+
+describe("generateWeeks", () => {
+  it("returns an array of Mondays", () => {
+    const from = new Date("2026-04-06T00:00:00"); // Monday
+    const to = new Date("2026-04-20T00:00:00");   // Monday + 2 weeks
+    const weeks = generateWeeks(from, to);
+    expect(weeks.length).toBe(3);
+    for (const w of weeks) {
+      expect(w.getDay()).toBe(1); // all Mondays
+    }
+  });
+
+  it("returns at least one week when from equals to", () => {
+    const date = new Date("2026-04-06T00:00:00");
+    const weeks = generateWeeks(date, date);
+    expect(weeks.length).toBe(1);
+  });
+
+  it("handles from mid-week by rounding down to Monday", () => {
+    const from = new Date("2026-04-08T00:00:00"); // Wednesday
+    const to = new Date("2026-04-14T00:00:00");   // Tuesday of next week
+    const weeks = generateWeeks(from, to);
+    expect(weeks.length).toBe(2);
+    expect(weeks[0].getDay()).toBe(1);
+  });
+});
+
+describe("formatWeekRange", () => {
+  it("formats a same-month week as 'Mon D – D'", () => {
+    // Apr 6 (Mon) to Apr 10 (Fri)
+    const result = formatWeekRange(new Date("2026-04-06T00:00:00"));
+    expect(result).toContain("Apr");
+    expect(result).toContain("6");
+    expect(result).toContain("10");
+    // Should NOT have month repeated
+    expect(result.split("Apr").length - 1).toBe(1);
+  });
+
+  it("formats a cross-month week with both month names", () => {
+    // Apr 28 (Mon) to May 2 (Fri)
+    const result = formatWeekRange(new Date("2026-04-27T00:00:00"));
+    expect(result).toContain("Apr");
+    expect(result).toContain("May");
   });
 });

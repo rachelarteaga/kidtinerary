@@ -240,3 +240,110 @@ export async function fetchChildren(userId: string) {
 
   return data ?? [];
 }
+
+export interface PlannerEntryRow {
+  id: string;
+  user_id: string;
+  child_id: string;
+  session_id: string;
+  status: "penciled_in" | "locked_in" | "cancelled";
+  sort_order: number;
+  notes: string | null;
+  created_at: string;
+  session: {
+    id: string;
+    starts_at: string;
+    ends_at: string;
+    time_slot: string;
+    hours_start: string | null;
+    hours_end: string | null;
+    is_sold_out: boolean;
+    activity: {
+      id: string;
+      name: string;
+      slug: string;
+      categories: string[];
+      registration_url: string | null;
+      organization: { id: string; name: string } | null;
+      price_options: {
+        id: string;
+        label: string;
+        price_cents: number;
+        price_unit: string;
+      }[];
+      activity_locations: { id: string; address: string; location_name: string | null }[];
+    };
+  };
+}
+
+export async function fetchPlannerEntries(
+  userId: string,
+  childId: string
+): Promise<PlannerEntryRow[]> {
+  const supabase = (await createClient()) as any;
+
+  const { data, error } = await supabase
+    .from("planner_entries")
+    .select(
+      `
+      id, user_id, child_id, session_id, status, sort_order, notes, created_at,
+      session:sessions!inner(
+        id, starts_at, ends_at, time_slot, hours_start, hours_end, is_sold_out,
+        activity:activities!inner(
+          id, name, slug, categories, registration_url,
+          organization:organizations(id, name),
+          price_options(id, label, price_cents, price_unit),
+          activity_locations(id, address, location_name)
+        )
+      )
+    `
+    )
+    .eq("user_id", userId)
+    .eq("child_id", childId)
+    .neq("status", "cancelled")
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    console.error("fetchPlannerEntries error:", error);
+    return [];
+  }
+
+  return (data ?? []) as PlannerEntryRow[];
+}
+
+export async function fetchFavoriteActivitiesWithSessions(userId: string) {
+  const supabase = (await createClient()) as any;
+
+  const { data: favs, error: favError } = await supabase
+    .from("favorites")
+    .select("activity_id")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (favError || !favs || favs.length === 0) {
+    return [];
+  }
+
+  const activityIds = favs.map((f: any) => f.activity_id);
+
+  const { data, error } = await supabase
+    .from("activities")
+    .select(
+      `
+      id, name, slug, categories, registration_url,
+      organization:organizations!inner(id, name),
+      sessions(id, starts_at, ends_at, time_slot, hours_start, hours_end, is_sold_out),
+      price_options(id, label, price_cents, price_unit),
+      activity_locations(id, address, location_name)
+    `
+    )
+    .in("id", activityIds)
+    .eq("is_active", true);
+
+  if (error) {
+    console.error("fetchFavoriteActivitiesWithSessions error:", error);
+    return [];
+  }
+
+  return (data ?? []) as any[];
+}
