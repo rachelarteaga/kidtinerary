@@ -3,6 +3,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import type { PlannerEntryRow } from "@/lib/queries";
 import { formatWeekRange } from "@/lib/format";
+import { PlannerEntryCard } from "./entry-card";
 
 interface WeekRowProps {
   weekKey: string;
@@ -22,8 +23,8 @@ export function WeekRow({
   hasLockedIn,
   isCoverageGap,
   selectedChildId: _selectedChildId,
-  onEntryUpdated: _onEntryUpdated,
-  onEntryRemoved: _onEntryRemoved,
+  onEntryUpdated,
+  onEntryRemoved,
 }: WeekRowProps) {
   const { isOver, setNodeRef } = useDroppable({ id: weekKey });
 
@@ -66,18 +67,13 @@ export function WeekRow({
       ) : (
         <div className="space-y-2">
           {entries.map((entry) => (
-            <div
+            <PlannerEntryCard
               key={entry.id}
-              className={`rounded-lg border p-3 text-sm ${
-                entry.status === "locked_in"
-                  ? "border-meadow/40 bg-meadow/5"
-                  : hasLockedIn
-                    ? "border-driftwood/20 bg-bark/3 opacity-60"
-                    : "border-driftwood/20 bg-cream"
-              }`}
-            >
-              <span className="font-medium">{entry.session.activity.name}</span>
-            </div>
+              entry={entry}
+              isGreyedOut={hasLockedIn && entry.status !== "locked_in"}
+              onEntryUpdated={onEntryUpdated}
+              onEntryRemoved={onEntryRemoved}
+            />
           ))}
         </div>
       )}
