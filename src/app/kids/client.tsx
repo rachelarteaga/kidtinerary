@@ -1,0 +1,75 @@
+"use client";
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ChildCard } from "@/components/kids/child-card";
+import { ChildForm } from "@/components/kids/child-form";
+import { useRouter } from "next/navigation";
+
+interface Child {
+  id: string;
+  name: string;
+  birth_date: string;
+  interests: string[];
+}
+
+interface KidsPageClientProps {
+  initialChildren: Child[];
+}
+
+export function KidsPageClient({ initialChildren }: KidsPageClientProps) {
+  const [showForm, setShowForm] = useState(false);
+  const [editingChild, setEditingChild] = useState<Child | null>(null);
+  const router = useRouter();
+
+  function handleDone() {
+    setShowForm(false);
+    setEditingChild(null);
+    router.refresh();
+  }
+
+  function handleEdit(child: Child) {
+    setEditingChild(child);
+    setShowForm(true);
+  }
+
+  return (
+    <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="font-serif text-4xl mb-2">My Kids</h1>
+          <p className="text-stone text-lg">
+            Manage your children&apos;s profiles and interests.
+          </p>
+        </div>
+        {!showForm && (
+          <Button onClick={() => setShowForm(true)}>Add Child</Button>
+        )}
+      </div>
+
+      {showForm && (
+        <div className="mb-6">
+          <ChildForm editingChild={editingChild} onDone={handleDone} />
+        </div>
+      )}
+
+      {initialChildren.length > 0 ? (
+        <div className="space-y-4">
+          {initialChildren.map((child: any) => (
+            <ChildCard key={child.id} child={child} onEdit={handleEdit} />
+          ))}
+        </div>
+      ) : (
+        !showForm && (
+          <div className="text-center py-16">
+            <p className="font-serif text-2xl mb-2">No kids added yet</p>
+            <p className="text-stone mb-6">
+              Add your children to get personalized activity recommendations.
+            </p>
+            <Button onClick={() => setShowForm(true)}>Add Your First Child</Button>
+          </div>
+        )
+      )}
+    </main>
+  );
+}
