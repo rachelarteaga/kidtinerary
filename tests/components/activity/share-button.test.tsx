@@ -61,7 +61,6 @@ describe("ShareButton", () => {
   });
 
   it("reverts from 'Copied!' back to 'Share' after timeout", async () => {
-    vi.useFakeTimers();
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(global, "navigator", {
       value: { clipboard: { writeText: writeTextMock } },
@@ -72,16 +71,17 @@ describe("ShareButton", () => {
     render(<ShareButton title="Nature Camp" url="https://example.com/activity/nature-camp" />);
     fireEvent.click(screen.getByRole("button", { name: /share/i }));
 
+    // Wait for the copied state to appear
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /copied!/i })).toBeInTheDocument();
     });
 
-    vi.advanceTimersByTime(2001);
-
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /share/i })).toBeInTheDocument();
-    });
-
-    vi.useRealTimers();
+    // Wait for the 2s timeout to expire and state to revert
+    await waitFor(
+      () => {
+        expect(screen.getByRole("button", { name: /share/i })).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 });
