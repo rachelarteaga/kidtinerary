@@ -363,3 +363,136 @@ export async function removePlannerEntry(entryId: string) {
   revalidatePath("/planner");
   return { success: true };
 }
+
+export async function setReminder(
+  activityId: string,
+  type: "registration_opens" | "registration_closes" | "custom",
+  remindAt: string
+) {
+  const supabase = (await createClient()) as any;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const validTypes = ["registration_opens", "registration_closes", "custom"];
+  if (!validTypes.includes(type)) {
+    return { error: "Invalid reminder type" };
+  }
+
+  const remindDate = new Date(remindAt);
+  if (isNaN(remindDate.getTime()) || remindDate <= new Date()) {
+    return { error: "remind_at must be a future date" };
+  }
+
+  const { data, error } = await supabase
+    .from("reminders")
+    .insert({
+      user_id: user.id,
+      activity_id: activityId,
+      type,
+      remind_at: remindAt,
+      sent_at: null,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    console.error("setReminder error:", error);
+    return { error: "Failed to set reminder" };
+  }
+
+  return { success: true, id: data.id };
+}
+
+export async function updateNotificationPreferences(
+  preferences: Record<string, boolean>
+) {
+  const supabase = (await createClient()) as any;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ notification_preferences: preferences })
+    .eq("id", user.id);
+
+  if (error) {
+    console.error("updateNotificationPreferences error:", error);
+    return { error: "Failed to update notification preferences" };
+  }
+
+  return { success: true };
+}
+
+export async function createSharedSchedule(
+  childId: string,
+  dateFrom: string,
+  dateTo: string
+) {
+  const supabase = (await createClient()) as any;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const token = crypto.randomUUID();
+
+  const { data, error } = await supabase
+    .from("shared_schedules")
+    .insert({
+      user_id: user.id,
+      child_id: childId,
+      token,
+      date_from: dateFrom,
+      date_to: dateTo,
+    })
+    .select("token")
+    .single();
+
+  if (error) {
+    console.error("createSharedSchedule error:", error);
+    return { error: "Failed to create shared schedule" };
+  }
+
+  return { success: true, token: data.token };
+}
+
+export async function revokeSharedSchedule(token: string) {
+  const supabase = (await createClient()) as any;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const { error } = await supabase
+    .from("shared_schedules")
+    .delete()
+    .eq("token", token)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("revokeSharedSchedule error:", error);
+    return { error: "Failed to revoke shared schedule" };
+  }
+
+  return { success: true };
+}
