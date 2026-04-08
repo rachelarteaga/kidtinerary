@@ -311,6 +311,107 @@ export async function fetchPlannerEntries(
   return (data ?? []) as PlannerEntryRow[];
 }
 
+export interface SharedScheduleRow {
+  token: string;
+  child_id: string;
+  date_from: string;
+  date_to: string;
+  child_name: string;
+  entries: {
+    id: string;
+    status: "penciled_in" | "locked_in" | "cancelled";
+    sort_order: number;
+    session: {
+      id: string;
+      starts_at: string;
+      ends_at: string;
+      time_slot: string;
+      hours_start: string | null;
+      hours_end: string | null;
+      is_sold_out: boolean;
+      activity: {
+        id: string;
+        name: string;
+        slug: string;
+        categories: string[];
+        registration_url: string | null;
+        organization: { id: string; name: string } | null;
+        price_options: {
+          id: string;
+          label: string;
+          price_cents: number;
+          price_unit: string;
+        }[];
+        activity_locations: { id: string; address: string; location_name: string | null }[];
+      };
+    };
+  }[];
+}
+
+export async function fetchSharedSchedule(token: string): Promise<SharedScheduleRow | null> {
+  // Uses the anon/public Supabase client — no auth required
+  const supabase = (await createClient()) as any;
+
+  // Fetch the shared schedule record
+  const { data: schedule, error: scheduleError } = await supabase
+    .from("shared_schedules")
+    .select("token, child_id, date_from, date_to")
+    .eq("token", token)
+    .single();
+
+  if (scheduleError || !schedule) {
+    return null;
+  }
+
+  // Fetch the child name
+  const { data: child, error: childError } = await supabase
+    .from("children")
+    .select("name")
+    .eq("id", schedule.child_id)
+    .single();
+
+  if (childError || !child) {
+    return null;
+  }
+
+  // Fetch planner entries for this child within the date range, excluding notes
+  const { data: entries, error: entriesError } = await supabase
+    .from("planner_entries")
+    .select(
+      `
+      id, status, sort_order,
+      session:sessions!inner(
+        id, starts_at, ends_at, time_slot, hours_start, hours_end, is_sold_out,
+        activity:activities!inner(
+          id, name, slug, categories, registration_url,
+          organization:organizations(id, name),
+          price_options(id, label, price_cents, price_unit),
+          activity_locations(id, address, location_name)
+        )
+      )
+    `
+    )
+    .eq("child_id", schedule.child_id)
+    .neq("status", "cancelled")
+    .gte("session.starts_at", schedule.date_from)
+    .lte("session.starts_at", schedule.date_to)
+    .order("sort_order", { ascending: true });
+
+  if (entriesError) {
+    console.error("fetchSharedSchedule entries error:", entriesError);
+    return null;
+  }
+
+  return {
+    token: schedule.token,
+    child_id: schedule.child_id,
+    date_from: schedule.date_from,
+    date_to: schedule.date_to,
+    child_name: child.name,
+    entries: (entries ?? []) as SharedScheduleRow["entries"],
+  };
+}
+
 export async function fetchFavoriteActivitiesWithSessions(userId: string) {
   const supabase = (await createClient()) as any;
 
