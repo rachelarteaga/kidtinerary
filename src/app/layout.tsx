@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Serif_Display, Inter, JetBrains_Mono } from "next/font/google";
+import { Nav } from "@/components/layout/nav";
+import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
 
 const dmSerif = DM_Serif_Display({
@@ -38,7 +40,10 @@ export default function RootLayout({
       className={`${dmSerif.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body className="bg-cream text-bark font-sans antialiased">
-        {children}
+        <ToastProvider>
+          <Nav />
+          <div className="pb-16 sm:pb-0">{children}</div>
+        </ToastProvider>
       </body>
     </html>
   );
