@@ -27,6 +27,7 @@ config({ path: ".env.local" });
 import { createClient } from "@supabase/supabase-js";
 import { runSource, runDiscoveryThenDetail, runDiscoveryPass, runDetailPass, runEnrichment } from "@/scraper/pipeline";
 import { getAdapter, getAllAdapters } from "@/scraper/adapters/index";
+import { runComprehensive } from "@/scraper/comprehensive-search";
 
 // ---------------------------------------------------------------------------
 // Aggregator URLs for --full mode
@@ -55,6 +56,8 @@ function parseArgs(argv: string[]): {
   detail?: string;
   full: boolean;
   enrich: boolean;
+  comprehensive: boolean;
+  batch?: number;
 } {
   const args = argv.slice(2);
   let source: string | undefined;
@@ -65,6 +68,8 @@ function parseArgs(argv: string[]): {
   let detail: string | undefined;
   let full = false;
   let enrich = false;
+  let comprehensive = false;
+  let batch: number | undefined;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--source" && args[i + 1]) {
@@ -83,10 +88,14 @@ function parseArgs(argv: string[]): {
       full = true;
     } else if (args[i] === "--enrich") {
       enrich = true;
+    } else if (args[i] === "--comprehensive") {
+      comprehensive = true;
+    } else if (args[i] === "--batch" && args[i + 1]) {
+      batch = parseInt(args[++i], 10);
     }
   }
 
-  return { source, all, adapterType, dryRun, discover, detail, full, enrich };
+  return { source, all, adapterType, dryRun, discover, detail, full, enrich, comprehensive, batch };
 }
 
 // ---------------------------------------------------------------------------
@@ -94,9 +103,9 @@ function parseArgs(argv: string[]): {
 // ---------------------------------------------------------------------------
 
 async function main() {
-  const { source, all, adapterType, dryRun, discover, detail, full, enrich } = parseArgs(process.argv);
+  const { source, all, adapterType, dryRun, discover, detail, full, enrich, comprehensive, batch } = parseArgs(process.argv);
 
-  const hasCommand = source || all || adapterType || discover || detail || full || enrich;
+  const hasCommand = source || all || adapterType || discover || detail || full || enrich || comprehensive;
   if (!hasCommand) {
     console.error("Usage:");
     console.error("  npx tsx src/scraper/run.ts --source <adapter-name>");
@@ -106,8 +115,17 @@ async function main() {
     console.error("  npx tsx src/scraper/run.ts --detail <activity-website-url>");
     console.error("  npx tsx src/scraper/run.ts --full");
     console.error("  npx tsx src/scraper/run.ts --enrich");
+    console.error("  npx tsx src/scraper/run.ts --comprehensive          # batch 1 (top 6 towns × 15 categories)");
+    console.error("  npx tsx src/scraper/run.ts --comprehensive --batch 2 # batch 2 (remaining towns/categories)");
+    console.error("  npx tsx src/scraper/run.ts --comprehensive --all    # all towns × all categories");
     console.error("  Add --dry-run to preview without writing to DB");
     process.exit(1);
+  }
+
+  // --- Comprehensive search mode ---
+  if (comprehensive) {
+    await runComprehensive({ batch, all });
+    return;
   }
 
   // --- Enrich mode ---
