@@ -86,4 +86,21 @@ describe("CampCard", () => {
     render(<CampCard activity={mockActivity} isFavorited={false} />);
     expect(screen.getByText(/1\s+session/)).toBeInTheDocument();
   });
+
+  it("renders distance when provided", () => {
+    render(<CampCard activity={mockActivity} isFavorited={false} distance={3.7} />);
+    expect(screen.getByText("3.7 mi")).toBeInTheDocument();
+  });
+
+  it("does not render distance when not provided", () => {
+    render(<CampCard activity={mockActivity} isFavorited={false} />);
+    expect(screen.queryByText(/\d+\.\d+ mi/)).not.toBeInTheDocument();
+  });
+
+  it("renders distance even when location is present", () => {
+    render(<CampCard activity={mockActivity} isFavorited={false} distance={1.2} />);
+    // Location name should also be visible
+    expect(screen.getByText("Central Park")).toBeInTheDocument();
+    expect(screen.getByText("1.2 mi")).toBeInTheDocument();
+  });
 });

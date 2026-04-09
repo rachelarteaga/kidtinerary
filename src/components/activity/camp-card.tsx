@@ -79,11 +79,13 @@ export function CampCard({ activity, isFavorited, showFavorite = true, distance 
         </div>
 
         {/* Location */}
-        {location && (
-          <p className="text-xs text-stone mb-3 truncate flex items-center gap-1.5">
-            <span className="truncate">
-              {(location as any).location_name ?? (location as any).address}
-            </span>
+        {(location || distance != null) && (
+          <p className="text-xs text-stone mb-3 flex items-center gap-1.5 overflow-hidden">
+            {location && (
+              <span className="truncate min-w-0">
+                {(location as any).location_name ?? (location as any).address}
+              </span>
+            )}
             {distance != null && (
               <span className="font-mono text-[10px] text-driftwood whitespace-nowrap shrink-0">
                 {distance.toFixed(1)} mi
