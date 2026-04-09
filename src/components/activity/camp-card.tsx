@@ -9,9 +9,10 @@ interface CampCardProps {
   activity: ActivityRow;
   isFavorited: boolean;
   showFavorite?: boolean;
+  distance?: number;
 }
 
-export function CampCard({ activity, isFavorited, showFavorite = true }: CampCardProps) {
+export function CampCard({ activity, isFavorited, showFavorite = true, distance }: CampCardProps) {
   const lowestPrice = activity.price_options?.length
     ? activity.price_options.reduce((min, p) => (p.price_cents < min.price_cents ? p : min), activity.price_options[0])
     : null;
@@ -79,8 +80,15 @@ export function CampCard({ activity, isFavorited, showFavorite = true }: CampCar
 
         {/* Location */}
         {location && (
-          <p className="text-xs text-stone mb-3 truncate">
-            {(location as any).location_name ?? (location as any).address}
+          <p className="text-xs text-stone mb-3 truncate flex items-center gap-1.5">
+            <span className="truncate">
+              {(location as any).location_name ?? (location as any).address}
+            </span>
+            {distance != null && (
+              <span className="font-mono text-[10px] text-driftwood whitespace-nowrap shrink-0">
+                {distance.toFixed(1)} mi
+              </span>
+            )}
           </p>
         )}
 

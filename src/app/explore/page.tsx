@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { fetchActivities, fetchUserFavoriteIds, type ActivityFilters } from "@/lib/queries";
+import { fetchActivities, fetchUserFavoriteIds, type ActivityFilters, type ActivityWithDistance } from "@/lib/queries";
 import { SearchBar } from "@/components/explore/search-bar";
 import { FilterSidebar } from "@/components/explore/filter-sidebar";
 import { SortBar } from "@/components/explore/sort-bar";
@@ -26,6 +26,11 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   if (typeof params.age_max === "string") filters.ageMax = parseInt(params.age_max, 10) || undefined;
   if (typeof params.indoor_outdoor === "string") filters.indoorOutdoor = params.indoor_outdoor;
   if (typeof params.sort === "string") filters.sortBy = params.sort as ActivityFilters["sortBy"];
+
+  // Radius filter params
+  if (typeof params.lat === "string") filters.lat = parseFloat(params.lat) || undefined;
+  if (typeof params.lng === "string") filters.lng = parseFloat(params.lng) || undefined;
+  if (typeof params.radius === "string") filters.radiusMiles = parseInt(params.radius, 10) || undefined;
 
   const page = typeof params.page === "string" ? parseInt(params.page, 10) || 1 : 1;
   filters.page = page;
@@ -87,7 +92,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
             }
           >
             <ActivityList
-              activities={activities}
+              activities={activities as ActivityWithDistance[]}
               favoriteIds={favoriteIds}
               total={total}
               page={page}

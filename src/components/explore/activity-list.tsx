@@ -3,10 +3,10 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { CampCard } from "@/components/activity/camp-card";
 import { Button } from "@/components/ui/button";
-import type { ActivityRow } from "@/lib/queries";
+import type { ActivityWithDistance } from "@/lib/queries";
 
 interface ActivityListProps {
-  activities: ActivityRow[];
+  activities: ActivityWithDistance[];
   favoriteIds: string[];
   total: number;
   page: number;
@@ -20,6 +20,7 @@ export function ActivityList({
   page,
   pageSize,
 }: ActivityListProps) {
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const totalPages = Math.ceil(total / pageSize);
@@ -49,6 +50,7 @@ export function ActivityList({
             key={activity.id}
             activity={activity}
             isFavorited={favoriteIds.includes(activity.id)}
+            distance={activity.distance_miles}
           />
         ))}
       </div>

@@ -9,9 +9,12 @@ export interface ActivityFilters {
   timeSlot?: string;
   minPrice?: number;
   maxPrice?: number;
-  sortBy?: "price_low" | "price_high" | "name";
+  sortBy?: "price_low" | "price_high" | "name" | "distance";
   page?: number;
   pageSize?: number;
+  lat?: number;
+  lng?: number;
+  radiusMiles?: number;
 }
 
 export interface ActivityRow {
@@ -50,7 +53,11 @@ export interface ActivityRow {
 
 const PAGE_SIZE = 12;
 
-export async function fetchActivities(filters: ActivityFilters = {}) {
+export interface ActivityWithDistance extends ActivityRow {
+  distance_miles?: number;
+}
+
+export async function fetchActivities(filters: ActivityFilters = {}): Promise<{ activities: ActivityWithDistance[]; total: number }> {
   // TODO: remove cast when types are generated
   const supabase = (await createClient()) as any;
 
@@ -58,6 +65,40 @@ export async function fetchActivities(filters: ActivityFilters = {}) {
   const pageSize = filters.pageSize ?? PAGE_SIZE;
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
+
+  // If radius filtering is requested, first get IDs + distances via RPC
+  let distanceMap: Map<string, number> | null = null;
+  let radiusActivityIds: string[] | null = null;
+
+  if (filters.lat != null && filters.lng != null) {
+    const radiusMiles = filters.radiusMiles ?? 20;
+    const { data: radiusData, error: radiusError } = await supabase.rpc(
+      "activities_within_radius",
+      {
+        lat: filters.lat,
+        lng: filters.lng,
+        radius_miles: radiusMiles,
+      }
+    );
+
+    if (radiusError) {
+      console.error("activities_within_radius error:", radiusError);
+      return { activities: [], total: 0 };
+    }
+
+    distanceMap = new Map<string, number>(
+      (radiusData ?? []).map((r: { activity_id: string; distance_miles: number }) => [
+        r.activity_id,
+        r.distance_miles,
+      ])
+    );
+    radiusActivityIds = Array.from(distanceMap.keys());
+
+    // If no activities in radius, return early
+    if (radiusActivityIds.length === 0) {
+      return { activities: [], total: 0 };
+    }
+  }
 
   let query = supabase
     .from("activities")
@@ -73,6 +114,11 @@ export async function fetchActivities(filters: ActivityFilters = {}) {
       { count: "exact" }
     )
     .eq("is_active", true);
+
+  // Radius filter: restrict to IDs returned by RPC
+  if (radiusActivityIds != null) {
+    query = query.in("id", radiusActivityIds);
+  }
 
   // Keyword search
   if (filters.keyword) {
@@ -101,18 +147,23 @@ export async function fetchActivities(filters: ActivityFilters = {}) {
     );
   }
 
-  // Sorting
-  switch (filters.sortBy) {
-    case "price_low":
-      query = query.order("name", { ascending: true });
-      break;
-    case "price_high":
-      query = query.order("name", { ascending: false });
-      break;
-    case "name":
-    default:
-      query = query.order("name", { ascending: true });
-      break;
+  // Sorting (distance sort is applied client-side after attaching distances)
+  if (filters.sortBy !== "distance") {
+    switch (filters.sortBy) {
+      case "price_low":
+        query = query.order("name", { ascending: true });
+        break;
+      case "price_high":
+        query = query.order("name", { ascending: false });
+        break;
+      case "name":
+      default:
+        query = query.order("name", { ascending: true });
+        break;
+    }
+  } else {
+    // Default DB order; will be re-sorted by distance client-side
+    query = query.order("name", { ascending: true });
   }
 
   query = query.range(from, to);
@@ -121,10 +172,18 @@ export async function fetchActivities(filters: ActivityFilters = {}) {
 
   if (error) {
     console.error("fetchActivities error:", error);
-    return { activities: [] as ActivityRow[], total: 0 };
+    return { activities: [] as ActivityWithDistance[], total: 0 };
   }
 
-  let activities = (data ?? []) as ActivityRow[];
+  let activities = (data ?? []) as ActivityWithDistance[];
+
+  // Attach distances from the RPC result
+  if (distanceMap != null) {
+    activities = activities.map((a) => ({
+      ...a,
+      distance_miles: distanceMap!.get(a.id),
+    }));
+  }
 
   // Client-side price sort (Supabase can't sort by nested relation)
   if (filters.sortBy === "price_low" || filters.sortBy === "price_high") {
@@ -132,6 +191,15 @@ export async function fetchActivities(filters: ActivityFilters = {}) {
       const aMin = Math.min(...(a.price_options?.map((p) => p.price_cents) ?? [Infinity]));
       const bMin = Math.min(...(b.price_options?.map((p) => p.price_cents) ?? [Infinity]));
       return filters.sortBy === "price_low" ? aMin - bMin : bMin - aMin;
+    });
+  }
+
+  // Client-side distance sort
+  if (filters.sortBy === "distance" && distanceMap != null) {
+    activities = activities.sort((a, b) => {
+      const aDist = a.distance_miles ?? Infinity;
+      const bDist = b.distance_miles ?? Infinity;
+      return aDist - bDist;
     });
   }
 

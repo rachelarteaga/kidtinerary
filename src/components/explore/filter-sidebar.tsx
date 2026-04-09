@@ -31,6 +31,9 @@ export function FilterSidebar() {
   const activeIndoorOutdoor = searchParams.get("indoor_outdoor") ?? "";
   const activeTimeSlot = searchParams.get("time_slot") ?? "";
 
+  const activeRadius = searchParams.get("radius") ? parseInt(searchParams.get("radius")!, 10) : 20;
+  const hasLocation = !!searchParams.get("lat");
+
   const hasFilters = activeCategories.length > 0 || activeIndoorOutdoor || activeTimeSlot;
 
   function clearAll() {
@@ -38,6 +41,15 @@ export function FilterSidebar() {
     params.delete("categories");
     params.delete("indoor_outdoor");
     params.delete("time_slot");
+    params.delete("page");
+    router.push(`/explore?${params.toString()}`);
+  }
+
+  const RADIUS_OPTIONS = [5, 10, 15, 20, 30] as const;
+
+  function setRadius(mi: number) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("radius", mi.toString());
     params.delete("page");
     router.push(`/explore?${params.toString()}`);
   }
@@ -140,6 +152,31 @@ export function FilterSidebar() {
           ))}
         </div>
       </div>
+
+      {/* Radius (only shown when a location is active) */}
+      {hasLocation && (
+        <div>
+          <h4 className="font-mono text-[10px] uppercase tracking-wide text-stone mb-2">
+            Radius
+          </h4>
+          <div className="flex flex-wrap gap-1.5">
+            {RADIUS_OPTIONS.map((mi) => (
+              <button
+                key={mi}
+                type="button"
+                onClick={() => setRadius(mi)}
+                className={`px-3 py-1.5 rounded-full font-mono text-xs transition-colors ${
+                  activeRadius === mi
+                    ? "bg-sunset text-white"
+                    : "bg-cream border border-driftwood/50 text-bark hover:border-sunset/50"
+                }`}
+              >
+                {mi} mi
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </aside>
   );
 }
