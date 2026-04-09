@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { load as cheerioLoad } from "cheerio";
 import { resolveAdapter } from "@/scraper/adapters/index";
 import { upsertActivity } from "@/scraper/upsert";
 import { isDuplicateOf, type DupeCandidate } from "@/scraper/dedupe";
@@ -8,6 +9,224 @@ import {
   createLLMAdapter,
   type DiscoveredActivity,
 } from "@/scraper/adapters/llm-extractor";
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const AGGREGATOR_DOMAINS = [
+  "fun4raleighkids.com",
+  "triangleonthecheap.com",
+  "kidsoutandabout.com",
+  "raleighsummercamps.com",
+  "campsearch.com",
+  "macaronikid.com",
+  "yelp.com",
+  "facebook.com",
+  "instagram.com",
+  "twitter.com",
+  "youtube.com",
+];
+
+const SKIP_ORG_NAMES = [
+  "ymca of the triangle",
+  "city of raleigh",
+];
+
+// ---------------------------------------------------------------------------
+// Search & Scrape helpers
+// ---------------------------------------------------------------------------
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isAggregatorUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./, "");
+    return AGGREGATOR_DOMAINS.some((d) => hostname === d || hostname.endsWith(`.${d}`));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Searches DuckDuckGo HTML for the first non-aggregator URL matching the org.
+ * Returns the URL string or null if not found.
+ */
+export async function searchAndScrapeOrg(
+  orgName: string,
+  location = "Raleigh NC"
+): Promise<string | null> {
+  const query = encodeURIComponent(`${orgName} ${location} camps kids`);
+  const searchUrl = `https://html.duckduckgo.com/html/?q=${query}`;
+
+  let html: string;
+  try {
+    const res = await globalThis.fetch(searchUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; KidPlan-Scraper/1.0; +https://kidplan.app)",
+        "Accept": "text/html",
+      },
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) {
+      console.warn(`[search] DuckDuckGo returned ${res.status} for "${orgName}"`);
+      return null;
+    }
+    html = await res.text();
+  } catch (err) {
+    console.warn(`[search] Fetch failed for "${orgName}": ${err instanceof Error ? err.message : String(err)}`);
+    return null;
+  }
+
+  const $ = cheerioLoad(html);
+
+  // DuckDuckGo HTML result links are in <a class="result__a"> with href
+  const candidates: string[] = [];
+  $("a.result__a").each((_i, el) => {
+    const href = $(el).attr("href");
+    if (!href) return;
+
+    // DDG wraps links — extract the real URL from uddg= param or use as-is
+    let realUrl = href;
+    try {
+      const parsed = new URL(href, "https://html.duckduckgo.com");
+      const uddg = parsed.searchParams.get("uddg");
+      if (uddg) {
+        realUrl = decodeURIComponent(uddg);
+      }
+    } catch {
+      // use href as-is
+    }
+
+    if (!isAggregatorUrl(realUrl)) {
+      candidates.push(realUrl);
+    }
+  });
+
+  return candidates[0] ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Enrichment pipeline
+// ---------------------------------------------------------------------------
+
+export interface EnrichResult {
+  total: number;
+  searched: number;
+  found: number;
+  scraped: number;
+  upserted: number;
+  skipped: number;
+  errors: string[];
+}
+
+/**
+ * Enriches low-confidence activities:
+ * 1. Queries all activities with data_confidence = 'low'
+ * 2. Groups by org name (deduplicates)
+ * 3. Skips orgs already having a website in organizations table
+ * 4. For each unknown org: searches DuckDuckGo, then detail-scrapes the found site
+ */
+export async function runEnrichment(): Promise<EnrichResult> {
+  const supabase = getServiceClient();
+  const errors: string[] = [];
+  let searched = 0;
+  let found = 0;
+  let scraped = 0;
+  let upserted = 0;
+  let skipped = 0;
+
+  // --- 1. Fetch low-confidence activities ---
+  const { data: lowConf, error: fetchError } = await supabase
+    .from("activities")
+    .select("id, name, organization_id, organizations(name, website)")
+    .eq("data_confidence", "low")
+    .eq("is_active", true);
+
+  if (fetchError || !lowConf) {
+    errors.push(`Failed to query low-confidence activities: ${fetchError?.message}`);
+    return { total: 0, searched: 0, found: 0, scraped: 0, upserted: 0, skipped: 0, errors };
+  }
+
+  // --- 2. Deduplicate by org name ---
+  const orgMap = new Map<string, { orgId: string; website: string | null }>();
+  for (const row of lowConf as any[]) {
+    const org = row.organizations;
+    if (!org) continue;
+    const orgName: string = org.name ?? "";
+    if (!orgMap.has(orgName)) {
+      orgMap.set(orgName, { orgId: row.organization_id, website: org.website ?? null });
+    }
+  }
+
+  const total = orgMap.size;
+  console.log(`\n[enrich] Found ${lowConf.length} low-confidence activities across ${total} unique orgs\n`);
+
+  let idx = 0;
+  for (const [orgName, { orgId, website }] of orgMap) {
+    idx++;
+
+    // --- 3. Skip well-known orgs ---
+    if (SKIP_ORG_NAMES.includes(orgName.toLowerCase())) {
+      console.log(`[enrich] ${idx}/${total}: "${orgName}" → skipped (known org)`);
+      skipped++;
+      continue;
+    }
+
+    // --- 4. Skip orgs that already have a website ---
+    if (website) {
+      console.log(`[enrich] ${idx}/${total}: "${orgName}" → already has website ${website}, skipping search`);
+      skipped++;
+      continue;
+    }
+
+    // --- 5. Search for org website ---
+    console.log(`[enrich] ${idx}/${total}: "${orgName}" → searching...`);
+    searched++;
+
+    await sleep(2000); // rate limit between searches
+
+    const foundUrl = await searchAndScrapeOrg(orgName);
+
+    if (!foundUrl) {
+      console.log(`[enrich] ${idx}/${total}: "${orgName}" → no website found`);
+      // Mark org as searched so we don't retry endlessly
+      await supabase
+        .from("organizations")
+        .update({ website: null })
+        .eq("id", orgId);
+      continue;
+    }
+
+    found++;
+    console.log(`[enrich] ${idx}/${total}: "${orgName}" → found ${foundUrl} → scraping...`);
+
+    // --- 6. Update org website in DB ---
+    await supabase
+      .from("organizations")
+      .update({ website: foundUrl })
+      .eq("id", orgId);
+
+    // --- 7. Detail-scrape the org website ---
+    await sleep(3000); // rate limit between LLM calls
+
+    try {
+      const { upserted: u, errors: detailErrors } = await runDetailPass(foundUrl);
+      errors.push(...detailErrors);
+      scraped++;
+      upserted += u;
+      console.log(`[enrich] ${idx}/${total}: "${orgName}" → upserted ${u} activities`);
+    } catch (err) {
+      const msg = `Detail pass failed for "${orgName}" (${foundUrl}): ${err instanceof Error ? err.message : String(err)}`;
+      errors.push(msg);
+      console.warn(`[enrich] ${msg}`);
+    }
+  }
+
+  return { total, searched, found, scraped, upserted, skipped, errors };
+}
 
 function getServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

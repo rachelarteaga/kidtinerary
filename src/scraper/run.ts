@@ -25,7 +25,7 @@ import { config } from "dotenv";
 config({ path: ".env.local" });
 
 import { createClient } from "@supabase/supabase-js";
-import { runSource, runDiscoveryThenDetail, runDiscoveryPass, runDetailPass } from "@/scraper/pipeline";
+import { runSource, runDiscoveryThenDetail, runDiscoveryPass, runDetailPass, runEnrichment } from "@/scraper/pipeline";
 import { getAdapter, getAllAdapters } from "@/scraper/adapters/index";
 
 // ---------------------------------------------------------------------------
@@ -54,6 +54,7 @@ function parseArgs(argv: string[]): {
   discover?: string;
   detail?: string;
   full: boolean;
+  enrich: boolean;
 } {
   const args = argv.slice(2);
   let source: string | undefined;
@@ -63,6 +64,7 @@ function parseArgs(argv: string[]): {
   let discover: string | undefined;
   let detail: string | undefined;
   let full = false;
+  let enrich = false;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--source" && args[i + 1]) {
@@ -79,10 +81,12 @@ function parseArgs(argv: string[]): {
       detail = args[++i];
     } else if (args[i] === "--full") {
       full = true;
+    } else if (args[i] === "--enrich") {
+      enrich = true;
     }
   }
 
-  return { source, all, adapterType, dryRun, discover, detail, full };
+  return { source, all, adapterType, dryRun, discover, detail, full, enrich };
 }
 
 // ---------------------------------------------------------------------------
@@ -90,9 +94,9 @@ function parseArgs(argv: string[]): {
 // ---------------------------------------------------------------------------
 
 async function main() {
-  const { source, all, adapterType, dryRun, discover, detail, full } = parseArgs(process.argv);
+  const { source, all, adapterType, dryRun, discover, detail, full, enrich } = parseArgs(process.argv);
 
-  const hasCommand = source || all || adapterType || discover || detail || full;
+  const hasCommand = source || all || adapterType || discover || detail || full || enrich;
   if (!hasCommand) {
     console.error("Usage:");
     console.error("  npx tsx src/scraper/run.ts --source <adapter-name>");
@@ -101,8 +105,29 @@ async function main() {
     console.error("  npx tsx src/scraper/run.ts --discover <aggregator-url>");
     console.error("  npx tsx src/scraper/run.ts --detail <activity-website-url>");
     console.error("  npx tsx src/scraper/run.ts --full");
+    console.error("  npx tsx src/scraper/run.ts --enrich");
     console.error("  Add --dry-run to preview without writing to DB");
     process.exit(1);
+  }
+
+  // --- Enrich mode ---
+  if (enrich) {
+    console.log("\n=== ENRICH: search + scrape low-confidence orgs ===\n");
+    const result = await runEnrichment();
+    console.log("\n=== Enrichment summary ===");
+    console.log(`  Unique orgs:     ${result.total}`);
+    console.log(`  Searched:        ${result.searched}`);
+    console.log(`  Websites found:  ${result.found}`);
+    console.log(`  Sites scraped:   ${result.scraped}`);
+    console.log(`  Activities added:${result.upserted}`);
+    console.log(`  Skipped:         ${result.skipped}`);
+    if (result.errors.length > 0) {
+      console.log(`  Errors (${result.errors.length}):`);
+      result.errors.slice(0, 10).forEach((e) => console.log(`    - ${e}`));
+      if (result.errors.length > 10) console.log(`    ... and ${result.errors.length - 10} more`);
+    }
+    console.log("\nDone.");
+    return;
   }
 
   // --- Two-pass modes ---
