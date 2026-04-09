@@ -57,9 +57,9 @@ export function CampCard({ activity, isFavorited, showFavorite = true, distance 
           )}
         </div>
 
-        {/* Org and activity name — visually separate */}
+        {/* Org and activity name — visually separate, nearly equal prominence */}
         {activity.organization && (
-          <p className="font-mono text-[10px] uppercase tracking-widest text-sunset mb-1">
+          <p className="font-sans text-sm font-semibold text-bark/70 mb-0.5">
             {(activity.organization as any).name}
           </p>
         )}
