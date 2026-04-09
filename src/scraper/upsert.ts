@@ -47,6 +47,10 @@ export async function upsertActivity(
   const orgId: string = org.id;
 
   // --- 2. Normalize activity fields ---
+  if (!scraped.name) {
+    errors.push("Activity skipped: missing name");
+    return { activityId: null, created: false, errors };
+  }
   const name = scraped.name.trim();
   const slug = toSlug(name);
   const categories =
@@ -63,7 +67,7 @@ export async function upsertActivity(
     categories,
     age_min: ageRange?.min ?? null,
     age_max: ageRange?.max ?? null,
-    indoor_outdoor: scraped.indoorOutdoor,
+    indoor_outdoor: (["indoor", "outdoor", "both"].includes(scraped.indoorOutdoor) ? scraped.indoorOutdoor : "both") as "indoor" | "outdoor" | "both",
     registration_url: scraped.registrationUrl ?? null,
     source_url: scraped.sourceUrl,
     scraped_at: new Date().toISOString(),
@@ -115,13 +119,26 @@ export async function upsertActivity(
   const locationId: string | null = locationRow?.id ?? null;
 
   // --- 6. Upsert sessions ---
+  const validTimeSlots = new Set(["full_day", "am_half", "pm_half"]);
   for (const session of scraped.sessions) {
+    // Skip sessions with missing required fields
+    if (!session.startsAt || !session.endsAt) {
+      errors.push(`Session skipped: missing starts_at or ends_at`);
+      continue;
+    }
+    if (!locationId) {
+      errors.push(`Session skipped (${session.startsAt}): no location resolved`);
+      continue;
+    }
+    // Normalize time_slot — LLM sometimes returns "both" or other invalid values
+    const timeSlot = validTimeSlots.has(session.timeSlot) ? session.timeSlot : "full_day";
+
     const sessionPayload = {
       activity_id: activityId,
       activity_location_id: locationId,
       starts_at: session.startsAt,
       ends_at: session.endsAt,
-      time_slot: session.timeSlot,
+      time_slot: timeSlot,
       hours_start: session.hoursStart ?? null,
       hours_end: session.hoursEnd ?? null,
       spots_available: session.spotsAvailable ?? null,
@@ -155,30 +172,57 @@ async function upsertPrices(
   const priceConfidence =
     confidence === "high" ? "verified" : confidence === "low" ? "llm_extracted" : "scraped";
 
+  const validPriceUnits = new Set(["per_week", "per_day", "per_session", "per_block"]);
   for (const price of prices) {
     const priceCents = priceToCents(price.priceString);
     if (priceCents === null) {
       errors.push(`Could not parse price "${price.priceString}" — skipped`);
       continue;
     }
+    // Normalize price_unit — LLM sometimes returns values not in the enum
+    const priceUnit = validPriceUnits.has(price.priceUnit) ? price.priceUnit : "per_session";
 
     const payload = {
       activity_id: activityId,
       session_id: sessionId,
       label: price.label,
       price_cents: priceCents,
-      price_unit: price.priceUnit,
+      price_unit: priceUnit,
       conditions: price.conditions ?? null,
       valid_from: price.validFrom ?? null,
       valid_until: price.validUntil ?? null,
       confidence: priceConfidence,
     };
 
-    const { error } = await supabase
+    // Partial unique indexes on price_options can't be used with PostgREST onConflict.
+    // Instead, do a select-then-insert/update pattern.
+    let existingQuery = supabase
       .from("price_options")
-      .upsert(payload, { onConflict: "activity_id,session_id,label" });
-    if (error) {
-      errors.push(`Price upsert failed ("${price.label}"): ${error.message}`);
+      .select("id")
+      .eq("activity_id", activityId)
+      .eq("label", price.label);
+    if (sessionId) {
+      existingQuery = existingQuery.eq("session_id", sessionId);
+    } else {
+      existingQuery = existingQuery.is("session_id", null);
+    }
+    const { data: existing } = await existingQuery.maybeSingle();
+
+    if (existing?.id) {
+      const { error: updateError } = await supabase
+        .from("price_options")
+        .update(payload)
+        .eq("id", existing.id);
+      if (updateError) {
+        errors.push(`Price update failed ("${price.label}"): ${updateError.message}`);
+      }
+    } else {
+      const { error: insertError } = await supabase
+        .from("price_options")
+        .insert(payload);
+      if (insertError) {
+        errors.push(`Price insert failed ("${price.label}"): ${insertError.message}`);
+      }
     }
   }
 }

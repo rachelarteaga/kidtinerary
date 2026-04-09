@@ -96,7 +96,7 @@ export async function extractWithLLM(
   try {
     const message = await client.messages.create({
       model: "claude-haiku-4-5",
-      max_tokens: 4096,
+      max_tokens: 8192,
       messages: [{ role: "user", content: prompt }],
     });
 
@@ -114,7 +114,12 @@ export async function extractWithLLM(
   let parsed: { activities: ScrapedActivity[] };
   try {
     // Strip markdown code fences if model wrapped output anyway
-    const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    let cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    // If the LLM appended trailing text after the JSON object, truncate at the last closing brace
+    const lastBrace = cleaned.lastIndexOf("}");
+    if (lastBrace !== -1 && lastBrace < cleaned.length - 1) {
+      cleaned = cleaned.slice(0, lastBrace + 1);
+    }
     parsed = JSON.parse(cleaned);
   } catch (err) {
     errors.push(`Failed to parse LLM response as JSON: ${err instanceof Error ? err.message : String(err)}`);

@@ -19,7 +19,8 @@ export function toSlug(name: string): string {
 // Price
 // ---------------------------------------------------------------------------
 
-export function priceToCents(raw: string): number | null {
+export function priceToCents(raw: string | null | undefined): number | null {
+  if (!raw) return null;
   const cleaned = raw.replace(/[$,\s]/g, "");
   const num = parseFloat(cleaned);
   if (isNaN(num)) return null;
