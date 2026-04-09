@@ -57,15 +57,15 @@ export function CampCard({ activity, isFavorited, showFavorite = true, distance 
           )}
         </div>
 
-        {/* Name and org */}
-        <h3 className="font-serif text-lg leading-tight mb-1 group-hover:text-sunset transition-colors">
-          {activity.name}
-        </h3>
+        {/* Org and activity name — visually separate */}
         {activity.organization && (
-          <p className="font-mono text-[10px] uppercase tracking-wide text-stone mb-3">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-sunset mb-1">
             {(activity.organization as any).name}
           </p>
         )}
+        <h3 className="font-serif text-lg leading-tight mb-3 group-hover:text-sunset transition-colors">
+          {activity.name}
+        </h3>
 
         {/* Tags row */}
         <div className="flex flex-wrap gap-1.5 mb-3">
