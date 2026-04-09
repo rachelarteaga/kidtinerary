@@ -3,6 +3,11 @@ import { resolveAdapter } from "@/scraper/adapters/index";
 import { upsertActivity } from "@/scraper/upsert";
 import { isDuplicateOf, type DupeCandidate } from "@/scraper/dedupe";
 import { geocodeWithCache } from "@/scraper/geocode-cache";
+import {
+  createDiscoveryAdapter,
+  createLLMAdapter,
+  type DiscoveredActivity,
+} from "@/scraper/adapters/llm-extractor";
 
 function getServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -17,6 +22,15 @@ export interface PipelineResult {
   recordsUpserted: number;
   duplicatesSkipped: number;
   status: "success" | "partial" | "failed";
+  errors: string[];
+}
+
+export interface DiscoveryPipelineResult {
+  aggregatorUrl: string;
+  discovered: number;
+  withWebsite: number;
+  detailScraped: number;
+  detailUpserted: number;
   errors: string[];
 }
 
@@ -151,6 +165,189 @@ export async function runSource(sourceId: string): Promise<PipelineResult> {
   await writeLog(supabase, sourceId, startedAt, status, recordsFound, errors);
 
   return { sourceId, recordsFound, recordsUpserted, duplicatesSkipped, status, errors };
+}
+
+// ---------------------------------------------------------------------------
+// Two-pass pipeline: Discovery → Detail
+// ---------------------------------------------------------------------------
+
+/**
+ * Pass 1: Discovery only — scrapes an aggregator URL to discover activities and
+ * their real website URLs. Stores them as placeholder activities with
+ * data_confidence: 'low'. Returns the list of discovered activities.
+ */
+export async function runDiscoveryPass(aggregatorUrl: string): Promise<{
+  discovered: DiscoveredActivity[];
+  errors: string[];
+}> {
+  const errors: string[] = [];
+  const adapter = createDiscoveryAdapter(aggregatorUrl);
+
+  let result;
+  try {
+    result = await adapter.fetch();
+  } catch (err) {
+    errors.push(`Discovery fetch failed: ${err instanceof Error ? err.message : String(err)}`);
+    return { discovered: [], errors };
+  }
+
+  errors.push(...result.errors);
+  console.log(`[discovery] ${aggregatorUrl} → ${result.activities.length} activities found`);
+
+  return { discovered: result.activities, errors };
+}
+
+/**
+ * Pass 2: Detail scrape — fetches a single activity website URL and extracts
+ * full pricing, session, and schedule data. Upserts with data_confidence: 'scraped'.
+ */
+export async function runDetailPass(websiteUrl: string): Promise<{
+  upserted: number;
+  errors: string[];
+}> {
+  const errors: string[] = [];
+  const adapter = createLLMAdapter(websiteUrl);
+
+  let result;
+  try {
+    result = await adapter.fetch();
+  } catch (err) {
+    errors.push(`Detail fetch failed: ${err instanceof Error ? err.message : String(err)}`);
+    return { upserted: 0, errors };
+  }
+
+  errors.push(...result.errors);
+
+  let upserted = 0;
+  for (const activity of result.activities) {
+    try {
+      const upsertResult = await upsertActivity(
+        { ...activity, sourceUrl: websiteUrl },
+        "high" // detail-scraped from actual org site = high confidence
+      );
+      if (upsertResult.activityId) {
+        upserted++;
+      }
+      errors.push(...upsertResult.errors);
+    } catch (err) {
+      errors.push(
+        `Detail upsert failed for "${activity.name}": ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+  }
+
+  return { upserted, errors };
+}
+
+/**
+ * Full two-pass pipeline:
+ * 1. Discover activities from an aggregator URL
+ * 2. For each discovered activity with a website URL, run the detail pass
+ *
+ * Skips detail scrape for orgs whose website was already scraped within
+ * `maxAgeHours` hours (default: 72h).
+ */
+export async function runDiscoveryThenDetail(
+  aggregatorUrl: string,
+  options: { maxAgeHours?: number; dryRun?: boolean } = {}
+): Promise<DiscoveryPipelineResult> {
+  const { maxAgeHours = 72, dryRun = false } = options;
+  const supabase = getServiceClient();
+  const errors: string[] = [];
+
+  // --- Pass 1: Discovery ---
+  const { discovered, errors: discoveryErrors } = await runDiscoveryPass(aggregatorUrl);
+  errors.push(...discoveryErrors);
+
+  const withWebsite = discovered.filter((a) => a.organizationWebsite);
+  console.log(`[discovery] ${discovered.length} activities discovered, ${withWebsite.length} have website URLs`);
+
+  if (dryRun) {
+    console.log("[discovery] Dry run — skipping detail pass and DB writes");
+    return {
+      aggregatorUrl,
+      discovered: discovered.length,
+      withWebsite: withWebsite.length,
+      detailScraped: 0,
+      detailUpserted: 0,
+      errors,
+    };
+  }
+
+  // --- Pass 2: Detail scrape for each website URL ---
+  let detailScraped = 0;
+  let detailUpserted = 0;
+
+  // Deduplicate by website URL
+  const seenUrls = new Set<string>();
+  const toDetail: DiscoveredActivity[] = [];
+  for (const activity of withWebsite) {
+    if (!activity.organizationWebsite || seenUrls.has(activity.organizationWebsite)) continue;
+    seenUrls.add(activity.organizationWebsite);
+    toDetail.push(activity);
+  }
+
+  for (const activity of toDetail) {
+    const websiteUrl = activity.organizationWebsite!;
+
+    // Check if we already have a recent scrape for this URL
+    const cutoff = new Date(Date.now() - maxAgeHours * 60 * 60 * 1000).toISOString();
+    const { data: existingSource } = await supabase
+      .from("scrape_sources")
+      .select("id, last_scraped_at, is_paused")
+      .eq("url", websiteUrl)
+      .maybeSingle();
+
+    if (existingSource?.last_scraped_at && existingSource.last_scraped_at > cutoff) {
+      console.log(`[detail] Skipping ${websiteUrl} (scraped ${existingSource.last_scraped_at})`);
+      continue;
+    }
+
+    if (existingSource?.is_paused) {
+      console.log(`[detail] Skipping ${websiteUrl} (source is paused)`);
+      continue;
+    }
+
+    // Ensure a scrape_sources row exists for this website
+    if (!existingSource) {
+      const { error: insertError } = await supabase
+        .from("scrape_sources")
+        .insert({
+          url: websiteUrl,
+          adapter_type: "generic_llm",
+          is_paused: false,
+          error_count: 0,
+        });
+      if (insertError) {
+        errors.push(`Failed to create scrape_sources row for ${websiteUrl}: ${insertError.message}`);
+      }
+    }
+
+    console.log(`[detail] Scraping ${websiteUrl} (${activity.organizationName})`);
+    const { upserted, errors: detailErrors } = await runDetailPass(websiteUrl);
+    errors.push(...detailErrors);
+    detailScraped++;
+    detailUpserted += upserted;
+
+    // Update the scrape_sources row with the latest scrape time
+    const errorOccurred = detailErrors.length > 0 && upserted === 0;
+    await supabase
+      .from("scrape_sources")
+      .update({
+        last_scraped_at: new Date().toISOString(),
+        ...(errorOccurred ? {} : { last_success_at: new Date().toISOString(), error_count: 0 }),
+      })
+      .eq("url", websiteUrl);
+  }
+
+  return {
+    aggregatorUrl,
+    discovered: discovered.length,
+    withWebsite: withWebsite.length,
+    detailScraped,
+    detailUpserted,
+    errors,
+  };
 }
 
 // ---------------------------------------------------------------------------

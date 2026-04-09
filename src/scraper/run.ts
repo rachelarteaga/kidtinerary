@@ -7,6 +7,12 @@
  *   npx tsx src/scraper/run.ts --adapter-type dedicated
  *   npx tsx src/scraper/run.ts --dry-run --source raleigh-parks
  *
+ *   # Two-pass pipeline
+ *   npx tsx src/scraper/run.ts --discover <url>     # discovery pass on one aggregator
+ *   npx tsx src/scraper/run.ts --detail <url>       # detail pass on one activity website
+ *   npx tsx src/scraper/run.ts --full               # discover from all aggregators, then detail-scrape
+ *   npx tsx src/scraper/run.ts --dry-run --discover <url>  # preview without DB writes
+ *
  * Requires env vars (loaded from .env.local):
  *   NEXT_PUBLIC_SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY
@@ -19,20 +25,44 @@ import { config } from "dotenv";
 config({ path: ".env.local" });
 
 import { createClient } from "@supabase/supabase-js";
-import { runSource } from "@/scraper/pipeline";
+import { runSource, runDiscoveryThenDetail, runDiscoveryPass, runDetailPass } from "@/scraper/pipeline";
 import { getAdapter, getAllAdapters } from "@/scraper/adapters/index";
+
+// ---------------------------------------------------------------------------
+// Aggregator URLs for --full mode
+// ---------------------------------------------------------------------------
+
+const AGGREGATOR_URLS = [
+  "https://fun4raleighkids.com/Camps/Variety-Camps/",
+  "https://fun4raleighkids.com/Camps/Art-Camps/",
+  "https://fun4raleighkids.com/Camps/Sports-Camps/",
+  "https://fun4raleighkids.com/Camps/Academic-Camps/",
+  "https://triangleonthecheap.com/summer-camps/",
+  "https://rt.kidsoutandabout.com/content/guide-summer-camps-research-triangle-area",
+  "https://www.raleighkidsguide.com/Summer_Camps.php",
+];
+
+// ---------------------------------------------------------------------------
+// Arg parsing
+// ---------------------------------------------------------------------------
 
 function parseArgs(argv: string[]): {
   source?: string;
   all: boolean;
   adapterType?: string;
   dryRun: boolean;
+  discover?: string;
+  detail?: string;
+  full: boolean;
 } {
   const args = argv.slice(2);
   let source: string | undefined;
   let all = false;
   let adapterType: string | undefined;
   let dryRun = false;
+  let discover: string | undefined;
+  let detail: string | undefined;
+  let full = false;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--source" && args[i + 1]) {
@@ -43,23 +73,149 @@ function parseArgs(argv: string[]): {
       adapterType = args[++i];
     } else if (args[i] === "--dry-run") {
       dryRun = true;
+    } else if (args[i] === "--discover" && args[i + 1]) {
+      discover = args[++i];
+    } else if (args[i] === "--detail" && args[i + 1]) {
+      detail = args[++i];
+    } else if (args[i] === "--full") {
+      full = true;
     }
   }
 
-  return { source, all, adapterType, dryRun };
+  return { source, all, adapterType, dryRun, discover, detail, full };
 }
 
-async function main() {
-  const { source, all, adapterType, dryRun } = parseArgs(process.argv);
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
 
-  if (!source && !all && !adapterType) {
+async function main() {
+  const { source, all, adapterType, dryRun, discover, detail, full } = parseArgs(process.argv);
+
+  const hasCommand = source || all || adapterType || discover || detail || full;
+  if (!hasCommand) {
     console.error("Usage:");
     console.error("  npx tsx src/scraper/run.ts --source <adapter-name>");
     console.error("  npx tsx src/scraper/run.ts --all");
     console.error("  npx tsx src/scraper/run.ts --adapter-type dedicated|generic_llm");
-    console.error("  Add --dry-run to see adapter output without writing to DB");
+    console.error("  npx tsx src/scraper/run.ts --discover <aggregator-url>");
+    console.error("  npx tsx src/scraper/run.ts --detail <activity-website-url>");
+    console.error("  npx tsx src/scraper/run.ts --full");
+    console.error("  Add --dry-run to preview without writing to DB");
     process.exit(1);
   }
+
+  // --- Two-pass modes ---
+
+  if (full) {
+    console.log(`\n=== FULL two-pass scrape: ${AGGREGATOR_URLS.length} aggregators ===\n`);
+    let totalDiscovered = 0;
+    let totalWithWebsite = 0;
+    let totalDetailScraped = 0;
+    let totalDetailUpserted = 0;
+    const allErrors: string[] = [];
+
+    for (const url of AGGREGATOR_URLS) {
+      console.log(`\n→ Aggregator: ${url}`);
+      try {
+        const result = await runDiscoveryThenDetail(url, { dryRun });
+        totalDiscovered += result.discovered;
+        totalWithWebsite += result.withWebsite;
+        totalDetailScraped += result.detailScraped;
+        totalDetailUpserted += result.detailUpserted;
+        allErrors.push(...result.errors);
+
+        console.log(`  Discovered:      ${result.discovered}`);
+        console.log(`  With website:    ${result.withWebsite}`);
+        console.log(`  Detail scraped:  ${result.detailScraped}`);
+        console.log(`  Detail upserted: ${result.detailUpserted}`);
+        if (result.errors.length > 0) {
+          console.log(`  Errors (${result.errors.length}):`);
+          result.errors.slice(0, 5).forEach((e) => console.log(`    - ${e}`));
+          if (result.errors.length > 5) console.log(`    ... and ${result.errors.length - 5} more`);
+        }
+      } catch (err) {
+        console.error(`  FATAL: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+
+    console.log("\n=== Full run summary ===");
+    console.log(`  Total discovered:      ${totalDiscovered}`);
+    console.log(`  Total with website:    ${totalWithWebsite}`);
+    console.log(`  Total detail scraped:  ${totalDetailScraped}`);
+    console.log(`  Total detail upserted: ${totalDetailUpserted}`);
+    if (allErrors.length > 0) {
+      console.log(`  Total errors: ${allErrors.length}`);
+    }
+    console.log("\nDone.");
+    return;
+  }
+
+  if (discover) {
+    console.log(`\n=== DISCOVERY pass: ${discover} ===\n`);
+    if (dryRun) {
+      const { discovered, errors } = await runDiscoveryPass(discover);
+      console.log(`Found ${discovered.length} activities:`);
+      discovered.forEach((a, i) => {
+        console.log(`  [${i + 1}] ${a.name}`);
+        console.log(`      org:     ${a.organizationName}`);
+        console.log(`      website: ${a.organizationWebsite ?? "(none)"}`);
+        console.log(`      address: ${a.address ?? "(none)"}`);
+        console.log(`      cats:    ${a.categories.join(", ") || "(none)"}`);
+      });
+      if (errors.length > 0) {
+        console.log(`\nErrors (${errors.length}):`);
+        errors.forEach((e) => console.log(`  - ${e}`));
+      }
+    } else {
+      const result = await runDiscoveryThenDetail(discover, { dryRun: false });
+      console.log(`  Discovered:      ${result.discovered}`);
+      console.log(`  With website:    ${result.withWebsite}`);
+      console.log(`  Detail scraped:  ${result.detailScraped}`);
+      console.log(`  Detail upserted: ${result.detailUpserted}`);
+      if (result.errors.length > 0) {
+        console.log(`  Errors (${result.errors.length}):`);
+        result.errors.slice(0, 10).forEach((e) => console.log(`  - ${e}`));
+      }
+    }
+    console.log("\nDone.");
+    return;
+  }
+
+  if (detail) {
+    console.log(`\n=== DETAIL pass: ${detail} ===\n`);
+    if (dryRun) {
+      // Just fetch and show what the LLM returns
+      const { createLLMAdapter } = await import("@/scraper/adapters/llm-extractor");
+      const adapter = createLLMAdapter(detail);
+      const result = await adapter.fetch();
+      console.log(`Activities found: ${result.activities.length}`);
+      result.activities.forEach((a, i) => {
+        console.log(`  [${i + 1}] ${a.name}`);
+        console.log(`      org:      ${a.organizationName}`);
+        console.log(`      address:  ${a.address}`);
+        console.log(`      sessions: ${a.sessions.length}`);
+        console.log(`      prices:   ${a.prices.length}`);
+        if (a.prices.length > 0) {
+          a.prices.forEach((p) => console.log(`        · ${p.label}: ${p.priceString} ${p.priceUnit}`));
+        }
+      });
+      if (result.errors.length > 0) {
+        console.log(`\nErrors: ${result.errors.join("; ")}`);
+      }
+    } else {
+      const { upserted, errors } = await runDetailPass(detail);
+      console.log(`  Upserted: ${upserted}`);
+      if (errors.length > 0) {
+        console.log(`  Errors (${errors.length}):`);
+        errors.forEach((e) => console.log(`  - ${e}`));
+      }
+    }
+    console.log("\nDone.");
+    return;
+  }
+
+  // --- Legacy modes (--source, --all, --adapter-type) ---
 
   if (dryRun) {
     await runDryRun(source, all);

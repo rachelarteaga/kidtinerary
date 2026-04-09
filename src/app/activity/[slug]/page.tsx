@@ -106,14 +106,36 @@ export default async function ActivityDetailPage({ params }: ActivityDetailPageP
 
       {/* Data freshness + report */}
       <section className="flex items-center justify-between pt-6 border-t border-driftwood/30">
-        <div className="flex items-center gap-3">
-          <span className={`w-2 h-2 rounded-full ${
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
             freshness.includes("stale") ? "bg-campfire" : "bg-meadow"
           }`} />
-          <span className="font-mono text-[10px] uppercase tracking-wide text-stone">
-            {freshness}
-          </span>
-          {activity.registration_url && (
+          {(activity as any).source_url ? (
+            <span className="font-mono text-[10px] uppercase tracking-wide text-stone">
+              Info sourced from{" "}
+              <a
+                href={(activity as any).source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sunset hover:underline normal-case"
+              >
+                {(() => {
+                  try {
+                    return new URL((activity as any).source_url).hostname.replace(/^www\./, "");
+                  } catch {
+                    return (activity as any).source_url;
+                  }
+                })()}
+              </a>
+              {" · "}
+              {freshness.replace("Updated ", "").replace("Data may be stale", "may be stale")}
+            </span>
+          ) : (
+            <span className="font-mono text-[10px] uppercase tracking-wide text-stone">
+              {freshness}
+            </span>
+          )}
+          {activity.registration_url && !(activity as any).source_url && (
             <a
               href={activity.registration_url}
               target="_blank"
