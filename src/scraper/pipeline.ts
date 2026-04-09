@@ -26,6 +26,23 @@ const AGGREGATOR_DOMAINS = [
   "instagram.com",
   "twitter.com",
   "youtube.com",
+  // Generic reference/directory sites that are never the org's own site
+  "wikipedia.org",
+  "activekids.com",
+  "mykidcamp.com",
+  "us-info.com",
+  "yellowpages.com",
+  "bbb.org",
+  "mapquest.com",
+  "google.com",
+  "bing.com",
+  "active.com",
+  "schoolhouse.com",
+  "care.com",
+  "indeed.com",
+  "glassdoor.com",
+  "linkedin.com",
+  "nextdoor.com",
 ];
 
 const SKIP_ORG_NAMES = [
@@ -51,27 +68,29 @@ function isAggregatorUrl(url: string): boolean {
 }
 
 /**
- * Searches DuckDuckGo HTML for the first non-aggregator URL matching the org.
- * Returns the URL string or null if not found.
+ * Searches Bing for the first non-aggregator URL matching the org.
+ * Parses <cite> tags from Bing HTML results (no API key required).
+ * Returns the full URL string (with https:// prefix) or null if not found.
  */
 export async function searchAndScrapeOrg(
   orgName: string,
   location = "Raleigh NC"
 ): Promise<string | null> {
-  const query = encodeURIComponent(`${orgName} ${location} camps kids`);
-  const searchUrl = `https://html.duckduckgo.com/html/?q=${query}`;
+  const query = `${orgName} ${location} kids camp official site`;
+  const searchUrl = `https://www.bing.com/search?q=${encodeURIComponent(query)}`;
 
   let html: string;
   try {
     const res = await globalThis.fetch(searchUrl, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; KidPlan-Scraper/1.0; +https://kidplan.app)",
-        "Accept": "text/html",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "en-US,en;q=0.9",
       },
       signal: AbortSignal.timeout(20_000),
     });
     if (!res.ok) {
-      console.warn(`[search] DuckDuckGo returned ${res.status} for "${orgName}"`);
+      console.warn(`[search] Bing returned ${res.status} for "${orgName}"`);
       return null;
     }
     html = await res.text();
@@ -82,26 +101,29 @@ export async function searchAndScrapeOrg(
 
   const $ = cheerioLoad(html);
 
-  // DuckDuckGo HTML result links are in <a class="result__a"> with href
+  // Bing <cite> tags contain the displayed URL (e.g. "https://www.artstogether.org › summer-camp")
+  // We strip the breadcrumb suffix and reconstruct a clean origin URL.
   const candidates: string[] = [];
-  $("a.result__a").each((_i, el) => {
-    const href = $(el).attr("href");
-    if (!href) return;
+  $("cite").each((_i, el) => {
+    const raw = $(el).text().trim();
+    if (!raw) return;
 
-    // DDG wraps links — extract the real URL from uddg= param or use as-is
-    let realUrl = href;
+    // Extract just the origin part before any › separator
+    const domain = raw.split("›")[0].trim();
+    if (!domain) return;
+
+    // Ensure it has a protocol
+    const urlStr = domain.startsWith("http") ? domain : `https://${domain}`;
+
+    // Validate it's parseable and not an aggregator
     try {
-      const parsed = new URL(href, "https://html.duckduckgo.com");
-      const uddg = parsed.searchParams.get("uddg");
-      if (uddg) {
-        realUrl = decodeURIComponent(uddg);
-      }
+      new URL(urlStr);
     } catch {
-      // use href as-is
+      return;
     }
 
-    if (!isAggregatorUrl(realUrl)) {
-      candidates.push(realUrl);
+    if (!isAggregatorUrl(urlStr)) {
+      candidates.push(urlStr);
     }
   });
 

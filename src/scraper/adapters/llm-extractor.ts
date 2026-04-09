@@ -1,5 +1,19 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { load as cheerioLoad } from "cheerio";
 import type { AdapterResult, ScrapedActivity } from "@/scraper/types";
+
+/**
+ * Pre-processes HTML to strip boilerplate (scripts, styles, nav, footer)
+ * and return clean readable text. This reduces token usage and allows the
+ * LLM to see the actual content even on large pages.
+ */
+function extractReadableContent(html: string): string {
+  const $ = cheerioLoad(html);
+  $("script, style, noscript, iframe, nav, header, footer, [aria-hidden='true']").remove();
+  const text = $("body").text().replace(/\s+/g, " ").trim();
+  // If text extraction worked well, use it; otherwise fall back to raw HTML slice
+  return text.length > 500 ? text : html;
+}
 
 // Extend ScrapedActivity to carry the LLM confidence tag
 export interface LLMScrapedActivity extends ScrapedActivity {
@@ -287,7 +301,8 @@ export function createLLMAdapter(sourceUrl: string) {
         return { activities: [], sourceUrl, scrapedAt, errors };
       }
 
-      return extractWithLLM(sourceUrl, html);
+      const content = extractReadableContent(html);
+      return extractWithLLM(sourceUrl, content);
     },
   };
 }
@@ -320,6 +335,7 @@ export function createDiscoveryAdapter(sourceUrl: string) {
         return { activities: [], sourceUrl, scrapedAt, errors };
       }
 
+      // For discovery, keep raw HTML so links/URLs are preserved for the LLM
       return discoverActivities(sourceUrl, html);
     },
   };
