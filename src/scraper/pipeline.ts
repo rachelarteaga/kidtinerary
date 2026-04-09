@@ -68,6 +68,29 @@ function isAggregatorUrl(url: string): boolean {
 }
 
 /**
+ * Returns true if the URL's hostname contains at least one meaningful word
+ * from the org name (length >= 4 chars, not a stopword).
+ * Used to reject clearly wrong search results (e.g. "beeradvocate.com" for "Cheers N Paint").
+ */
+function isRelevantUrl(url: string, orgName: string): boolean {
+  const STOPWORDS = new Set(["the", "and", "for", "kids", "camp", "arts", "raleigh", "north", "carolina", "inc", "llc"]);
+  let hostname: string;
+  try {
+    hostname = new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return false;
+  }
+
+  const orgWords = orgName
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length >= 4 && !STOPWORDS.has(w));
+
+  return orgWords.some((word) => hostname.includes(word));
+}
+
+/**
  * Searches Bing for the first non-aggregator URL matching the org.
  * Parses <cite> tags from Bing HTML results (no API key required).
  * Returns the full URL string (with https:// prefix) or null if not found.
@@ -214,11 +237,12 @@ export async function runEnrichment(): Promise<EnrichResult> {
 
     if (!foundUrl) {
       console.log(`[enrich] ${idx}/${total}: "${orgName}" → no website found`);
-      // Mark org as searched so we don't retry endlessly
-      await supabase
-        .from("organizations")
-        .update({ website: null })
-        .eq("id", orgId);
+      continue;
+    }
+
+    // Reject results where hostname shares no meaningful words with the org name
+    if (!isRelevantUrl(foundUrl, orgName)) {
+      console.log(`[enrich] ${idx}/${total}: "${orgName}" → rejected irrelevant result ${foundUrl}`);
       continue;
     }
 
