@@ -16,14 +16,31 @@ export interface UpsertResult {
   errors: string[];
 }
 
+const ADULT_KEYWORDS = [
+  "adult", "seniors", "senior", "masters swim", "lifeguard training",
+  "corporate", "wedding", "teens and adults", "teen & adult",
+  "50+", "55+", "60+", "65+",
+];
+
+function isAdultOnly(name: string): boolean {
+  const lower = name.toLowerCase();
+  return ADULT_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
 /**
  * Upserts a single scraped activity (plus its org, locations, sessions, prices)
  * into Supabase. Returns the activity UUID.
+ * Filters out adult-only activities automatically.
  */
 export async function upsertActivity(
   scraped: ScrapedActivity,
   confidence: "high" | "medium" | "low" = "medium"
 ): Promise<UpsertResult> {
+  // Skip adult-only activities
+  if (isAdultOnly(scraped.name)) {
+    return { activityId: null, created: false, errors: [`Skipped adult-only: ${scraped.name}`] };
+  }
+
   const supabase = getServiceClient() as any;
   const errors: string[] = [];
 
