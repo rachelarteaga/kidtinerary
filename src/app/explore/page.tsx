@@ -1,9 +1,7 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { fetchActivities, fetchUserFavoriteIds, type ActivityFilters, type ActivityWithDistance } from "@/lib/queries";
-import { SearchBar } from "@/components/explore/search-bar";
-import { FilterSidebar } from "@/components/explore/filter-sidebar";
-import { SortBar } from "@/components/explore/sort-bar";
+import { SearchFilterPanel } from "@/components/explore/search-filter-panel";
 import { ActivityList } from "@/components/explore/activity-list";
 
 export const dynamic = "force-dynamic";
@@ -40,45 +38,43 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   // Get user favorites (if logged in)
   let favoriteIds: string[] = [];
   try {
-    // TODO: remove cast when types are generated
     const supabase = (await createClient()) as any;
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       favoriteIds = await fetchUserFavoriteIds(user.id);
     }
   } catch {
-    // Not logged in — that's fine
+    // Not logged in
   }
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Hero / Search */}
+      {/* Hero */}
       <div className="mb-8">
         <h1 className="font-serif text-4xl sm:text-5xl mb-2">
           Find something they&apos;ll love
         </h1>
-        <p className="text-stone text-lg mb-6">
+        <p className="text-stone text-lg">
           Camps, classes, and activities for kids in the Raleigh area.
         </p>
-        <Suspense fallback={<div className="h-24 bg-white rounded-2xl animate-pulse" />}>
-          <SearchBar />
-        </Suspense>
       </div>
 
-      {/* Main content: sidebar + results */}
+      {/* Main content: unified left panel + results */}
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Filters sidebar (desktop) */}
-        <div className="hidden lg:block w-56 flex-shrink-0">
-          <Suspense fallback={null}>
-            <FilterSidebar />
+        {/* Search + Filter + Sort panel (left rail) */}
+        <div className="w-full lg:w-64 flex-shrink-0">
+          <Suspense fallback={<div className="h-96 bg-white rounded-2xl animate-pulse" />}>
+            <SearchFilterPanel />
           </Suspense>
         </div>
 
         {/* Results */}
         <div className="flex-1 min-w-0">
-          <Suspense fallback={null}>
-            <SortBar total={total} />
-          </Suspense>
+          {/* Result count */}
+          <p className="font-mono text-xs text-stone uppercase tracking-wide mb-4">
+            {total} {total === 1 ? "activity" : "activities"} found
+          </p>
+
           <Suspense
             fallback={
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
