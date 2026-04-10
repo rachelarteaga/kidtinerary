@@ -26,8 +26,7 @@ export function SearchFilterPanel() {
   const [selectedLng, setSelectedLng] = useState<number | null>(
     searchParams.get("lng") ? parseFloat(searchParams.get("lng")!) : null
   );
-  const [ageMin, setAgeMin] = useState(searchParams.get("age_min") ?? "");
-  const [ageMax, setAgeMax] = useState(searchParams.get("age_max") ?? "");
+  const [childAge, setChildAge] = useState(searchParams.get("age") ?? "");
   const [geocoding, setGeocoding] = useState(false);
   const [geocodeError, setGeocodeError] = useState<string | null>(null);
 
@@ -81,9 +80,10 @@ export function SearchFilterPanel() {
       params.delete("q");
     }
 
-    // Update age
-    if (ageMin) { params.set("age_min", ageMin); } else { params.delete("age_min"); }
-    if (ageMax) { params.set("age_max", ageMax); } else { params.delete("age_max"); }
+    // Update child age
+    if (childAge) { params.set("age", childAge); } else { params.delete("age"); }
+    params.delete("age_min");
+    params.delete("age_max");
 
     // Update address/location
     if (address.trim()) {
@@ -124,7 +124,7 @@ export function SearchFilterPanel() {
 
     params.delete("page");
     router.push(`/explore?${params.toString()}`);
-  }, [keyword, ageMin, ageMax, address, selectedLat, selectedLng, radius, searchParams, router]);
+  }, [keyword, childAge, address, selectedLat, selectedLng, radius, searchParams, router]);
 
   const hasLocation = !!searchParams.get("lat");
 
@@ -196,31 +196,20 @@ export function SearchFilterPanel() {
         </div>
       )}
 
-      {/* Age range */}
+      {/* Child's age */}
       <div>
         <label className="block font-mono text-[10px] uppercase tracking-widest text-stone mb-1.5">
-          Age Range
+          Child&apos;s Age
         </label>
-        <div className="flex gap-2">
-          <input
-            type="number"
-            min={3}
-            max={18}
-            value={ageMin}
-            onChange={(e) => setAgeMin(e.target.value)}
-            placeholder="Min"
-            className="w-full px-3 py-2 rounded-lg border border-driftwood/50 bg-white text-bark text-sm focus:outline-none focus:border-sunset focus:ring-1 focus:ring-sunset/30"
-          />
-          <input
-            type="number"
-            min={3}
-            max={18}
-            value={ageMax}
-            onChange={(e) => setAgeMax(e.target.value)}
-            placeholder="Max"
-            className="w-full px-3 py-2 rounded-lg border border-driftwood/50 bg-white text-bark text-sm focus:outline-none focus:border-sunset focus:ring-1 focus:ring-sunset/30"
-          />
-        </div>
+        <input
+          type="number"
+          min={3}
+          max={18}
+          value={childAge}
+          onChange={(e) => setChildAge(e.target.value)}
+          placeholder="e.g. 7"
+          className="w-full px-3 py-2 rounded-lg border border-driftwood/50 bg-white text-bark text-sm focus:outline-none focus:border-sunset focus:ring-1 focus:ring-sunset/30"
+        />
       </div>
 
       {/* Search button */}

@@ -5,6 +5,7 @@ export interface ActivityFilters {
   categories?: string[];
   ageMin?: number;
   ageMax?: number;
+  childAge?: number;
   indoorOutdoor?: string;
   timeSlot?: string;
   minPrice?: number;
@@ -133,10 +134,16 @@ export async function fetchActivities(filters: ActivityFilters = {}): Promise<{ 
   }
 
   // Age filter: activities whose range overlaps the requested range
-  if (filters.ageMin != null) {
+  // Single child age: find activities where age_min <= childAge <= age_max
+  if (filters.childAge != null) {
+    query = query.or(`age_min.lte.${filters.childAge},age_min.is.null`);
+    query = query.or(`age_max.gte.${filters.childAge},age_max.is.null`);
+  }
+  // Legacy range filters (kept for backwards compat)
+  if (filters.ageMin != null && filters.childAge == null) {
     query = query.or(`age_max.gte.${filters.ageMin},age_max.is.null`);
   }
-  if (filters.ageMax != null) {
+  if (filters.ageMax != null && filters.childAge == null) {
     query = query.or(`age_min.lte.${filters.ageMax},age_min.is.null`);
   }
 

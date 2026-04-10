@@ -20,6 +20,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   if (typeof params.categories === "string" && params.categories) {
     filters.categories = params.categories.split(",").filter(Boolean);
   }
+  if (typeof params.age === "string") filters.childAge = parseInt(params.age, 10) || undefined;
   if (typeof params.age_min === "string") filters.ageMin = parseInt(params.age_min, 10) || undefined;
   if (typeof params.age_max === "string") filters.ageMax = parseInt(params.age_max, 10) || undefined;
   if (typeof params.indoor_outdoor === "string") filters.indoorOutdoor = params.indoor_outdoor;
