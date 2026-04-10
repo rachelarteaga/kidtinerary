@@ -79,7 +79,8 @@ export function SearchBar() {
 
   return (
     <div className="bg-white rounded-2xl border border-driftwood/30 shadow-sm p-4 sm:p-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Row 1: Keyword + Category + Age Range */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {/* Keyword */}
         <div>
           <label className="block font-mono text-[10px] uppercase tracking-wide text-stone mb-1.5">
@@ -145,16 +146,9 @@ export function SearchBar() {
             />
           </div>
         </div>
-
-        {/* Search button */}
-        <div className="flex items-end">
-          <Button onClick={handleSearch} className="w-full" disabled={geocoding}>
-            {geocoding ? "Searching..." : "Search"}
-          </Button>
-        </div>
       </div>
 
-      {/* Address + Radius row */}
+      {/* Row 2: Address + Radius */}
       <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Address input with autocomplete */}
         <div>
@@ -165,7 +159,6 @@ export function SearchBar() {
             value={address}
             onChange={(val) => {
               setAddress(val);
-              // Clear pre-selected coords when user edits the field manually
               setSelectedLat(null);
               setSelectedLng(null);
               setGeocodeError(null);
@@ -205,6 +198,13 @@ export function SearchBar() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Row 3: Full-width search button */}
+      <div className="mt-4">
+        <Button onClick={handleSearch} className="w-full py-3 text-sm" disabled={geocoding}>
+          {geocoding ? "Searching..." : "Search Activities"}
+        </Button>
       </div>
     </div>
   );
