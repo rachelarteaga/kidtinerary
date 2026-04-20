@@ -1,75 +1,116 @@
 "use client";
 
-import { useDroppable } from "@dnd-kit/core";
-import type { PlannerEntryStatus } from "@/lib/supabase/types";
-import { CampCard } from "./camp-card";
+import { useDndMonitor } from "@dnd-kit/core";
+import { useState } from "react";
+import { CellTimelineGrid, type TimelineEntry } from "./cell-timeline-grid";
+import { ConsideringChips, type ConsideringChip } from "./considering-chips";
+import { CellDropZones } from "./cell-drop-zones";
+import type { DayOfWeek } from "@/lib/supabase/types";
+import type { ScheduleSlot } from "@/lib/schedule";
 
-export interface CellEntry {
-  kind: "camp";
+export interface CellLegendRow {
   entryId: string;
   activityName: string;
-  activitySlug: string;
-  status: PlannerEntryStatus;
-  timeLabel?: string | null;
-  priceLabel?: string | null;
-  sharedWith: string[];
-  isLoading: boolean;
+  color: string;
+  description: string;
+  isWaitlisted: boolean;
 }
 
 interface Props {
   childId: string;
-  weekStart: string; // YYYY-MM-DD
-  entries: CellEntry[];
+  weekStart: string;
+  weekStartDate: Date;
+  plannerStart: Date;
+  plannerEnd: Date;
+  timelineEntries: TimelineEntry[];
+  legendRows: CellLegendRow[];
+  consideringChips: ConsideringChip[];
+  onEntryClick: (entryId: string) => void;
   onAddClick: (childId: string, weekStart: string) => void;
-  onChanged: () => void;
 }
 
-export function PlannerCell({ childId, weekStart, entries, onAddClick, onChanged }: Props) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: `cell-${childId}-${weekStart}`,
-    data: { type: "cell", childId, weekStart },
+export function PlannerCell({
+  childId,
+  weekStart,
+  weekStartDate,
+  plannerStart,
+  plannerEnd,
+  timelineEntries,
+  legendRows,
+  consideringChips,
+  onEntryClick,
+  onAddClick,
+}: Props) {
+  const [dragging, setDragging] = useState(false);
+
+  useDndMonitor({
+    onDragStart: (event) => {
+      const data = event.active.data.current;
+      if (data?.type === "camp") setDragging(true);
+    },
+    onDragEnd: () => setDragging(false),
+    onDragCancel: () => setDragging(false),
   });
 
-  const emptyOverCls = isOver
-    ? "!border-sunset !border-solid bg-sunset/10 text-bark"
-    : "";
+  const hasContent = timelineEntries.length > 0 || consideringChips.length > 0;
 
-  if (entries.length === 0) {
+  if (dragging) {
+    return (
+      <div className="rounded-lg border border-driftwood/30 bg-cream p-2">
+        <CellDropZones childId={childId} weekStart={weekStart} />
+      </div>
+    );
+  }
+
+  if (!hasContent) {
     return (
       <button
-        ref={setNodeRef}
         onClick={() => onAddClick(childId, weekStart)}
-        className={`w-full h-full min-h-[60px] border border-dashed border-driftwood/60 rounded-lg text-stone/70 hover:border-driftwood hover:text-stone hover:bg-driftwood/5 transition-colors font-mono text-[11px] uppercase tracking-wide ${emptyOverCls}`}
+        className="w-full rounded-lg border border-dashed border-driftwood/50 bg-cream/50 p-3 text-xs text-stone hover:text-bark hover:border-bark font-mono uppercase tracking-widest"
       >
-        {isOver ? "Drop here" : "+ Add camp"}
+        + Add camp
       </button>
     );
   }
 
+  function handleSquareClick(_day: DayOfWeek, _slot: ScheduleSlot) {
+    if (timelineEntries.length > 0) {
+      onEntryClick(timelineEntries[0].id);
+    } else {
+      onAddClick(childId, weekStart);
+    }
+  }
+
   return (
-    <div
-      ref={setNodeRef}
-      className={`space-y-2 rounded-lg transition-colors ${isOver ? "ring-2 ring-sunset bg-sunset/5 p-1" : ""}`}
-    >
-      {entries.map((e) => (
-        <CampCard
-          key={e.entryId}
-          entryId={e.entryId}
-          activityName={e.activityName}
-          activitySlug={e.activitySlug}
-          status={e.status}
-          timeLabel={e.timeLabel}
-          priceLabel={e.priceLabel}
-          sharedWith={e.sharedWith}
-          isLoading={e.isLoading}
-          onChanged={onChanged}
-        />
-      ))}
-      {isOver && (
-        <div className="text-center font-mono text-[10px] uppercase tracking-widest text-sunset/80 py-1">
-          Drop to stack
+    <div className="rounded-lg border border-driftwood/30 bg-white p-2">
+      <CellTimelineGrid
+        entries={timelineEntries}
+        weekStart={weekStartDate}
+        plannerStart={plannerStart}
+        plannerEnd={plannerEnd}
+        onSquareClick={handleSquareClick}
+      />
+      {legendRows.length > 0 && (
+        <div className="mt-1.5 space-y-0.5">
+          {legendRows.map((r) => (
+            <button
+              key={r.entryId}
+              onClick={() => onEntryClick(r.entryId)}
+              className="w-full flex items-center gap-1.5 text-left text-xs text-bark hover:underline"
+            >
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: r.color }} />
+              <span className="truncate">{r.activityName}</span>
+              {r.isWaitlisted && (
+                <span className="ml-auto font-mono text-[9px] uppercase tracking-wide text-campfire bg-campfire/10 px-1.5 py-0.5 rounded-full">
+                  pending
+                </span>
+              )}
+              {!r.isWaitlisted && <span className="ml-auto font-mono text-[9px] text-stone">{r.description}</span>}
+            </button>
+          ))}
         </div>
       )}
+      <ConsideringChips chips={consideringChips} onChipClick={onEntryClick} />
     </div>
   );
 }
