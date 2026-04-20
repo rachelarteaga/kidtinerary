@@ -1,6 +1,12 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { fetchChildren, fetchPlannerEntries, fetchUserCamps, fetchPlannerBlocks } from "@/lib/queries";
+import {
+  fetchChildren,
+  fetchPlannerEntries,
+  fetchUserCamps,
+  fetchPlannerBlocks,
+  fetchDefaultPlanner,
+} from "@/lib/queries";
 import { PlannerClient } from "./client";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +18,9 @@ export default async function PlannerPage() {
 
   const children = await fetchChildren(user.id);
   if (children.length === 0) redirect("/kids");
+
+  const planner = await fetchDefaultPlanner(user.id);
+  if (!planner) redirect("/auth/login");
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -33,6 +42,7 @@ export default async function PlannerPage() {
       userCamps={userCamps}
       blocks={blocks}
       shareCampsDefault={profile?.share_camps_default ?? true}
+      planner={planner}
     />
   );
 }
