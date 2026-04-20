@@ -1,21 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  DndContext,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  closestCenter,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import { SortableContext, arrayMove, horizontalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import { KidColumnHeader } from "./kid-column-header";
 import { KidAvatar } from "./kid-avatar";
 import { PlannerCell, type CellEntry } from "./planner-cell";
 export type { CellEntry };
 import { BlockCard } from "./block-card";
-import { reorderKidColumns } from "@/lib/actions";
 import { formatWeekRange, getWeekKey } from "@/lib/format";
 import type { PlannerBlockType } from "@/lib/supabase/types";
 
@@ -43,6 +34,7 @@ export interface WeekRow {
 interface Props {
   children: Child[];
   weeks: WeekRow[];
+  orderedIds: string[];
   onAddCampClick: (childId: string | null, weekStart: string | null) => void;
   onAddBlockClick: (childId: string | null, weekStart: string | null) => void;
   onChanged: () => void;
@@ -53,14 +45,7 @@ function ageYears(birthDate: string): number {
   return Math.floor(ms / (365.25 * 24 * 60 * 60 * 1000));
 }
 
-export function PlannerMatrix({ children, weeks, onAddCampClick, onAddBlockClick, onChanged }: Props) {
-  const [orderedIds, setOrderedIds] = useState(children.map((c) => c.id));
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
-
-  useEffect(() => {
-    setOrderedIds(children.map((c) => c.id));
-  }, [children]);
-
+export function PlannerMatrix({ children, weeks, orderedIds, onAddCampClick, onAddBlockClick, onChanged }: Props) {
   const [narrow, setNarrow] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -76,16 +61,6 @@ export function PlannerMatrix({ children, weeks, onAddCampClick, onAddBlockClick
 
   const childById = new Map(children.map((c) => [c.id, c]));
   const orderedChildren = orderedIds.map((id) => childById.get(id)!).filter(Boolean);
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIndex = orderedIds.indexOf(active.id as string);
-    const newIndex = orderedIds.indexOf(over.id as string);
-    const next = arrayMove(orderedIds, oldIndex, newIndex);
-    setOrderedIds(next);
-    void reorderKidColumns(next);
-  }
 
   const cols = orderedChildren.length;
   const gridTemplate = `100px ${"1fr ".repeat(cols).trim()}`;
@@ -157,76 +132,74 @@ export function PlannerMatrix({ children, weeks, onAddCampClick, onAddBlockClick
   }
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <div className="space-y-3">
-        {/* Header row: kids */}
-        <div className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
-          <div />
-          <SortableContext items={orderedIds} strategy={horizontalListSortingStrategy}>
-            {orderedChildren.map((c) => (
-              <KidColumnHeader key={c.id} child={c} ageYears={ageYears(c.birth_date)} />
-            ))}
-          </SortableContext>
-        </div>
+    <div className="space-y-3">
+      {/* Header row: kids */}
+      <div className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
+        <div />
+        <SortableContext items={orderedIds} strategy={horizontalListSortingStrategy}>
+          {orderedChildren.map((c) => (
+            <KidColumnHeader key={c.id} child={c} ageYears={ageYears(c.birth_date)} />
+          ))}
+        </SortableContext>
+      </div>
 
-        {/* Week rows */}
-        {weeks.map((w) => {
-          const weekKey = getWeekKey(w.weekStart);
-          const weekStartStr = w.weekStart.toISOString().split("T")[0];
+      {/* Week rows */}
+      {weeks.map((w) => {
+        const weekKey = getWeekKey(w.weekStart);
+        const weekStartStr = w.weekStart.toISOString().split("T")[0];
 
-          if (w.fullRowBlock) {
-            return (
-              <div key={weekKey} className="grid gap-2" style={{ gridTemplateColumns: "100px 1fr" }}>
-                <div className="font-mono text-[10px] uppercase tracking-widest text-stone self-center px-1.5">
-                  {formatWeekRange(w.weekStart)}
-                </div>
-                <BlockCard
-                  blockId={w.fullRowBlock.blockId}
-                  type={w.fullRowBlock.type}
-                  title={w.fullRowBlock.title}
-                  emoji={w.fullRowBlock.emoji}
-                  subtitle={w.fullRowBlock.subtitle}
-                  onChanged={onChanged}
-                />
-              </div>
-            );
-          }
-
+        if (w.fullRowBlock) {
           return (
-            <div key={weekKey} className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
+            <div key={weekKey} className="grid gap-2" style={{ gridTemplateColumns: "100px 1fr" }}>
               <div className="font-mono text-[10px] uppercase tracking-widest text-stone self-center px-1.5">
                 {formatWeekRange(w.weekStart)}
               </div>
-              {orderedChildren.map((child) => {
-                const partial = w.partialBlocksByChild[child.id];
-                if (partial) {
-                  return (
-                    <BlockCard
-                      key={`${weekKey}-${child.id}`}
-                      blockId={partial.blockId}
-                      type={partial.type}
-                      title={partial.title}
-                      emoji={partial.emoji}
-                      onChanged={onChanged}
-                    />
-                  );
-                }
-                const cell = w.cells.find((c) => c.childId === child.id);
+              <BlockCard
+                blockId={w.fullRowBlock.blockId}
+                type={w.fullRowBlock.type}
+                title={w.fullRowBlock.title}
+                emoji={w.fullRowBlock.emoji}
+                subtitle={w.fullRowBlock.subtitle}
+                onChanged={onChanged}
+              />
+            </div>
+          );
+        }
+
+        return (
+          <div key={weekKey} className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
+            <div className="font-mono text-[10px] uppercase tracking-widest text-stone self-center px-1.5">
+              {formatWeekRange(w.weekStart)}
+            </div>
+            {orderedChildren.map((child) => {
+              const partial = w.partialBlocksByChild[child.id];
+              if (partial) {
                 return (
-                  <PlannerCell
+                  <BlockCard
                     key={`${weekKey}-${child.id}`}
-                    childId={child.id}
-                    weekStart={weekStartStr}
-                    entries={cell?.entries ?? []}
-                    onAddClick={(cid, ws) => onAddCampClick(cid, ws)}
+                    blockId={partial.blockId}
+                    type={partial.type}
+                    title={partial.title}
+                    emoji={partial.emoji}
                     onChanged={onChanged}
                   />
                 );
-              })}
-            </div>
-          );
-        })}
-      </div>
-    </DndContext>
+              }
+              const cell = w.cells.find((c) => c.childId === child.id);
+              return (
+                <PlannerCell
+                  key={`${weekKey}-${child.id}`}
+                  childId={child.id}
+                  weekStart={weekStartStr}
+                  entries={cell?.entries ?? []}
+                  onAddClick={(cid, ws) => onAddCampClick(cid, ws)}
+                  onChanged={onChanged}
+                />
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
   );
 }

@@ -20,6 +20,7 @@ interface Props {
 export function KidColumnHeader({ child, ageYears }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: child.id,
+    data: { type: "kid-column" },
   });
 
   const style = {

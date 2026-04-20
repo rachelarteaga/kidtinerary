@@ -1,5 +1,6 @@
 "use client";
 
+import { useDroppable } from "@dnd-kit/core";
 import type { PlannerEntryStatus } from "@/lib/supabase/types";
 import { CampCard } from "./camp-card";
 
@@ -24,11 +25,19 @@ interface Props {
 }
 
 export function PlannerCell({ childId, weekStart, entries, onAddClick, onChanged }: Props) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `cell-${childId}-${weekStart}`,
+    data: { type: "cell", childId, weekStart },
+  });
+
+  const overCls = isOver ? "border-sunset bg-sunset/5" : "";
+
   if (entries.length === 0) {
     return (
       <button
+        ref={setNodeRef}
         onClick={() => onAddClick(childId, weekStart)}
-        className="w-full h-full min-h-[60px] border border-dashed border-driftwood/60 rounded-lg text-stone/70 hover:border-driftwood hover:text-stone hover:bg-driftwood/5 transition-colors font-mono text-[11px] uppercase tracking-wide"
+        className={`w-full h-full min-h-[60px] border border-dashed border-driftwood/60 rounded-lg text-stone/70 hover:border-driftwood hover:text-stone hover:bg-driftwood/5 transition-colors font-mono text-[11px] uppercase tracking-wide ${overCls}`}
       >
         + Add camp
       </button>
@@ -36,7 +45,10 @@ export function PlannerCell({ childId, weekStart, entries, onAddClick, onChanged
   }
 
   return (
-    <div className="space-y-2">
+    <div
+      ref={setNodeRef}
+      className={`space-y-2 rounded-lg border border-transparent transition-colors ${overCls}`}
+    >
       {entries.map((e) => (
         <CampCard
           key={e.entryId}
