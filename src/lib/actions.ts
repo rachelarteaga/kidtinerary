@@ -253,7 +253,7 @@ export async function addPlannerEntry(
 
 export async function updatePlannerEntryStatus(
   entryId: string,
-  status: "penciled_in" | "locked_in" | "cancelled"
+  status: "considering" | "waitlisted" | "registered"
 ) {
   const supabase = (await createClient()) as any;
 
@@ -340,24 +340,18 @@ export async function updatePlannerEntrySortOrder(
 
 export async function removePlannerEntry(entryId: string) {
   const supabase = (await createClient()) as any;
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
 
   const { error } = await supabase
     .from("planner_entries")
-    .update({ status: "cancelled" })
+    .delete()
     .eq("id", entryId)
     .eq("user_id", user.id);
 
   if (error) {
     console.error("removePlannerEntry error:", error);
-    return { error: "Failed to remove entry" };
+    return { error: "Failed to remove" };
   }
 
   revalidatePath("/planner");
@@ -784,4 +778,164 @@ export async function removeCampFromShortlist(userCampId: string): Promise<{ err
 
   revalidatePath("/planner");
   return {};
+}
+
+export async function addPlannerBlock(data: {
+  type: "school" | "travel" | "at_home" | "other";
+  title: string;
+  emoji?: string | null;
+  startDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
+  childIds: string[];
+}): Promise<{ error?: string; blockId?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  if (!data.title.trim()) return { error: "Title required" };
+  if (data.childIds.length === 0) return { error: "Pick at least one kid" };
+  if (data.startDate > data.endDate) return { error: "End date must be after start" };
+
+  const { data: block, error } = await supabase
+    .from("planner_blocks")
+    .insert({
+      user_id: user.id,
+      type: data.type,
+      title: data.title.trim(),
+      emoji: data.emoji ?? null,
+      start_date: data.startDate,
+      end_date: data.endDate,
+    })
+    .select("id")
+    .single();
+
+  if (error || !block) {
+    console.error("addPlannerBlock error:", error);
+    return { error: "Failed to add block" };
+  }
+
+  const { error: joinErr } = await supabase
+    .from("planner_block_kids")
+    .insert(data.childIds.map((cid) => ({ block_id: block.id, child_id: cid })));
+
+  if (joinErr) {
+    console.error("addPlannerBlock join error:", joinErr);
+    await supabase.from("planner_blocks").delete().eq("id", block.id);
+    return { error: "Failed to attach kids" };
+  }
+
+  revalidatePath("/planner");
+  return { blockId: block.id };
+}
+
+export async function removePlannerBlock(blockId: string): Promise<{ error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("planner_blocks")
+    .delete()
+    .eq("id", blockId)
+    .eq("user_id", user.id);
+
+  if (error) return { error: "Failed to remove block" };
+  revalidatePath("/planner");
+  return {};
+}
+
+export async function reorderKidColumns(
+  orderedChildIds: string[]
+): Promise<{ error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const updates = orderedChildIds.map((childId, idx) =>
+    supabase
+      .from("children")
+      .update({ sort_order: idx })
+      .eq("id", childId)
+      .eq("user_id", user.id)
+  );
+
+  const results = await Promise.all(updates);
+  const firstError = results.find((r: any) => r.error);
+  if (firstError) return { error: "Failed to save order" };
+
+  revalidatePath("/planner");
+  return {};
+}
+
+export async function updateChildColor(
+  childId: string,
+  color: string
+): Promise<{ error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("children")
+    .update({ color })
+    .eq("id", childId)
+    .eq("user_id", user.id);
+
+  if (error) return { error: "Failed to update color" };
+  revalidatePath("/planner");
+  revalidatePath("/kids");
+  return {};
+}
+
+export async function updateShareCampsDefault(
+  enabled: boolean
+): Promise<{ error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ share_camps_default: enabled })
+    .eq("id", user.id);
+
+  if (error) return { error: "Failed to update preference" };
+  return {};
+}
+
+export async function updateChildAvatar(
+  childId: string,
+  formData: FormData
+): Promise<{ error?: string; url?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const file = formData.get("file");
+  if (!(file instanceof File)) return { error: "No file provided" };
+  if (file.size > 2 * 1024 * 1024) return { error: "File must be under 2MB" };
+  if (!file.type.startsWith("image/")) return { error: "Must be an image" };
+
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+  const path = `${user.id}/${childId}.${ext}`;
+
+  const { error: uploadErr } = await supabase.storage
+    .from("avatars")
+    .upload(path, file, { upsert: true, contentType: file.type });
+
+  if (uploadErr) return { error: "Upload failed" };
+
+  const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+
+  const { error: dbErr } = await supabase
+    .from("children")
+    .update({ avatar_url: urlData.publicUrl })
+    .eq("id", childId)
+    .eq("user_id", user.id);
+
+  if (dbErr) return { error: "Failed to save avatar URL" };
+
+  revalidatePath("/planner");
+  revalidatePath("/kids");
+  return { url: urlData.publicUrl };
 }
