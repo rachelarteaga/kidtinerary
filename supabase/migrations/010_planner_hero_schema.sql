@@ -26,7 +26,7 @@ alter table planner_entries
   alter column status set not null,
   alter column status set default 'considering'::planner_entry_status_new;
 
-drop type planner_entry_status;
+drop type planner_status;
 alter type planner_entry_status_new rename to planner_entry_status;
 
 -- 3. Children: add color, sort_order, avatar_url.
