@@ -1,38 +1,48 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import type { PlannerEntryRow } from "@/lib/queries";
-import { generateWeeks, getWeekKey } from "@/lib/format";
-import { WeekRow } from "@/components/planner/week-row";
-import { PlannerSidebar } from "@/components/planner/planner-sidebar";
-import { PlannerDndProvider } from "@/components/planner/dnd-provider";
-import { ShareScheduleButton } from "@/components/planner/share-schedule-button";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { PlannerMatrix, type WeekRow, type CellEntry } from "@/components/planner/matrix";
+import { MyCampsRow } from "@/components/planner/my-camps-row";
+import { AddCampModal } from "@/components/planner/add-camp-modal";
+import { AddBlockModal } from "@/components/planner/add-block-modal";
+import { useScrapeJob } from "@/lib/use-scrape-job";
+import { generateWeeks, getWeekKey, formatTimeSlot, formatPrice, formatPriceUnit } from "@/lib/format";
+import { detectSharedEntries } from "@/lib/planner-matrix";
+import type { PlannerEntryRow, UserCampWithActivity, PlannerBlockWithKids } from "@/lib/queries";
 
-interface Child {
+interface Kid {
   id: string;
   name: string;
   birth_date: string;
+  color: string;
+  avatar_url: string | null;
+  sort_order: number;
   interests: string[];
 }
 
-interface PlannerClientProps {
-  children: Child[];
-  initialEntries: PlannerEntryRow[];
-  favoriteActivities: any[];
-  userId: string;
+interface Props {
+  kids: Kid[];
+  entries: PlannerEntryRow[];
+  userCamps: UserCampWithActivity[];
+  blocks: PlannerBlockWithKids[];
+  shareCampsDefault: boolean;
 }
 
-export function PlannerClient({
-  children,
-  initialEntries,
-  favoriteActivities,
-  userId: _userId,
-}: PlannerClientProps) {
-  const [selectedChildId, setSelectedChildId] = useState(children[0]?.id ?? "");
-  const [entries, setEntries] = useState<PlannerEntryRow[]>(initialEntries);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefault }: Props) {
+  const router = useRouter();
+  const [campModal, setCampModal] = useState<{ childId: string | null; weekStart: string | null } | null>(null);
+  const [blockModal, setBlockModal] = useState<{ childId: string | null; weekStart: string | null } | null>(null);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
 
-  // Default: upcoming 3 months
+  const { done } = useScrapeJob(activeJobId);
+  useMemo(() => {
+    if (done && activeJobId) {
+      setActiveJobId(null);
+      router.refresh();
+    }
+  }, [done, activeJobId, router]);
+
   const dateRange = useMemo(() => {
     const from = new Date();
     const to = new Date();
@@ -40,216 +50,117 @@ export function PlannerClient({
     return { from, to };
   }, []);
 
-  const weeks = useMemo(
-    () => generateWeeks(dateRange.from, dateRange.to),
-    [dateRange]
-  );
+  const weekStarts = useMemo(() => generateWeeks(dateRange.from, dateRange.to), [dateRange]);
 
-  // Group entries by week key
-  const entriesByWeek = useMemo(() => {
-    const map: Record<string, PlannerEntryRow[]> = {};
-    for (const entry of entries) {
-      const startDate = new Date(entry.session.starts_at + "T00:00:00");
-      const key = getWeekKey(startDate);
-      if (!map[key]) map[key] = [];
-      map[key].push(entry);
-    }
-    // Sort each week's entries by sort_order
-    for (const key of Object.keys(map)) {
-      map[key].sort((a, b) => a.sort_order - b.sort_order);
-    }
-    return map;
-  }, [entries]);
+  const sharingInput = entries.map((e) => ({
+    entryId: e.id,
+    childId: e.child_id,
+    activityId: e.session.activity.id,
+    weekKey: getWeekKey(new Date(e.session.starts_at + "T00:00:00")),
+  }));
+  const sharedMap = detectSharedEntries(sharingInput, kids.map((k) => ({ id: k.id, name: k.name })));
 
-  // Determine which weeks have a locked_in entry (for coverage gap detection)
-  const coveredWeeks = useMemo(() => {
-    const covered = new Set<string>();
-    for (const entry of entries) {
-      if (entry.status === "locked_in") {
-        const startDate = new Date(entry.session.starts_at + "T00:00:00");
-        const key = getWeekKey(startDate);
-        covered.add(key);
+  const weeks: WeekRow[] = weekStarts.map((weekStart) => {
+    const weekKey = getWeekKey(weekStart);
+
+    const cells = kids.map((kid) => {
+      const kidEntries = entries.filter((e) => {
+        if (e.child_id !== kid.id) return false;
+        const ws = new Date(e.session.starts_at + "T00:00:00");
+        return getWeekKey(ws) === weekKey;
+      });
+      const cellEntries: CellEntry[] = kidEntries.map((e) => {
+        const act = e.session.activity as any;
+        const lowest = act.price_options?.[0];
+        return {
+          kind: "camp" as const,
+          entryId: e.id,
+          activityName: act.name,
+          activitySlug: act.slug,
+          status: e.status as any,
+          timeLabel: e.session.time_slot ? formatTimeSlot(e.session.time_slot as any) : null,
+          priceLabel: lowest ? `${formatPrice(lowest.price_cents)}${formatPriceUnit(lowest.price_unit as any)}` : null,
+          sharedWith: sharedMap.get(e.id) ?? [],
+          isLoading: !act.verified && (act.price_options?.length ?? 0) === 0,
+        };
+      });
+      return { childId: kid.id, entries: cellEntries };
+    });
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    const overlaps = blocks.filter(
+      (b) => new Date(b.start_date) <= weekEnd && new Date(b.end_date) >= weekStart
+    );
+
+    let fullRowBlock: WeekRow["fullRowBlock"] = null;
+    const partialBlocksByChild: WeekRow["partialBlocksByChild"] = {};
+    for (const b of overlaps) {
+      const coversAll = kids.every((k) => b.child_ids.includes(k.id));
+      if (coversAll) {
+        fullRowBlock = { blockId: b.id, type: b.type, title: b.title, emoji: b.emoji, subtitle: `${b.child_ids.length} kids` };
+      } else {
+        for (const cid of b.child_ids) partialBlocksByChild[cid] = { blockId: b.id, type: b.type, title: b.title, emoji: b.emoji };
       }
     }
-    return covered;
-  }, [entries]);
 
-  const hasAnyEntries = entries.length > 0;
-  const lockedInCount = entries.filter((e) => e.status === "locked_in").length;
-
-  async function handleChildSwitch(childId: string) {
-    setSelectedChildId(childId);
-    const res = await fetch(
-      `/api/planner-entries?childId=${childId}`,
-      { cache: "no-store" }
-    );
-    if (res.ok) {
-      const data = await res.json();
-      setEntries(data.entries);
-    }
-  }
-
-  function handleEntryUpdated(updated: PlannerEntryRow) {
-    setEntries((prev) =>
-      prev.map((e) => (e.id === updated.id ? updated : e))
-    );
-  }
-
-  function handleEntryRemoved(entryId: string) {
-    setEntries((prev) => prev.filter((e) => e.id !== entryId));
-  }
-
-  function handleEntriesRefreshed() {
-    fetch(`/api/planner-entries?childId=${selectedChildId}`, { cache: "no-store" })
-      .then((r) => r.json())
-      .then((data) => setEntries(data.entries));
-  }
-
-  function handleExportCalendar() {
-    const url = `/api/planner-export?childId=${selectedChildId}`;
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "kidtinerary-plan.ics";
-    a.click();
-  }
+    return { weekStart, cells, fullRowBlock, partialBlocksByChild };
+  });
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-2">
+      <header className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="font-serif text-4xl mb-2">My Planner</h1>
-          <p className="text-stone text-lg">
-            Drag activities onto weeks to build your schedule.
-          </p>
+          <h1 className="font-serif text-4xl mb-1">Planner</h1>
+          <p className="text-stone">{kids.length} kid{kids.length === 1 ? "" : "s"} · {weeks.length} weeks</p>
         </div>
-
-        {/* Action buttons — shown when there are locked-in entries */}
-        {lockedInCount > 0 && (
-          <div className="shrink-0 mt-1 flex items-center gap-2">
-            <ShareScheduleButton
-              childId={selectedChildId}
-              dateFrom={dateRange.from.toISOString().slice(0, 10)}
-              dateTo={dateRange.to.toISOString().slice(0, 10)}
-            />
-            <button
-              onClick={handleExportCalendar}
-              className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-meadow hover:text-meadow/80 border border-meadow/40 hover:border-meadow/70 rounded-full px-4 py-2 transition-colors cursor-pointer"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-              Export {lockedInCount} locked in
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Child selector tabs */}
-      <div className="flex gap-1 mt-6 mb-8 border-b border-driftwood/30">
-        {children.map((child) => (
+        <div className="flex gap-2">
           <button
-            key={child.id}
-            onClick={() => handleChildSwitch(child.id)}
-            className={`px-4 py-2.5 font-mono text-xs uppercase tracking-widest transition-colors rounded-t-lg cursor-pointer ${
-              selectedChildId === child.id
-                ? "bg-white text-bark border border-driftwood/30 border-b-white -mb-px"
-                : "text-stone hover:text-bark hover:bg-bark/5"
-            }`}
+            onClick={() => setCampModal({ childId: null, weekStart: null })}
+            className="font-mono text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-bark text-cream hover:bg-bark/90"
           >
-            {child.name}
+            + Add camp
           </button>
-        ))}
-      </div>
-
-      {/* Two-panel layout wrapped in DndContext */}
-      <PlannerDndProvider
-        selectedChildId={selectedChildId}
-        onEntryAdded={handleEntriesRefreshed}
-        existingEntryCount={entries.length}
-      >
-        {/* Mobile: favorites toggle button */}
-        <div className="lg:hidden mb-4">
           <button
-            onClick={() => setSidebarOpen((v) => !v)}
-            className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-bark border border-driftwood/30 rounded-full px-4 py-2 bg-white hover:bg-cream transition-colors cursor-pointer"
+            onClick={() => setBlockModal({ childId: null, weekStart: null })}
+            className="font-mono text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-white border border-driftwood text-bark hover:border-bark"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-            </svg>
-            {sidebarOpen ? "Hide favorites" : "Show favorites"}
+            + Add block
           </button>
         </div>
+      </header>
 
-        {/* Mobile slide-out panel */}
-        {sidebarOpen && (
-          <div className="lg:hidden mb-4">
-            <PlannerSidebar
-              favoriteActivities={favoriteActivities}
-              selectedChildId={selectedChildId}
-            />
-          </div>
-        )}
+      <MyCampsRow
+        camps={userCamps}
+        onChipClick={(c) => router.push(`/activity/${c.activity.slug}`)}
+        onAddClick={() => setCampModal({ childId: null, weekStart: null })}
+      />
 
-        <div className="flex gap-6 items-start">
-          {/* Sidebar - favorites to drag from (desktop only) */}
-          <div className="hidden lg:block w-72 shrink-0 sticky top-24">
-            <PlannerSidebar
-              favoriteActivities={favoriteActivities}
-              selectedChildId={selectedChildId}
-            />
-          </div>
+      <PlannerMatrix
+        children={kids}
+        weeks={weeks}
+        onAddCampClick={(childId, weekStart) => setCampModal({ childId, weekStart })}
+        onAddBlockClick={(childId, weekStart) => setBlockModal({ childId, weekStart })}
+        onChanged={() => router.refresh()}
+      />
 
-          {/* Week grid */}
-          <div className="flex-1 space-y-3">
-            {weeks.map((weekStart) => {
-              const key = getWeekKey(weekStart);
-              const weekEntries = entriesByWeek[key] ?? [];
-              const hasLockedIn = weekEntries.some(
-                (e) => e.status === "locked_in"
-              );
-              const isCovered = coveredWeeks.has(key);
-
-              return (
-                <WeekRow
-                  key={key}
-                  weekKey={key}
-                  weekStart={weekStart}
-                  entries={weekEntries}
-                  hasLockedIn={hasLockedIn}
-                  isCoverageGap={hasAnyEntries && !isCovered}
-                  selectedChildId={selectedChildId}
-                  onEntryUpdated={handleEntryUpdated}
-                  onEntryRemoved={handleEntryRemoved}
-                />
-              );
-            })}
-          </div>
-        </div>
-      </PlannerDndProvider>
+      <AddCampModal
+        open={campModal !== null}
+        onClose={() => setCampModal(null)}
+        scope={campModal ?? { childId: null, weekStart: null }}
+        shareCampsDefault={shareCampsDefault}
+        onSubmitted={(result) => {
+          if (result.jobId) setActiveJobId(result.jobId);
+          router.refresh();
+        }}
+      />
+      <AddBlockModal
+        open={blockModal !== null}
+        onClose={() => setBlockModal(null)}
+        children={kids}
+        scope={blockModal ?? { childId: null, weekStart: null }}
+        onSubmitted={() => router.refresh()}
+      />
     </main>
   );
 }

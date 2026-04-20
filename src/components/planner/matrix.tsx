@@ -12,6 +12,7 @@ import {
 import { SortableContext, arrayMove, horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import { KidColumnHeader } from "./kid-column-header";
 import { PlannerCell, type CellEntry } from "./planner-cell";
+export type { CellEntry };
 import { BlockCard } from "./block-card";
 import { reorderKidColumns } from "@/lib/actions";
 import { formatWeekRange, getWeekKey } from "@/lib/format";

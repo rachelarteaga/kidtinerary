@@ -20,7 +20,7 @@ export default async function PlannerPage() {
     .maybeSingle();
 
   const allEntries = (
-    await Promise.all(children.map((c) => fetchPlannerEntries(user.id, c.id)))
+    await Promise.all(children.map((c: any) => fetchPlannerEntries(user.id, c.id)))
   ).flat();
 
   const userCamps = await fetchUserCamps(user.id);
