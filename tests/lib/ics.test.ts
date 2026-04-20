@@ -11,6 +11,12 @@ function fakeEntry(status: "considering" | "waitlisted" | "registered") {
     sort_order: 0,
     notes: null,
     created_at: "2026-04-20",
+    planner_id: "p1",
+    price_cents: null,
+    price_unit: null,
+    extras: [],
+    session_part: "full",
+    days_of_week: ["mon", "tue", "wed", "thu", "fri"],
     session: {
       id: "s1",
       starts_at: "2026-06-22",
@@ -49,5 +55,14 @@ describe("generateICS", () => {
     const ics = generateICS([fakeEntry("waitlisted")], "Camila");
     expect(ics).toContain("Camp Kanata");
     expect(ics).toContain("STATUS:TENTATIVE");
+  });
+
+  it("exports one VEVENT per day_of_week for multi-day sessions", () => {
+    const entry = fakeEntry("registered");
+    entry.days_of_week = ["mon", "wed", "fri"];
+    entry.session_part = "am";
+    const ics = generateICS([entry], "Camila");
+    const vevents = (ics.match(/BEGIN:VEVENT/g) || []).length;
+    expect(vevents).toBe(3);
   });
 });

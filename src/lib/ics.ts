@@ -30,9 +30,17 @@ function foldLine(line: string): string {
   return chunks.join("\r\n ");
 }
 
-function toIcsDate(dateStr: string): string {
-  // dateStr is "YYYY-MM-DD" — emit as DATE value (all-day)
-  return dateStr.replace(/-/g, "");
+const DAY_NAMES = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+
+function timeRange(part: "full" | "am" | "pm" | null | undefined): [string, string] {
+  if (part === "am") return ["090000", "120000"];
+  if (part === "pm") return ["130000", "170000"];
+  return ["090000", "170000"];
+}
+
+function formatLocalDate(d: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
 }
 
 function nowUTC(): string {
@@ -86,31 +94,49 @@ export function generateICS(
       activity.activity_locations?.[0]?.location_name ??
       "";
 
-    // DTEND for all-day events is exclusive, so +1 day past ends_at
-    const endExclusive = new Date(entry.session.ends_at + "T00:00:00");
-    endExclusive.setDate(endExclusive.getDate() + 1);
-    const endStr = endExclusive.toISOString().split("T")[0];
-
-    const uid = `kidtinerary-entry-${entry.id}@kidtinerary.app`;
     const summary = `${activity.name} — ${childName}`;
     const icsStatus = entry.status === "registered" ? "CONFIRMED" : "TENTATIVE";
     const url = origin ? `${origin}/activity/${activity.slug}` : "";
 
-    const vevent = [
-      "BEGIN:VEVENT",
-      foldLine(`UID:${uid}`),
-      foldLine(`SUMMARY:${escapeIcs(summary)}`),
-      `STATUS:${icsStatus}`,
-      description ? foldLine(`DESCRIPTION:${escapeIcs(description)}`) : "",
-      location ? foldLine(`LOCATION:${escapeIcs(location)}`) : "",
-      foldLine(`DTSTART;VALUE=DATE:${toIcsDate(entry.session.starts_at)}`),
-      foldLine(`DTEND;VALUE=DATE:${toIcsDate(endStr)}`),
-      url ? foldLine(`URL:${url}`) : "",
-      `DTSTAMP:${nowUTC()}`,
-      "END:VEVENT",
-    ].filter(Boolean);
+    // Compute the list of dates to emit based on session date range + days_of_week.
+    const start = new Date(entry.session.starts_at + "T00:00:00");
+    const end = new Date(entry.session.ends_at + "T00:00:00");
+    const daysOfWeek = (entry.days_of_week as string[] | null | undefined) ?? [];
 
-    lines.push(...vevent);
+    const datesToEmit: Date[] = [];
+    for (
+      const d = new Date(start);
+      d <= end;
+      d.setDate(d.getDate() + 1)
+    ) {
+      const dayName = DAY_NAMES[d.getDay()];
+      if (daysOfWeek.includes(dayName)) {
+        datesToEmit.push(new Date(d));
+      }
+    }
+
+    const [hStart, hEnd] = timeRange(entry.session_part);
+
+    for (const d of datesToEmit) {
+      const dateStr = formatLocalDate(d);
+      const uid = `kidtinerary-entry-${entry.id}-${dateStr}@kidtinerary.app`;
+
+      const vevent = [
+        "BEGIN:VEVENT",
+        foldLine(`UID:${uid}`),
+        foldLine(`SUMMARY:${escapeIcs(summary)}`),
+        `STATUS:${icsStatus}`,
+        description ? foldLine(`DESCRIPTION:${escapeIcs(description)}`) : "",
+        location ? foldLine(`LOCATION:${escapeIcs(location)}`) : "",
+        `DTSTART:${dateStr}T${hStart}`,
+        `DTEND:${dateStr}T${hEnd}`,
+        url ? foldLine(`URL:${url}`) : "",
+        `DTSTAMP:${nowUTC()}`,
+        "END:VEVENT",
+      ].filter(Boolean);
+
+      lines.push(...vevent);
+    }
   }
 
   lines.push("END:VCALENDAR");
