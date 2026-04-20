@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import { KidColumnHeader } from "./kid-column-header";
-import { KidAvatar } from "./kid-avatar";
-import { PlannerCell, type CellEntry } from "./planner-cell";
-export type { CellEntry };
+import { PlannerCell, type CellLegendRow } from "./planner-cell";
 import { BlockCard } from "./block-card";
+import { KidAvatar } from "./kid-avatar";
 import { formatWeekRange, getWeekKey } from "@/lib/format";
 import type { PlannerBlockType } from "@/lib/supabase/types";
+import type { TimelineEntry } from "./cell-timeline-grid";
+import type { ConsideringChip } from "./considering-chips";
 
 interface Child {
   id: string;
@@ -21,7 +22,9 @@ interface Child {
 
 export interface WeekCell {
   childId: string;
-  entries: CellEntry[];
+  timelineEntries: TimelineEntry[];
+  legendRows: CellLegendRow[];
+  consideringChips: ConsideringChip[];
 }
 
 export interface WeekRow {
@@ -35,9 +38,12 @@ interface Props {
   children: Child[];
   weeks: WeekRow[];
   orderedIds: string[];
+  plannerStart: Date;
+  plannerEnd: Date;
   onAddCampClick: (childId: string | null, weekStart: string | null) => void;
   onAddBlockClick: (childId: string | null, weekStart: string | null) => void;
-  onChanged: () => void;
+  onEntryClick: (entryId: string) => void;
+  onBlockClick: (blockId: string) => void;
 }
 
 function ageYears(birthDate: string): number {
@@ -45,7 +51,20 @@ function ageYears(birthDate: string): number {
   return Math.floor(ms / (365.25 * 24 * 60 * 60 * 1000));
 }
 
-export function PlannerMatrix({ children, weeks, orderedIds, onAddCampClick, onAddBlockClick, onChanged }: Props) {
+export function PlannerMatrix({
+  children,
+  weeks,
+  orderedIds,
+  plannerStart,
+  plannerEnd,
+  onAddCampClick,
+  onAddBlockClick,
+  onEntryClick,
+  onBlockClick,
+}: Props) {
+  const childById = new Map(children.map((c) => [c.id, c]));
+  const orderedChildren = orderedIds.map((id) => childById.get(id)!).filter(Boolean);
+
   const [narrow, setNarrow] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -54,13 +73,11 @@ export function PlannerMatrix({ children, weeks, orderedIds, onAddCampClick, onA
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, []);
+
   const [focusedKidId, setFocusedKidId] = useState<string>(orderedIds[0] ?? "");
   useEffect(() => {
     if (!orderedIds.includes(focusedKidId) && orderedIds.length > 0) setFocusedKidId(orderedIds[0]);
   }, [orderedIds, focusedKidId]);
-
-  const childById = new Map(children.map((c) => [c.id, c]));
-  const orderedChildren = orderedIds.map((id) => childById.get(id)!).filter(Boolean);
 
   const cols = orderedChildren.length;
   const gridTemplate = `100px ${"1fr ".repeat(cols).trim()}`;
@@ -96,7 +113,8 @@ export function PlannerMatrix({ children, weeks, orderedIds, onAddCampClick, onA
                     title={w.fullRowBlock.title}
                     emoji={w.fullRowBlock.emoji}
                     subtitle={w.fullRowBlock.subtitle}
-                    onChanged={onChanged}
+                    onClick={() => onBlockClick(w.fullRowBlock!.blockId)}
+                    onChanged={() => { /* parent refreshes on its own */ }}
                   />
                 </div>
               );
@@ -112,15 +130,21 @@ export function PlannerMatrix({ children, weeks, orderedIds, onAddCampClick, onA
                     type={partial.type}
                     title={partial.title}
                     emoji={partial.emoji}
-                    onChanged={onChanged}
+                    onClick={() => onBlockClick(partial.blockId)}
+                    onChanged={() => { /* parent refreshes on its own */ }}
                   />
                 ) : (
                   <PlannerCell
                     childId={focused.id}
                     weekStart={weekStartStr}
-                    entries={focusedCell?.entries ?? []}
+                    weekStartDate={w.weekStart}
+                    plannerStart={plannerStart}
+                    plannerEnd={plannerEnd}
+                    timelineEntries={focusedCell?.timelineEntries ?? []}
+                    legendRows={focusedCell?.legendRows ?? []}
+                    consideringChips={focusedCell?.consideringChips ?? []}
+                    onEntryClick={onEntryClick}
                     onAddClick={(cid, ws) => onAddCampClick(cid, ws)}
-                    onChanged={onChanged}
                   />
                 )}
               </div>
@@ -133,7 +157,6 @@ export function PlannerMatrix({ children, weeks, orderedIds, onAddCampClick, onA
 
   return (
     <div className="space-y-3">
-      {/* Header row: kids */}
       <div className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
         <div />
         <SortableContext items={orderedIds} strategy={horizontalListSortingStrategy}>
@@ -143,7 +166,6 @@ export function PlannerMatrix({ children, weeks, orderedIds, onAddCampClick, onA
         </SortableContext>
       </div>
 
-      {/* Week rows */}
       {weeks.map((w) => {
         const weekKey = getWeekKey(w.weekStart);
         const weekStartStr = w.weekStart.toISOString().split("T")[0];
@@ -160,7 +182,8 @@ export function PlannerMatrix({ children, weeks, orderedIds, onAddCampClick, onA
                 title={w.fullRowBlock.title}
                 emoji={w.fullRowBlock.emoji}
                 subtitle={w.fullRowBlock.subtitle}
-                onChanged={onChanged}
+                onClick={() => onBlockClick(w.fullRowBlock!.blockId)}
+                onChanged={() => { /* parent refreshes on its own */ }}
               />
             </div>
           );
@@ -181,7 +204,8 @@ export function PlannerMatrix({ children, weeks, orderedIds, onAddCampClick, onA
                     type={partial.type}
                     title={partial.title}
                     emoji={partial.emoji}
-                    onChanged={onChanged}
+                    onClick={() => onBlockClick(partial.blockId)}
+                    onChanged={() => { /* parent refreshes on its own */ }}
                   />
                 );
               }
@@ -191,9 +215,14 @@ export function PlannerMatrix({ children, weeks, orderedIds, onAddCampClick, onA
                   key={`${weekKey}-${child.id}`}
                   childId={child.id}
                   weekStart={weekStartStr}
-                  entries={cell?.entries ?? []}
+                  weekStartDate={w.weekStart}
+                  plannerStart={plannerStart}
+                  plannerEnd={plannerEnd}
+                  timelineEntries={cell?.timelineEntries ?? []}
+                  legendRows={cell?.legendRows ?? []}
+                  consideringChips={cell?.consideringChips ?? []}
+                  onEntryClick={onEntryClick}
                   onAddClick={(cid, ws) => onAddCampClick(cid, ws)}
-                  onChanged={onChanged}
                 />
               );
             })}

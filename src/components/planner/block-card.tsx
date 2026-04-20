@@ -17,15 +17,18 @@ interface Props {
   title: string;
   emoji?: string | null;
   subtitle?: string;
+  onClick?: () => void;
   onChanged: () => void;
 }
 
-export function BlockCard({ blockId, type, title, emoji, subtitle, onChanged }: Props) {
+export function BlockCard({ blockId, type, title, emoji, subtitle, onClick, onChanged }: Props) {
   const [isPending, startTransition] = useTransition();
   const t = TYPE_STYLES[type];
   const icon = emoji || t.emoji;
 
-  function handleRemove() {
+  function handleRemove(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!confirm("Remove this block?")) return;
     startTransition(async () => {
       await removePlannerBlock(blockId);
       onChanged();
@@ -33,7 +36,10 @@ export function BlockCard({ blockId, type, title, emoji, subtitle, onChanged }: 
   }
 
   return (
-    <div className={`rounded-lg border p-3 flex items-start gap-3 ${t.bg} ${t.border} ${isPending ? "opacity-60" : ""}`}>
+    <div
+      onClick={onClick}
+      className={`rounded-lg border p-3 flex items-start gap-3 cursor-pointer ${t.bg} ${t.border} ${isPending ? "opacity-60" : ""}`}
+    >
       <span className="text-lg shrink-0">{icon}</span>
       <div className="flex-1 min-w-0">
         <div className="font-medium text-sm text-bark truncate">{title}</div>
