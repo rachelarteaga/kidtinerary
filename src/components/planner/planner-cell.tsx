@@ -30,16 +30,18 @@ export function PlannerCell({ childId, weekStart, entries, onAddClick, onChanged
     data: { type: "cell", childId, weekStart },
   });
 
-  const overCls = isOver ? "border-sunset bg-sunset/5" : "";
+  const emptyOverCls = isOver
+    ? "!border-sunset !border-solid bg-sunset/10 text-bark"
+    : "";
 
   if (entries.length === 0) {
     return (
       <button
         ref={setNodeRef}
         onClick={() => onAddClick(childId, weekStart)}
-        className={`w-full h-full min-h-[60px] border border-dashed border-driftwood/60 rounded-lg text-stone/70 hover:border-driftwood hover:text-stone hover:bg-driftwood/5 transition-colors font-mono text-[11px] uppercase tracking-wide ${overCls}`}
+        className={`w-full h-full min-h-[60px] border border-dashed border-driftwood/60 rounded-lg text-stone/70 hover:border-driftwood hover:text-stone hover:bg-driftwood/5 transition-colors font-mono text-[11px] uppercase tracking-wide ${emptyOverCls}`}
       >
-        + Add camp
+        {isOver ? "Drop here" : "+ Add camp"}
       </button>
     );
   }
@@ -47,7 +49,7 @@ export function PlannerCell({ childId, weekStart, entries, onAddClick, onChanged
   return (
     <div
       ref={setNodeRef}
-      className={`space-y-2 rounded-lg border border-transparent transition-colors ${overCls}`}
+      className={`space-y-2 rounded-lg transition-colors ${isOver ? "ring-2 ring-sunset bg-sunset/5 p-1" : ""}`}
     >
       {entries.map((e) => (
         <CampCard
@@ -63,6 +65,11 @@ export function PlannerCell({ childId, weekStart, entries, onAddClick, onChanged
           onChanged={onChanged}
         />
       ))}
+      {isOver && (
+        <div className="text-center font-mono text-[10px] uppercase tracking-widest text-sunset/80 py-1">
+          Drop to stack
+        </div>
+      )}
     </div>
   );
 }

@@ -244,10 +244,13 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
         />
       </main>
 
-      <DragOverlay>
+      <DragOverlay dropAnimation={null}>
         {draggingCamp ? (
-          <div className="rounded-lg border border-sunset bg-white shadow-xl p-2.5 w-56 opacity-90 rotate-2">
+          <div className="rounded-lg border-2 border-sunset bg-white shadow-2xl p-2.5 w-56 rotate-2 pointer-events-none">
             <div className="font-medium text-sm text-bark truncate">{draggingCamp.name}</div>
+            <div className="mt-1 font-mono text-[9px] uppercase tracking-widest text-sunset/80">
+              Drop on a week ↓
+            </div>
           </div>
         ) : null}
       </DragOverlay>

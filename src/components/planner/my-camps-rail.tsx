@@ -50,9 +50,9 @@ function DraggableCampItem({ camp, onClick }: { camp: UserCampWithActivity; onCl
       {...listeners}
       {...attributes}
       onClick={onClick}
-      className={`shrink-0 w-56 md:w-auto rounded-lg border bg-white p-2.5 cursor-grab active:cursor-grabbing select-none transition-opacity ${
+      className={`shrink-0 w-56 md:w-auto rounded-lg border bg-white p-2.5 cursor-grab active:cursor-grabbing select-none transition-all ${
         camp.activity.verified ? "border-meadow/30" : "border-driftwood/40"
-      } ${isDragging ? "opacity-30" : "hover:border-bark"}`}
+      } ${isDragging ? "opacity-60 ring-2 ring-sunset/40" : "hover:border-bark"}`}
     >
       <div className="font-medium text-sm text-bark truncate">{camp.activity.name}</div>
       <div className="mt-1 flex items-center gap-2 font-mono text-[10px] uppercase tracking-wide text-stone">
