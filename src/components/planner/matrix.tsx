@@ -11,6 +11,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, arrayMove, horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import { KidColumnHeader } from "./kid-column-header";
+import { KidAvatar } from "./kid-avatar";
 import { PlannerCell, type CellEntry } from "./planner-cell";
 export type { CellEntry };
 import { BlockCard } from "./block-card";
@@ -60,6 +61,19 @@ export function PlannerMatrix({ children, weeks, onAddCampClick, onAddBlockClick
     setOrderedIds(children.map((c) => c.id));
   }, [children]);
 
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    setNarrow(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setNarrow(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  const [focusedKidId, setFocusedKidId] = useState<string>(orderedIds[0] ?? "");
+  useEffect(() => {
+    if (!orderedIds.includes(focusedKidId) && orderedIds.length > 0) setFocusedKidId(orderedIds[0]);
+  }, [orderedIds, focusedKidId]);
+
   const childById = new Map(children.map((c) => [c.id, c]));
   const orderedChildren = orderedIds.map((id) => childById.get(id)!).filter(Boolean);
 
@@ -75,6 +89,72 @@ export function PlannerMatrix({ children, weeks, onAddCampClick, onAddBlockClick
 
   const cols = orderedChildren.length;
   const gridTemplate = `100px ${"1fr ".repeat(cols).trim()}`;
+
+  if (narrow && orderedChildren.length > 1) {
+    const focused = orderedChildren.find((c) => c.id === focusedKidId) ?? orderedChildren[0];
+    return (
+      <div className="space-y-3">
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {orderedChildren.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setFocusedKidId(c.id)}
+              className={`shrink-0 rounded-full border px-3 py-1.5 text-sm flex items-center gap-2 ${c.id === focusedKidId ? "bg-white" : "bg-white opacity-60"}`}
+              style={{ borderColor: c.id === focusedKidId ? c.color : "#d9c9b0" }}
+            >
+              <KidAvatar name={c.name} color={c.color} avatarUrl={c.avatar_url} size={22} />
+              {c.name}
+            </button>
+          ))}
+        </div>
+        <div className="space-y-3">
+          {weeks.map((w) => {
+            const weekKey = getWeekKey(w.weekStart);
+            const weekStartStr = w.weekStart.toISOString().split("T")[0];
+            if (w.fullRowBlock) {
+              return (
+                <div key={weekKey}>
+                  <div className="font-mono text-[10px] uppercase tracking-widest text-stone mb-1">{formatWeekRange(w.weekStart)}</div>
+                  <BlockCard
+                    blockId={w.fullRowBlock.blockId}
+                    type={w.fullRowBlock.type}
+                    title={w.fullRowBlock.title}
+                    emoji={w.fullRowBlock.emoji}
+                    subtitle={w.fullRowBlock.subtitle}
+                    onChanged={onChanged}
+                  />
+                </div>
+              );
+            }
+            const partial = w.partialBlocksByChild[focused.id];
+            const focusedCell = w.cells.find((c) => c.childId === focused.id);
+            return (
+              <div key={weekKey}>
+                <div className="font-mono text-[10px] uppercase tracking-widest text-stone mb-1">{formatWeekRange(w.weekStart)}</div>
+                {partial ? (
+                  <BlockCard
+                    blockId={partial.blockId}
+                    type={partial.type}
+                    title={partial.title}
+                    emoji={partial.emoji}
+                    onChanged={onChanged}
+                  />
+                ) : (
+                  <PlannerCell
+                    childId={focused.id}
+                    weekStart={weekStartStr}
+                    entries={focusedCell?.entries ?? []}
+                    onAddClick={(cid, ws) => onAddCampClick(cid, ws)}
+                    onChanged={onChanged}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
