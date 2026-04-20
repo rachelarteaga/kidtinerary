@@ -79,6 +79,12 @@ Jul 20–24     + Add          🏡 Grandma      + Add
 
 **Global actions** above the matrix: `+ Add camp`, `+ Add block`. These open the add flows without pre-scoping kid or week (parent chooses in the modal).
 
+## "My Camps" (family-level shortlist)
+
+My Camps replaces the old Favorites concept. It's a **family-level** list (not per-kid) of every camp the parent has added — via the planner, via autocomplete, or via manual submission. Any camp the parent interacts with ends up here by default. Removing a camp from a specific kid × week does **not** remove it from My Camps; removing from My Camps removes it from any kid × week too (with confirmation).
+
+Renders as a compact horizontal chip row at the top of the planner, above the matrix. Each chip is the camp name + a small indicator of how many kids × weeks it's currently slotted into. Clicking a chip opens the camp's detail card.
+
 ## Add Camp Flow
 
 ### Input
@@ -96,10 +102,13 @@ If input looks like a URL (starts with http, contains a dot + no spaces) → scr
 - **Optional URL helper text** under the input: "Got a link handy? Paste it for the best match." No separate field — same input.
 
 ### Optimistic async scrape
-1. On submit, immediately create a planner entry with status `considering` and a temporary activity stub (name = user input, other fields null).
-2. Add a row to a new `scrape_jobs` table (or reuse existing scraper queue) with the input and context (location, kid age, target week).
-3. UI shows the entry with a loading skeleton for fields that are scraping.
-4. When the scraper completes, it upserts into `activities`/`sessions` as usual, then the planner entry is updated to point at the real session. UI updates via polling: client polls the scrape_job status every 2s for up to 90s on the active entry; after that, falls back to a manual refresh affordance. (Realtime subscriptions deferred — polling is simpler for MVP and the wait is bounded.)
+1. On submit, immediately create:
+   - A stub row in `activities` (name = user input, `verified = false`, other fields null). Reuse existing activity if the input matches a known slug or fuzzy-match.
+   - A `user_camps` row linking the current user to that activity (the family-level "My Camps" entry).
+   - If the add was scoped to a specific kid × week: also create a `planner_entries` row with status `considering` referencing a placeholder session for that week. If the add was from the global shortlist (no kid × week), skip the planner entry — the camp lives in My Camps until the parent slots it.
+2. Add a row to `scrape_jobs` with the input and context (location, kid age, target week, consent_share flag).
+3. UI shows the entry with a loading skeleton for fields still being scraped.
+4. When the scraper completes, it upserts real session rows; the placeholder session on the planner entry is replaced with the matched real session. UI updates via polling: client polls the scrape_job status every 2s for up to 90s on the active entry; after that, falls back to a manual refresh affordance. (Realtime subscriptions deferred — polling is simpler for MVP and the wait is bounded.)
 5. If scrape confidence is low or ambiguous → fallback UX (see "Scrape confidence fallbacks" below).
 
 ### Scrape confidence fallbacks
@@ -153,13 +162,16 @@ States are **independent per kid** for the same camp × week — one sibling can
 
 **Removal** is a delete, not a cancelled state (removes the planner entry).
 
-**Export to calendar (.ics)**: only `registered` entries export by default. Waitlisted export is an open question (see below).
+**Export to calendar (.ics)**: both `registered` and `waitlisted` entries export. Registered entries use `STATUS:CONFIRMED`; waitlisted use `STATUS:TENTATIVE` — standard iCalendar convention keeps them visible in the parent's calendar as "maybe" events so they don't slip through.
 
 ## Data Model Changes
 
 ### New tables
 - `scrape_jobs` — queue for on-demand scraping with optimistic async flow.
   - Columns: `id`, `user_id`, `input` (text: name or URL), `context` (jsonb: target_kid_id, target_week, location_hint), `status` (queued/running/resolved/failed), `activity_id` (set once resolved), `confidence` (high/partial/ambiguous/none), `consent_share` (bool), `created_at`, `resolved_at`.
+
+- `user_camps` — the family-level "My Camps" shortlist. Camps appear here regardless of whether they're slotted into a week yet. One row per (user, activity).
+  - Columns: `id`, `user_id`, `activity_id`, `created_at`. Unique constraint on (`user_id`, `activity_id`).
 
 - `planner_blocks` — non-camp blocks.
   - Columns: `id`, `user_id`, `type` (school/travel/at_home/other), `title`, `emoji` (for "other"), `start_date`, `end_date`, `created_at`.
@@ -168,16 +180,16 @@ States are **independent per kid** for the same camp × week — one sibling can
   - Columns: `block_id`, `child_id`, primary key composite.
 
 ### Modified tables
-- `children` — add `color` (text), `sort_order` (int), and `avatar_url` (text, nullable). Color assigned on first save from a fixed palette (see Open Questions); avatar photo optional, stored in Supabase Storage `avatars/` bucket.
-- `planner_entries` — rename `status` enum from `penciled_in|locked_in|cancelled` to `considering|waitlisted|registered`. Drop `cancelled` — use delete instead. Migrate existing rows: `penciled_in`→`considering`, `locked_in`→`registered`, `cancelled`→delete.
+- `children` — add `color` (text), `sort_order` (int), and `avatar_url` (text, nullable). Color assigned on first save from a fixed 6-color palette: `#f4b76f` (orange), `#7fa06a` (green), `#8fa4c8` (blue), `#d4a1c8` (rose), `#c8a76a` (sand), `#9fc8b8` (teal). Palette revisits in the future design overhaul. Avatar photo optional, stored in Supabase Storage `avatars/` bucket.
+- `planner_entries` — rename `status` enum from `penciled_in|locked_in|cancelled` to `considering|waitlisted|registered`. Drop `cancelled` — use delete instead. Since no production users exist yet, existing rows can be dropped or simply migrated (`penciled_in`→`considering`, `locked_in`→`registered`, `cancelled`→delete).
 - `profiles` — add `share_camps_default` (bool, default true) for the global consent preference.
 - `activities` — add `verified` (bool, default false) and `verified_at` (timestamptz, nullable). User-submitted camps start unverified; moderation flips the flag.
 
 ### Migrations
 - `010_planner_hero_schema.sql` — creates new tables, modifies existing, migrates data.
 
-### Data migration: favorites
-The `favorites` table is retired as user-facing concept. Migration: convert each favorite into a no-session planner entry for the user's first kid with status `considering`. This ensures no data loss; users see their favorites as "My Camps" shortlist entries. (Open: what if a favorite is unmatched to any kid? Default to first kid chronologically; user can reassign.)
+### Retired tables
+- `favorites` — drop the table. No production users yet, so no migration needed.
 
 ## Component Architecture
 
@@ -193,12 +205,15 @@ The `favorites` table is retired as user-facing concept. Migration: convert each
 - `src/components/planner/state-badge.tsx` — 3-state pill (considering / waitlisted / registered).
 
 ### New server actions (`src/lib/actions.ts`)
-- `submitCampSearch(input, context, consentShare)` — creates scrape_job + placeholder entry; returns job id.
+- `submitCamp(input, context, consentShare)` — creates the activity stub, user_camps row, optional planner_entry (if scoped), and scrape_job; returns `{ jobId, userCampId, plannerEntryId? }`.
+- `assignCampToWeek(userCampId, childId, weekStart)` — slots an existing My Camps entry into a specific kid × week; creates a planner_entry.
+- `removeCampFromShortlist(userCampId)` — removes the camp from My Camps. Cascades: also removes any planner entries for that camp.
 - `addPlannerBlock(blockData)` — creates block + kid join rows.
 - `updatePlannerEntryStatus(entryId, status)` — now 3 states; updates accordingly.
-- `removePlannerEntry(entryId)` — hard delete (replaces the "cancelled" soft delete).
+- `removePlannerEntry(entryId)` — hard delete (replaces the "cancelled" soft delete). Does not remove from My Camps.
 - `reorderKidColumns(order)` — persists the kid column order for the parent.
 - `updateChildColor(childId, color)` — color picker on kid profile.
+- `updateChildAvatar(childId, file)` — uploads to Supabase Storage, sets `avatar_url`.
 
 ### Scraper changes (`src/scraper/`)
 - New entry point: `scrapeOnDemand(input, context)` — runs immediately rather than queued, short-circuits if cache hit, writes back to `scrape_jobs`.
@@ -242,9 +257,7 @@ The `favorites` table is retired as user-facing concept. Migration: convert each
 
 ## Open Questions
 
-- **Favorites migration ambiguity**: if parent has multiple kids and favorited a camp before this release, which kid does the migrated planner entry attach to? Proposed: first kid by `sort_order`; parent can reassign. Confirm or propose alternative.
-- **Waitlist in .ics export**: export tentative events or skip? Proposed: export with `STATUS:TENTATIVE`. Confirm.
-- **Default kid colors palette**: pick a 6–8 color palette upfront or defer to design overhaul? Proposed: ship a simple palette now (orange, green, blue, purple, teal, rose), revisit in design pass.
+None at this point — all resolved during brainstorming.
 
 ## Sequencing
 
