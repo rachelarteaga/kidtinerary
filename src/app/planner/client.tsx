@@ -54,6 +54,20 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
   const [drawerBlockId, setDrawerBlockId] = useState<string | null>(null);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [draggingCamp, setDraggingCamp] = useState<{ name: string; color: string } | null>(null);
+  const [viewMode, setViewMode] = useState<"detail" | "simple">("detail");
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem("planner-view-mode");
+    if (stored === "simple" || stored === "detail") setViewMode(stored);
+  }, []);
+
+  // Persist on change
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("planner-view-mode", viewMode);
+  }, [viewMode]);
 
   const { done } = useScrapeJob(activeJobId);
   useEffect(() => {
@@ -239,6 +253,24 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
             <p className="text-stone">{kids.length} kid{kids.length === 1 ? "" : "s"} · {weekStarts.length} weeks</p>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <div className="inline-flex rounded-full border border-driftwood/40 bg-white overflow-hidden">
+              <button
+                onClick={() => setViewMode("detail")}
+                className={`font-mono text-[11px] uppercase tracking-widest px-3 py-2 transition-colors ${
+                  viewMode === "detail" ? "bg-bark text-cream" : "text-stone hover:text-bark"
+                }`}
+              >
+                Detail
+              </button>
+              <button
+                onClick={() => setViewMode("simple")}
+                className={`font-mono text-[11px] uppercase tracking-widest px-3 py-2 transition-colors ${
+                  viewMode === "simple" ? "bg-bark text-cream" : "text-stone hover:text-bark"
+                }`}
+              >
+                Simple
+              </button>
+            </div>
             <PlannerRangePicker
               plannerId={planner.id}
               startDate={planner.start_date}
@@ -277,6 +309,7 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
               orderedIds={orderedIds}
               plannerStart={plannerStart}
               plannerEnd={plannerEnd}
+              viewMode={viewMode}
               onAddCampClick={(childId, weekStart) => setCampModal({ childId, weekStart })}
               onAddBlockClick={(childId, weekStart) => setBlockModal({ childId, weekStart })}
               onEntryClick={(entryId) => setDrawerEntryId(entryId)}
