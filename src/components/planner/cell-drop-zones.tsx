@@ -1,6 +1,7 @@
 "use client";
 
 import { useDroppable } from "@dnd-kit/core";
+import { useMemo } from "react";
 import type { PlannerEntryStatus } from "@/lib/supabase/types";
 
 interface Props {
@@ -23,9 +24,13 @@ function Zone({
   childId,
   weekStart,
 }: { status: PlannerEntryStatus; label: string; border: string; bg: string; text: string; childId: string; weekStart: string }) {
+  const data = useMemo(
+    () => ({ type: "cell-drop" as const, childId, weekStart, status }),
+    [childId, weekStart, status]
+  );
   const { isOver, setNodeRef } = useDroppable({
     id: `cell-drop-${childId}-${weekStart}-${status}`,
-    data: { type: "cell-drop", childId, weekStart, status },
+    data,
   });
 
   return (

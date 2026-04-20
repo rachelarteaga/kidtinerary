@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { KidAvatar } from "./kid-avatar";
@@ -18,9 +19,10 @@ interface Props {
 }
 
 export function KidColumnHeader({ child, ageYears }: Props) {
+  const sortableData = useMemo(() => ({ type: "kid-column" as const }), []);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: child.id,
-    data: { type: "kid-column" },
+    data: sortableData,
   });
 
   const style = {

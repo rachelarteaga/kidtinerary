@@ -1,6 +1,7 @@
 "use client";
 
 import { useDroppable } from "@dnd-kit/core";
+import { useMemo } from "react";
 import { CellTimelineGrid, type TimelineEntry } from "./cell-timeline-grid";
 import { ConsideringChips, type ConsideringChip } from "./considering-chips";
 import { CellDropZones } from "./cell-drop-zones";
@@ -44,9 +45,10 @@ export function PlannerCell({
   onEntryClick,
   onAddClick,
 }: Props) {
+  const droppableData = useMemo(() => ({ type: "cell-hover" as const }), []);
   const { isOver, setNodeRef } = useDroppable({
     id: `cell-hover-${childId}-${weekStart}`,
-    data: { type: "cell-hover" },
+    data: droppableData,
   });
 
   const showZones = isDraggingCamp && isOver;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { removeCampFromShortlist } from "@/lib/actions";
 import type { UserCampWithActivity } from "@/lib/queries";
@@ -112,15 +112,19 @@ function DraggableCampItem({
   onClick: () => void;
   onRemoveClick: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `camp-${camp.id}`,
-    data: {
-      type: "camp",
+  const data = useMemo(
+    () => ({
+      type: "camp" as const,
       userCampId: camp.id,
       activityId: camp.activity.id,
       name: camp.activity.name,
       color: camp.color,
-    },
+    }),
+    [camp.id, camp.activity.id, camp.activity.name, camp.color]
+  );
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `camp-${camp.id}`,
+    data,
   });
 
   return (
