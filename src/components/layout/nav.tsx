@@ -5,9 +5,8 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 const NAV_LINKS = [
-  { href: "/explore", label: "Explore" },
   { href: "/planner", label: "Planner" },
-  { href: "/favorites", label: "Favorites" },
+  { href: "/explore", label: "Explore" },
   { href: "/kids", label: "My Kids" },
 ] as const;
 
