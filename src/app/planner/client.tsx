@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
@@ -13,15 +13,18 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { PlannerMatrix, type WeekRow, type CellEntry } from "@/components/planner/matrix";
+import { PlannerMatrix, type WeekRow } from "@/components/planner/matrix";
 import { MyCampsRail } from "@/components/planner/my-camps-rail";
 import { AddCampModal } from "@/components/planner/add-camp-modal";
 import { AddBlockModal } from "@/components/planner/add-block-modal";
+import { CampDetailDrawer } from "@/components/planner/camp-detail-drawer";
+import { BlockDetailDrawer } from "@/components/planner/block-detail-drawer";
+import { PlannerRangePicker } from "@/components/planner/planner-range-picker";
 import { useScrapeJob } from "@/lib/use-scrape-job";
 import { reorderKidColumns, assignCampToWeek } from "@/lib/actions";
-import { generateWeeks, getWeekKey, formatTimeSlot, formatPrice, formatPriceUnit } from "@/lib/format";
-import { detectSharedEntries } from "@/lib/planner-matrix";
+import { generateWeeks, getWeekKey } from "@/lib/format";
 import type { PlannerEntryRow, UserCampWithActivity, PlannerBlockWithKids } from "@/lib/queries";
+import type { PlannerRow } from "@/lib/supabase/types";
 
 interface Kid {
   id: string;
@@ -39,14 +42,18 @@ interface Props {
   userCamps: UserCampWithActivity[];
   blocks: PlannerBlockWithKids[];
   shareCampsDefault: boolean;
+  planner: PlannerRow;
 }
 
-export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefault }: Props) {
+export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefault, planner }: Props) {
   const router = useRouter();
+
   const [campModal, setCampModal] = useState<{ childId: string | null; weekStart: string | null } | null>(null);
   const [blockModal, setBlockModal] = useState<{ childId: string | null; weekStart: string | null } | null>(null);
+  const [drawerEntryId, setDrawerEntryId] = useState<string | null>(null);
+  const [drawerBlockId, setDrawerBlockId] = useState<string | null>(null);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
-  const [draggingCamp, setDraggingCamp] = useState<{ name: string } | null>(null);
+  const [draggingCamp, setDraggingCamp] = useState<{ name: string; color: string } | null>(null);
 
   const { done } = useScrapeJob(activeJobId);
   useEffect(() => {
@@ -56,18 +63,15 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
     }
   }, [done, activeJobId, router]);
 
-  // Kid ordering lives here so the top-level drag-end handler sees it.
   const [orderedIds, setOrderedIds] = useState(kids.map((c) => c.id));
-  useEffect(() => {
-    setOrderedIds(kids.map((c) => c.id));
-  }, [kids]);
+  useEffect(() => setOrderedIds(kids.map((c) => c.id)), [kids]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   function handleDragStart(event: DragStartEvent) {
     const data = event.active.data.current;
     if (data?.type === "camp") {
-      setDraggingCamp({ name: String(data.name) });
+      setDraggingCamp({ name: String(data.name ?? ""), color: String(data.color ?? "#f4b76f") });
     }
   }
 
@@ -76,22 +80,12 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
     const { active, over } = event;
     if (!over) return;
 
-    const activeData = active.data.current as
-      | { type?: string; userCampId?: string; name?: string }
-      | undefined;
-    const overData = over.data.current as
-      | { type?: string; childId?: string; weekStart?: string }
-      | undefined;
+    const activeData = active.data.current as { type?: string; userCampId?: string } | undefined;
+    const overData = over.data.current as { type?: string; childId?: string; weekStart?: string; status?: "considering" | "waitlisted" | "registered" } | undefined;
 
-    // Case 1: Camp dropped on a cell
-    if (
-      activeData?.type === "camp" &&
-      activeData.userCampId &&
-      overData?.type === "cell" &&
-      overData.childId &&
-      overData.weekStart
-    ) {
-      const result = await assignCampToWeek(activeData.userCampId, overData.childId, overData.weekStart);
+    if (activeData?.type === "camp" && overData?.type === "cell-drop" && overData.childId && overData.weekStart) {
+      const status = overData.status ?? "considering";
+      const result = await assignCampToWeek(activeData.userCampId!, overData.childId, overData.weekStart, status);
       if (result.error) {
         alert(result.error);
         return;
@@ -100,7 +94,6 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
       return;
     }
 
-    // Case 2: Kid column reorder
     if (activeData?.type === "kid-column") {
       if (active.id === over.id) return;
       const oldIndex = orderedIds.indexOf(active.id as string);
@@ -109,52 +102,57 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
       const next = arrayMove(orderedIds, oldIndex, newIndex);
       setOrderedIds(next);
       await reorderKidColumns(next);
-      return;
     }
   }
 
-  const dateRange = useMemo(() => {
-    const from = new Date();
-    const to = new Date();
-    to.setMonth(to.getMonth() + 3);
-    return { from, to };
-  }, []);
+  const plannerStart = useMemo(() => new Date(planner.start_date + "T00:00:00"), [planner.start_date]);
+  const plannerEnd = useMemo(() => new Date(planner.end_date + "T23:59:59"), [planner.end_date]);
+  const weekStarts = useMemo(() => generateWeeks(plannerStart, plannerEnd), [plannerStart, plannerEnd]);
 
-  const weekStarts = useMemo(() => generateWeeks(dateRange.from, dateRange.to), [dateRange]);
-
-  const sharingInput = entries.map((e) => ({
-    entryId: e.id,
-    childId: e.child_id,
-    activityId: e.session.activity.id,
-    weekKey: getWeekKey(new Date(e.session.starts_at + "T00:00:00")),
-  }));
-  const sharedMap = detectSharedEntries(sharingInput, kids.map((k) => ({ id: k.id, name: k.name })));
+  const colorByActivityId = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const uc of userCamps) m.set(uc.activity.id, uc.color);
+    return m;
+  }, [userCamps]);
 
   const weeks: WeekRow[] = weekStarts.map((weekStart) => {
     const weekKey = getWeekKey(weekStart);
-
     const cells = kids.map((kid) => {
       const kidEntries = entries.filter((e) => {
         if (e.child_id !== kid.id) return false;
         const ws = new Date(e.session.starts_at + "T00:00:00");
         return getWeekKey(ws) === weekKey;
       });
-      const cellEntries: CellEntry[] = kidEntries.map((e) => {
-        const act = e.session.activity;
-        const lowest = act.price_options?.[0];
-        return {
-          kind: "camp" as const,
-          entryId: e.id,
-          activityName: act.name,
-          activitySlug: act.slug,
+
+      const timelineEntries = kidEntries
+        .filter((e) => e.status !== "considering")
+        .map((e) => ({
+          id: e.id,
+          color: colorByActivityId.get(e.session.activity.id) ?? "#f4b76f",
           status: e.status,
-          timeLabel: e.session.time_slot ? formatTimeSlot(e.session.time_slot as any) : null,
-          priceLabel: lowest ? `${formatPrice(lowest.price_cents)}${formatPriceUnit(lowest.price_unit as any)}` : null,
-          sharedWith: sharedMap.get(e.id) ?? [],
-          isLoading: !act.verified && (act.price_options?.length ?? 0) === 0,
-        };
-      });
-      return { childId: kid.id, entries: cellEntries };
+          sessionPart: e.session_part,
+          daysOfWeek: e.days_of_week,
+        }));
+
+      const legendRows = kidEntries
+        .filter((e) => e.status !== "considering")
+        .map((e) => ({
+          entryId: e.id,
+          activityName: e.session.activity.name,
+          color: colorByActivityId.get(e.session.activity.id) ?? "#f4b76f",
+          description: `${e.session_part === "full" ? "Full" : e.session_part.toUpperCase()} · ${e.status}`,
+          isWaitlisted: e.status === "waitlisted",
+        }));
+
+      const consideringChips = kidEntries
+        .filter((e) => e.status === "considering")
+        .map((e) => ({
+          entryId: e.id,
+          activityName: e.session.activity.name,
+          color: colorByActivityId.get(e.session.activity.id) ?? "#f4b76f",
+        }));
+
+      return { childId: kid.id, timelineEntries, legendRows, consideringChips };
     });
 
     const weekEnd = new Date(weekStart);
@@ -177,6 +175,47 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
     return { weekStart, cells, fullRowBlock, partialBlocksByChild };
   });
 
+  const drawerEntry = useMemo(() => {
+    if (!drawerEntryId) return null;
+    const e = entries.find((x) => x.id === drawerEntryId);
+    if (!e) return null;
+    const uc = userCamps.find((u) => u.activity.id === e.session.activity.id);
+    return {
+      id: e.id,
+      childId: e.child_id,
+      weekStart: new Date(e.session.starts_at + "T00:00:00"),
+      userCampId: uc?.id ?? "",
+      activityName: e.session.activity.name,
+      activitySlug: e.session.activity.slug,
+      activityUrl: null as string | null,
+      activityDescription: null as string | null,
+      orgName: uc?.activity.organization?.name ?? null,
+      verified: uc?.activity.verified ?? false,
+      status: e.status,
+      sessionPart: e.session_part,
+      daysOfWeek: e.days_of_week,
+      priceCents: e.price_cents,
+      priceUnit: e.price_unit,
+      extras: e.extras,
+      notes: e.notes,
+    };
+  }, [drawerEntryId, entries, userCamps]);
+
+  const drawerBlock = useMemo(() => {
+    if (!drawerBlockId) return null;
+    const b = blocks.find((x) => x.id === drawerBlockId);
+    if (!b) return null;
+    return {
+      id: b.id,
+      type: b.type,
+      title: b.title,
+      emoji: b.emoji,
+      startDate: b.start_date,
+      endDate: b.end_date,
+      childIds: b.child_ids,
+    };
+  }, [drawerBlockId, blocks]);
+
   return (
     <DndContext
       sensors={sensors}
@@ -185,12 +224,18 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
       onDragEnd={handleDragEnd}
     >
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <header className="flex items-start justify-between mb-6">
+        <header className="flex items-start justify-between mb-6 flex-wrap gap-3">
           <div>
-            <h1 className="font-serif text-4xl mb-1">Planner</h1>
-            <p className="text-stone">{kids.length} kid{kids.length === 1 ? "" : "s"} · {weeks.length} weeks</p>
+            <h1 className="font-serif text-4xl mb-1">{planner.name}</h1>
+            <p className="text-stone">{kids.length} kid{kids.length === 1 ? "" : "s"} · {weekStarts.length} weeks</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <PlannerRangePicker
+              plannerId={planner.id}
+              startDate={planner.start_date}
+              endDate={planner.end_date}
+              onChanged={() => router.refresh()}
+            />
             <button
               onClick={() => setCampModal({ childId: null, weekStart: null })}
               className="font-mono text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-bark text-cream hover:bg-bark/90"
@@ -213,14 +258,17 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
             onAddClick={() => setCampModal({ childId: null, weekStart: null })}
           />
 
-          <div className="flex-1 min-w-0 w-full">
+          <div className="w-full md:flex-1 min-w-0">
             <PlannerMatrix
               children={kids}
               weeks={weeks}
               orderedIds={orderedIds}
+              plannerStart={plannerStart}
+              plannerEnd={plannerEnd}
               onAddCampClick={(childId, weekStart) => setCampModal({ childId, weekStart })}
               onAddBlockClick={(childId, weekStart) => setBlockModal({ childId, weekStart })}
-              onChanged={() => router.refresh()}
+              onEntryClick={(entryId) => setDrawerEntryId(entryId)}
+              onBlockClick={(blockId) => setDrawerBlockId(blockId)}
             />
           </div>
         </div>
@@ -242,13 +290,31 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
           scope={blockModal ?? { childId: null, weekStart: null }}
           onSubmitted={() => router.refresh()}
         />
+
+        <CampDetailDrawer
+          open={drawerEntryId !== null}
+          onClose={() => setDrawerEntryId(null)}
+          entry={drawerEntry}
+          kids={kids}
+          onChanged={() => router.refresh()}
+        />
+        <BlockDetailDrawer
+          open={drawerBlockId !== null}
+          onClose={() => setDrawerBlockId(null)}
+          block={drawerBlock}
+          kids={kids}
+          onChanged={() => router.refresh()}
+        />
       </main>
 
       <DragOverlay dropAnimation={null}>
         {draggingCamp ? (
-          <div className="rounded-lg border-2 border-sunset bg-white shadow-2xl p-2.5 w-56 rotate-2 pointer-events-none">
-            <div className="font-medium text-sm text-bark truncate">{draggingCamp.name}</div>
-            <div className="mt-1 font-mono text-[9px] uppercase tracking-widest text-sunset/80">
+          <div className="rounded-lg border-2 bg-white shadow-2xl p-2.5 w-56 rotate-2 pointer-events-none" style={{ borderColor: draggingCamp.color }}>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full" style={{ background: draggingCamp.color }} />
+              <div className="font-medium text-sm text-bark truncate">{draggingCamp.name}</div>
+            </div>
+            <div className="mt-1 font-mono text-[9px] uppercase tracking-widest text-stone">
               Drop on a week ↓
             </div>
           </div>
