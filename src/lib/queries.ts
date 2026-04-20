@@ -305,7 +305,7 @@ export async function fetchChildren(userId: string) {
 
   const { data, error } = await supabase
     .from("children")
-    .select("id, name, birth_date, interests, created_at")
+    .select("id, name, birth_date, interests, color, sort_order, avatar_url, created_at")
     .eq("user_id", userId)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
