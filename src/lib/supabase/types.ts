@@ -51,3 +51,24 @@ export interface ScrapeJobRow {
   created_at: string;
   resolved_at: string | null;
 }
+
+// Planner v2 additions
+export type SessionPart = "full" | "am" | "pm";
+export type PriceUnit = "per_week" | "per_day";
+export type DayOfWeek = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+
+export interface PlannerRow {
+  id: string;
+  user_id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  is_default: boolean;
+  created_at: string;
+}
+
+export interface ExtraItem {
+  label: string;
+  cost_cents: number;
+  unit: PriceUnit;
+}
