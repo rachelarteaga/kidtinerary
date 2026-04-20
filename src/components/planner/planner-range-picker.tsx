@@ -1,12 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { updatePlannerRange } from "@/lib/actions";
+import { updatePlannerRangeWithCleanup } from "@/lib/actions";
+
+interface EntryDateLike {
+  startsAt: string;
+  endsAt: string;
+}
+interface BlockDateLike {
+  startDate: string;
+  endDate: string;
+}
 
 interface Props {
   plannerId: string;
   startDate: string;
   endDate: string;
+  entries: EntryDateLike[];
+  blocks: BlockDateLike[];
   onChanged: () => void;
 }
 
@@ -14,15 +25,21 @@ function formatRange(start: string, end: string): string {
   const s = new Date(start + "T00:00:00");
   const e = new Date(end + "T00:00:00");
   const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
-  const sStr = s.toLocaleDateString(undefined, opts);
-  const eStr = e.toLocaleDateString(undefined, opts);
-  return `${sStr} – ${eStr}`;
+  return `${s.toLocaleDateString(undefined, opts)} – ${e.toLocaleDateString(undefined, opts)}`;
 }
 
-export function PlannerRangePicker({ plannerId, startDate, endDate, onChanged }: Props) {
+export function PlannerRangePicker({
+  plannerId,
+  startDate,
+  endDate,
+  entries,
+  blocks,
+  onChanged,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [localStart, setLocalStart] = useState(startDate);
   const [localEnd, setLocalEnd] = useState(endDate);
+  const [confirming, setConfirming] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -40,17 +57,41 @@ export function PlannerRangePicker({ plannerId, startDate, endDate, onChanged }:
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  function save() {
+  function countOutOfRange() {
+    let removedEntries = 0;
+    for (const e of entries) {
+      if (e.endsAt < localStart || e.startsAt > localEnd) removedEntries++;
+    }
+    let removedBlocks = 0;
+    for (const b of blocks) {
+      if (b.endDate < localStart || b.startDate > localEnd) removedBlocks++;
+    }
+    return { removedEntries, removedBlocks };
+  }
+
+  function commitSave() {
     startTransition(async () => {
-      const result = await updatePlannerRange(plannerId, localStart, localEnd);
+      const result = await updatePlannerRangeWithCleanup(plannerId, localStart, localEnd);
       if (result.error) {
         alert(result.error);
         return;
       }
       onChanged();
       setOpen(false);
+      setConfirming(false);
     });
   }
+
+  function handleSaveClick() {
+    const { removedEntries, removedBlocks } = countOutOfRange();
+    if (removedEntries > 0 || removedBlocks > 0) {
+      setConfirming(true);
+    } else {
+      commitSave();
+    }
+  }
+
+  const { removedEntries, removedBlocks } = countOutOfRange();
 
   return (
     <div className="relative" ref={ref}>
@@ -62,32 +103,60 @@ export function PlannerRangePicker({ plannerId, startDate, endDate, onChanged }:
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-2 bg-white border border-driftwood/30 rounded-lg shadow-lg p-4 z-20 min-w-[280px]">
-          <div className="space-y-2 mb-3">
-            <div>
-              <label className="font-mono text-[10px] uppercase tracking-widest text-stone">Start</label>
-              <input
-                type="date"
-                value={localStart}
-                onChange={(e) => setLocalStart(e.target.value)}
-                className="w-full mt-1 rounded-md border border-driftwood/40 px-2 py-1.5 text-sm"
-              />
-            </div>
-            <div>
-              <label className="font-mono text-[10px] uppercase tracking-widest text-stone">End</label>
-              <input
-                type="date"
-                value={localEnd}
-                onChange={(e) => setLocalEnd(e.target.value)}
-                className="w-full mt-1 rounded-md border border-driftwood/40 px-2 py-1.5 text-sm"
-              />
-            </div>
-          </div>
-          <div className="flex gap-2 justify-end">
-            <button onClick={() => setOpen(false)} className="font-mono text-[11px] uppercase tracking-widest px-3 py-1.5 text-stone">Cancel</button>
-            <button onClick={save} disabled={isPending} className="font-mono text-[11px] uppercase tracking-widest px-3 py-1.5 rounded-full bg-bark text-cream disabled:opacity-50">
-              {isPending ? "Saving…" : "Save"}
-            </button>
-          </div>
+          {!confirming ? (
+            <>
+              <div className="space-y-2 mb-3">
+                <div>
+                  <label className="font-mono text-[10px] uppercase tracking-widest text-stone">Start</label>
+                  <input
+                    type="date"
+                    value={localStart}
+                    onChange={(e) => setLocalStart(e.target.value)}
+                    className="w-full mt-1 rounded-md border border-driftwood/40 px-2 py-1.5 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="font-mono text-[10px] uppercase tracking-widest text-stone">End</label>
+                  <input
+                    type="date"
+                    value={localEnd}
+                    onChange={(e) => setLocalEnd(e.target.value)}
+                    className="w-full mt-1 rounded-md border border-driftwood/40 px-2 py-1.5 text-sm"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setOpen(false)} className="font-mono text-[11px] uppercase tracking-widest px-3 py-1.5 text-stone">Cancel</button>
+                <button
+                  onClick={handleSaveClick}
+                  disabled={isPending}
+                  className="font-mono text-[11px] uppercase tracking-widest px-3 py-1.5 rounded-full bg-bark text-cream disabled:opacity-50"
+                >
+                  {isPending ? "Saving…" : "Save"}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="font-medium text-sm text-bark mb-2">Remove items outside the new range?</div>
+              <p className="text-xs text-stone mb-3 leading-relaxed">
+                {removedEntries > 0 && <span>{removedEntries} camp entr{removedEntries === 1 ? "y" : "ies"}</span>}
+                {removedEntries > 0 && removedBlocks > 0 && <span> and </span>}
+                {removedBlocks > 0 && <span>{removedBlocks} block{removedBlocks === 1 ? "" : "s"}</span>}
+                {" "}fall outside the new range and will be deleted. This cannot be undone.
+              </p>
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setConfirming(false)} className="font-mono text-[11px] uppercase tracking-widest px-3 py-1.5 text-stone">Back</button>
+                <button
+                  onClick={commitSave}
+                  disabled={isPending}
+                  className="font-mono text-[11px] uppercase tracking-widest px-3 py-1.5 rounded-full bg-red-600 text-white disabled:opacity-50"
+                >
+                  {isPending ? "Saving…" : "Remove & save"}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

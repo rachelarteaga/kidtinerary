@@ -105,7 +105,7 @@ export function PlannerMatrix({
             const weekStartStr = w.weekStart.toISOString().split("T")[0];
             if (w.fullRowBlock) {
               return (
-                <div key={weekKey}>
+                <div key={weekKey} className="min-h-[180px]">
                   <div className="font-mono text-[10px] uppercase tracking-widest text-stone mb-1">{formatWeekRange(w.weekStart)}</div>
                   <BlockCard
                     blockId={w.fullRowBlock.blockId}
@@ -122,7 +122,7 @@ export function PlannerMatrix({
             const partial = w.partialBlocksByChild[focused.id];
             const focusedCell = w.cells.find((c) => c.childId === focused.id);
             return (
-              <div key={weekKey}>
+              <div key={weekKey} className="min-h-[180px]">
                 <div className="font-mono text-[10px] uppercase tracking-widest text-stone mb-1">{formatWeekRange(w.weekStart)}</div>
                 {partial ? (
                   <BlockCard
@@ -172,7 +172,7 @@ export function PlannerMatrix({
 
         if (w.fullRowBlock) {
           return (
-            <div key={weekKey} className="grid gap-2" style={{ gridTemplateColumns: "100px 1fr" }}>
+            <div key={weekKey} className="grid gap-2 min-h-[180px]" style={{ gridTemplateColumns: "100px 1fr" }}>
               <div className="font-mono text-[10px] uppercase tracking-widest text-stone self-center px-1.5">
                 {formatWeekRange(w.weekStart)}
               </div>
@@ -190,7 +190,7 @@ export function PlannerMatrix({
         }
 
         return (
-          <div key={weekKey} className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
+          <div key={weekKey} className="grid gap-2 min-h-[180px]" style={{ gridTemplateColumns: gridTemplate }}>
             <div className="font-mono text-[10px] uppercase tracking-widest text-stone self-center px-1.5">
               {formatWeekRange(w.weekStart)}
             </div>

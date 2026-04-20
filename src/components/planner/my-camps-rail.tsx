@@ -11,7 +11,7 @@ interface Props {
 
 export function MyCampsRail({ camps, onChipClick, onAddClick }: Props) {
   return (
-    <aside className="w-full md:w-60 shrink-0">
+    <aside className="w-full md:w-60 shrink-0 md:sticky md:top-[120px] md:self-start">
       <h2 className="font-mono text-[10px] uppercase tracking-widest text-stone mb-3">My camps</h2>
 
       <button

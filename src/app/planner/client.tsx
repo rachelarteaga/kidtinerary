@@ -216,6 +216,15 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
     };
   }, [drawerBlockId, blocks]);
 
+  const rangePickerEntries = entries.map((e) => ({
+    startsAt: e.session.starts_at,
+    endsAt: e.session.ends_at,
+  }));
+  const rangePickerBlocks = blocks.map((b) => ({
+    startDate: b.start_date,
+    endDate: b.end_date,
+  }));
+
   return (
     <DndContext
       sensors={sensors}
@@ -223,8 +232,8 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <header className="flex items-start justify-between mb-6 flex-wrap gap-3">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <header className="sticky top-0 z-30 bg-cream flex items-start justify-between mb-6 flex-wrap gap-3 pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 pt-6">
           <div>
             <h1 className="font-serif text-4xl mb-1">{planner.name}</h1>
             <p className="text-stone">{kids.length} kid{kids.length === 1 ? "" : "s"} · {weekStarts.length} weeks</p>
@@ -234,6 +243,8 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
               plannerId={planner.id}
               startDate={planner.start_date}
               endDate={planner.end_date}
+              entries={rangePickerEntries}
+              blocks={rangePickerBlocks}
               onChanged={() => router.refresh()}
             />
             <button

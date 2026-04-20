@@ -1193,3 +1193,59 @@ export async function updateBlockDetails(data: {
   revalidatePath("/planner");
   return {};
 }
+
+export async function updatePlannerRangeWithCleanup(
+  plannerId: string,
+  startDate: string,
+  endDate: string
+): Promise<{ error?: string; removedEntries?: number; removedBlocks?: number }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+  if (startDate > endDate) return { error: "End date must be on or after start date" };
+
+  // Delete entries whose underlying session.starts_at falls outside the new range
+  const { data: entries } = await supabase
+    .from("planner_entries")
+    .select("id, session:sessions!inner(starts_at, ends_at)")
+    .eq("planner_id", plannerId)
+    .eq("user_id", user.id);
+
+  const outOfRangeEntryIds: string[] = [];
+  for (const e of (entries ?? []) as any[]) {
+    const start = e.session?.starts_at as string | undefined;
+    const end = e.session?.ends_at as string | undefined;
+    if (!start || !end) continue;
+    if (end < startDate || start > endDate) outOfRangeEntryIds.push(e.id);
+  }
+
+  if (outOfRangeEntryIds.length > 0) {
+    await supabase.from("planner_entries").delete().in("id", outOfRangeEntryIds);
+  }
+
+  // Delete blocks fully outside the new range
+  const { data: blocks } = await supabase
+    .from("planner_blocks")
+    .select("id, start_date, end_date")
+    .eq("planner_id", plannerId)
+    .eq("user_id", user.id);
+
+  const outOfRangeBlockIds: string[] = [];
+  for (const b of (blocks ?? []) as any[]) {
+    if (b.end_date < startDate || b.start_date > endDate) outOfRangeBlockIds.push(b.id);
+  }
+
+  if (outOfRangeBlockIds.length > 0) {
+    await supabase.from("planner_blocks").delete().in("id", outOfRangeBlockIds);
+  }
+
+  const { error } = await supabase
+    .from("planners")
+    .update({ start_date: startDate, end_date: endDate })
+    .eq("id", plannerId)
+    .eq("user_id", user.id);
+
+  if (error) return { error: "Failed to update planner range" };
+  revalidatePath("/planner");
+  return { removedEntries: outOfRangeEntryIds.length, removedBlocks: outOfRangeBlockIds.length };
+}
