@@ -1,18 +1,15 @@
 import Link from "next/link";
 import { Tag } from "@/components/ui/tag";
-import { FavoriteButton } from "@/components/favorites/favorite-button";
 import { formatPrice, formatPriceUnit, formatAgeRange, formatTimeSlot, categoryLabel } from "@/lib/format";
 import { CATEGORY_COLORS, type Category } from "@/lib/constants";
 import type { ActivityRow } from "@/lib/queries";
 
 interface CampCardProps {
   activity: ActivityRow;
-  isFavorited: boolean;
-  showFavorite?: boolean;
   distance?: number;
 }
 
-export function CampCard({ activity, isFavorited, showFavorite = true, distance }: CampCardProps) {
+export function CampCard({ activity, distance }: CampCardProps) {
   const lowestPrice = activity.price_options?.length
     ? activity.price_options.reduce((min, p) => (p.price_cents < min.price_cents ? p : min), activity.price_options[0])
     : null;
@@ -41,7 +38,7 @@ export function CampCard({ activity, isFavorited, showFavorite = true, distance 
       />
 
       <div className="p-5">
-        {/* Top row: category icon + favorite */}
+        {/* Top row: category icon */}
         <div className="flex items-start justify-between mb-3">
           {/* Category icon */}
           {primaryCategory && (
@@ -51,9 +48,6 @@ export function CampCard({ activity, isFavorited, showFavorite = true, distance 
             >
               {getCategoryEmoji(primaryCategory)}
             </div>
-          )}
-          {showFavorite && (
-            <FavoriteButton activityId={activity.id} initialFavorited={isFavorited} />
           )}
         </div>
 

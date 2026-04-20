@@ -30,7 +30,7 @@ export const CATEGORY_COLORS: Record<Category, { bg: string; text: string }> = {
   language: { bg: "bg-[#6B8CBB]/12", text: "text-[#4a6d8c]" },
 };
 
-export const PLANNER_STATUS = ["penciled_in", "locked_in", "cancelled"] as const;
+export const PLANNER_STATUS = ["considering", "waitlisted", "registered"] as const;
 export type PlannerStatus = (typeof PLANNER_STATUS)[number];
 
 export const PRICE_UNITS = ["per_week", "per_day", "per_session", "per_block"] as const;

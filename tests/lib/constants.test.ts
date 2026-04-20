@@ -32,8 +32,8 @@ describe("constants", () => {
     }
   });
 
-  it("PLANNER_STATUS has penciled_in, locked_in, cancelled", () => {
-    expect(PLANNER_STATUS).toEqual(["penciled_in", "locked_in", "cancelled"]);
+  it("PLANNER_STATUS has considering, waitlisted, registered", () => {
+    expect(PLANNER_STATUS).toEqual(["considering", "waitlisted", "registered"]);
   });
 
   it("PRICE_UNITS has all pricing types", () => {

@@ -10,13 +10,6 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-// Mock favorite button to avoid server action import
-vi.mock("@/components/favorites/favorite-button", () => ({
-  FavoriteButton: ({ activityId }: { activityId: string }) => (
-    <button data-testid={`fav-${activityId}`}>fav</button>
-  ),
-}));
-
 const mockActivity: ActivityRow = {
   id: "test-id",
   name: "Nature Explorers Camp",
@@ -57,48 +50,48 @@ const mockActivity: ActivityRow = {
 
 describe("CampCard", () => {
   it("renders activity name", () => {
-    render(<CampCard activity={mockActivity} isFavorited={false} />);
+    render(<CampCard activity={mockActivity} />);
     expect(screen.getByText("Nature Explorers Camp")).toBeInTheDocument();
   });
 
   it("renders organization name", () => {
-    render(<CampCard activity={mockActivity} isFavorited={false} />);
+    render(<CampCard activity={mockActivity} />);
     expect(screen.getByText("Raleigh Parks")).toBeInTheDocument();
   });
 
   it("renders price", () => {
-    render(<CampCard activity={mockActivity} isFavorited={false} />);
+    render(<CampCard activity={mockActivity} />);
     expect(screen.getByText("$285")).toBeInTheDocument();
   });
 
   it("renders age range tag", () => {
-    render(<CampCard activity={mockActivity} isFavorited={false} />);
+    render(<CampCard activity={mockActivity} />);
     expect(screen.getByText("Ages 5–9")).toBeInTheDocument();
   });
 
   it("links to activity detail page", () => {
-    render(<CampCard activity={mockActivity} isFavorited={false} />);
+    render(<CampCard activity={mockActivity} />);
     const link = screen.getByRole("link");
     expect(link).toHaveAttribute("href", "/activity/nature-explorers-camp");
   });
 
   it("renders session count", () => {
-    render(<CampCard activity={mockActivity} isFavorited={false} />);
+    render(<CampCard activity={mockActivity} />);
     expect(screen.getByText(/1\s+session/)).toBeInTheDocument();
   });
 
   it("renders distance when provided", () => {
-    render(<CampCard activity={mockActivity} isFavorited={false} distance={3.7} />);
+    render(<CampCard activity={mockActivity} distance={3.7} />);
     expect(screen.getByText("3.7 mi")).toBeInTheDocument();
   });
 
   it("does not render distance when not provided", () => {
-    render(<CampCard activity={mockActivity} isFavorited={false} />);
+    render(<CampCard activity={mockActivity} />);
     expect(screen.queryByText(/\d+\.\d+ mi/)).not.toBeInTheDocument();
   });
 
   it("renders distance even when location is present", () => {
-    render(<CampCard activity={mockActivity} isFavorited={false} distance={1.2} />);
+    render(<CampCard activity={mockActivity} distance={1.2} />);
     // Location name should also be visible
     expect(screen.getByText("Central Park")).toBeInTheDocument();
     expect(screen.getByText("1.2 mi")).toBeInTheDocument();

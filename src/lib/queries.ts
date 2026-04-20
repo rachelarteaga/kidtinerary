@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { PlannerBlockRow, ScrapeJobRow } from "@/lib/supabase/types";
+import type { PlannerBlockRow, PlannerEntryStatus, ScrapeJobRow } from "@/lib/supabase/types";
 
 export interface ActivityFilters {
   keyword?: string;
@@ -323,7 +323,7 @@ export interface PlannerEntryRow {
   user_id: string;
   child_id: string;
   session_id: string;
-  status: "penciled_in" | "locked_in" | "cancelled";
+  status: PlannerEntryStatus;
   sort_order: number;
   notes: string | null;
   created_at: string;
@@ -339,6 +339,7 @@ export interface PlannerEntryRow {
       id: string;
       name: string;
       slug: string;
+      verified: boolean;
       categories: string[];
       registration_url: string | null;
       organization: { id: string; name: string } | null;
@@ -367,7 +368,7 @@ export async function fetchPlannerEntries(
       session:sessions!inner(
         id, starts_at, ends_at, time_slot, hours_start, hours_end, is_sold_out,
         activity:activities!inner(
-          id, name, slug, categories, registration_url,
+          id, name, slug, verified, categories, registration_url,
           organization:organizations(id, name),
           price_options(id, label, price_cents, price_unit),
           activity_locations(id, address, location_name)
@@ -377,7 +378,6 @@ export async function fetchPlannerEntries(
     )
     .eq("user_id", userId)
     .eq("child_id", childId)
-    .neq("status", "cancelled")
     .order("sort_order", { ascending: true });
 
   if (error) {
@@ -396,7 +396,7 @@ export interface SharedScheduleRow {
   child_name: string;
   entries: {
     id: string;
-    status: "penciled_in" | "locked_in" | "cancelled";
+    status: PlannerEntryStatus;
     sort_order: number;
     session: {
       id: string;
@@ -469,7 +469,6 @@ export async function fetchSharedSchedule(token: string): Promise<SharedSchedule
     `
     )
     .eq("child_id", schedule.child_id)
-    .neq("status", "cancelled")
     .gte("session.starts_at", schedule.date_from)
     .lte("session.starts_at", schedule.date_to)
     .order("sort_order", { ascending: true });

@@ -30,7 +30,6 @@ export async function toggleFavorite(activityId: string) {
       .eq("id", existing.id);
 
     if (error) return { error: "Failed to remove favorite" };
-    revalidatePath("/favorites");
     revalidatePath("/explore");
     return { favorited: false };
   } else {
@@ -39,7 +38,6 @@ export async function toggleFavorite(activityId: string) {
       .insert({ user_id: user.id, activity_id: activityId });
 
     if (error) return { error: "Failed to add favorite" };
-    revalidatePath("/favorites");
     revalidatePath("/explore");
     return { favorited: true };
   }
@@ -223,7 +221,6 @@ export async function addPlannerEntry(
     .eq("user_id", user.id)
     .eq("child_id", childId)
     .eq("session_id", sessionId)
-    .neq("status", "cancelled")
     .maybeSingle();
 
   if (existing) {
@@ -236,7 +233,7 @@ export async function addPlannerEntry(
       user_id: user.id,
       child_id: childId,
       session_id: sessionId,
-      status: "penciled_in",
+      status: "considering",
       sort_order: sortOrder,
     })
     .select("id")

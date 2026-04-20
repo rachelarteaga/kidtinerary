@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Button } from "@/components/ui/button";
 
 const NAV_LINKS = [
   { href: "/planner", label: "Planner" },
@@ -42,14 +41,6 @@ export function Nav() {
             );
           })}
         </nav>
-
-        <div className="flex items-center gap-3">
-          <Link href="/submit">
-            <Button variant="outline" className="hidden sm:inline-flex text-[10px] px-4 py-2">
-              Submit a Camp
-            </Button>
-          </Link>
-        </div>
 
         {/* Mobile nav */}
         <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-cream border-t border-driftwood/50 flex justify-around py-2 z-40">

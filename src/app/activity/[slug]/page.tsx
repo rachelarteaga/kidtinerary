@@ -1,9 +1,7 @@
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { fetchActivityBySlug, fetchUserFavoriteIds } from "@/lib/queries";
+import { fetchActivityBySlug } from "@/lib/queries";
 import { formatDataFreshness } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { FavoriteButton } from "@/components/favorites/favorite-button";
 import { DetailHero } from "@/components/activity/detail-hero";
 import { SessionTable } from "@/components/activity/session-table";
 import { PriceTable } from "@/components/activity/price-table";
@@ -25,20 +23,6 @@ export default async function ActivityDetailPage({ params }: ActivityDetailPageP
     notFound();
   }
 
-  // Get user favorites
-  let isFavorited = false;
-  try {
-    // TODO: remove cast when types are generated
-    const supabase = (await createClient()) as any;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const favIds = await fetchUserFavoriteIds(user.id);
-      isFavorited = favIds.includes(activity.id);
-    }
-  } catch {
-    // Not logged in
-  }
-
   const location = activity.activity_locations?.[0];
   const freshness = formatDataFreshness((activity as any).last_verified_at ?? (activity as any).scraped_at);
 
@@ -53,7 +37,6 @@ export default async function ActivityDetailPage({ params }: ActivityDetailPageP
             <Button>Visit Camp Website</Button>
           </a>
         )}
-        <FavoriteButton activityId={activity.id} initialFavorited={isFavorited} />
         <PlannerStub />
         <ShareButton
           title={activity.name}

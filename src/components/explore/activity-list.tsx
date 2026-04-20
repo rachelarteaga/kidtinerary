@@ -7,7 +7,6 @@ import type { ActivityWithDistance } from "@/lib/queries";
 
 interface ActivityListProps {
   activities: ActivityWithDistance[];
-  favoriteIds: string[];
   total: number;
   page: number;
   pageSize: number;
@@ -15,7 +14,6 @@ interface ActivityListProps {
 
 export function ActivityList({
   activities,
-  favoriteIds,
   total,
   page,
   pageSize,
@@ -49,7 +47,6 @@ export function ActivityList({
           <CampCard
             key={activity.id}
             activity={activity}
-            isFavorited={favoriteIds.includes(activity.id)}
             distance={activity.distance_miles}
           />
         ))}

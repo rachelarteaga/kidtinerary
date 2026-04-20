@@ -70,14 +70,14 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
         return getWeekKey(ws) === weekKey;
       });
       const cellEntries: CellEntry[] = kidEntries.map((e) => {
-        const act = e.session.activity as any;
+        const act = e.session.activity;
         const lowest = act.price_options?.[0];
         return {
           kind: "camp" as const,
           entryId: e.id,
           activityName: act.name,
           activitySlug: act.slug,
-          status: e.status as any,
+          status: e.status,
           timeLabel: e.session.time_slot ? formatTimeSlot(e.session.time_slot as any) : null,
           priceLabel: lowest ? `${formatPrice(lowest.price_cents)}${formatPriceUnit(lowest.price_unit as any)}` : null,
           sharedWith: sharedMap.get(e.id) ?? [],
