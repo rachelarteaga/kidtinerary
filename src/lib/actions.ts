@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { paletteColorForCampIndex } from "@/lib/camp-palette";
 
 /**
  * Find-or-create a placeholder activity_location for an activity.
@@ -533,6 +534,7 @@ export async function revokeSharedSchedule(token: string) {
 interface SubmitCampContext {
   childId?: string;
   weekStart?: string; // YYYY-MM-DD Monday
+  initialStatus?: "considering" | "waitlisted" | "registered";
 }
 
 export async function submitCamp(
@@ -549,6 +551,15 @@ export async function submitCamp(
   const supabase = (await createClient()) as any;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
+
+  const { data: defaultPlanner } = await supabase
+    .from("planners")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("is_default", true)
+    .maybeSingle();
+
+  if (!defaultPlanner) return { error: "No planner found — refresh and retry" };
 
   const trimmed = input.trim();
   if (!trimmed) return { error: "Enter a camp name or URL" };
@@ -622,20 +633,31 @@ export async function submitCamp(
     activityId = stub.id;
   }
 
-  // Upsert user_camps (family shortlist).
-  const { data: userCamp, error: ucErr } = await supabase
+  // Count existing user_camps for color assignment
+  const { count } = await supabase
+    .from("user_camps")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
+  const color = paletteColorForCampIndex(count ?? 0);
+
+  const { error: ucUpsertErr } = await supabase
     .from("user_camps")
     .upsert(
-      { user_id: user.id, activity_id: activityId },
-      { onConflict: "user_id,activity_id", ignoreDuplicates: false }
-    )
-    .select("id")
-    .single();
-
-  if (ucErr || !userCamp) {
-    console.error("submitCamp user_camps error:", ucErr);
+      { user_id: user.id, activity_id: activityId, color },
+      { onConflict: "user_id,activity_id", ignoreDuplicates: true }
+    );
+  if (ucUpsertErr) {
+    console.error("submitCamp user_camps upsert error:", ucUpsertErr);
     return { error: "Failed to save camp to shortlist" };
   }
+  const { data: userCamp } = await supabase
+    .from("user_camps")
+    .select("id, color")
+    .eq("user_id", user.id)
+    .eq("activity_id", activityId)
+    .single();
+  if (!userCamp) return { error: "Failed to retrieve user camp" };
 
   // Optionally create a planner entry if scoped to week + kid.
   let plannerEntryId: string | null = null;
@@ -682,10 +704,13 @@ export async function submitCamp(
       .from("planner_entries")
       .insert({
         user_id: user.id,
+        planner_id: defaultPlanner.id,
         child_id: context.childId,
         session_id: sessionId,
-        status: "considering",
+        status: context.initialStatus ?? "considering",
         sort_order: 0,
+        session_part: "full",
+        days_of_week: ["mon", "tue", "wed", "thu", "fri"],
       })
       .select("id")
       .single();
@@ -723,11 +748,21 @@ export async function submitCamp(
 export async function assignCampToWeek(
   userCampId: string,
   childId: string,
-  weekStart: string
+  weekStart: string,
+  status: "considering" | "waitlisted" | "registered" = "considering"
 ): Promise<{ error?: string; entryId?: string }> {
   const supabase = (await createClient()) as any;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
+
+  const { data: defaultPlanner } = await supabase
+    .from("planners")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("is_default", true)
+    .maybeSingle();
+
+  if (!defaultPlanner) return { error: "No planner found — refresh and retry" };
 
   const { data: uc } = await supabase
     .from("user_camps")
@@ -781,10 +816,13 @@ export async function assignCampToWeek(
     .from("planner_entries")
     .insert({
       user_id: user.id,
+      planner_id: defaultPlanner.id,
       child_id: childId,
       session_id: sessionId,
-      status: "considering",
+      status,
       sort_order: 0,
+      session_part: "full",
+      days_of_week: ["mon", "tue", "wed", "thu", "fri"],
     })
     .select("id")
     .single();
@@ -846,10 +884,20 @@ export async function addPlannerBlock(data: {
   if (data.childIds.length === 0) return { error: "Pick at least one kid" };
   if (data.startDate > data.endDate) return { error: "End date must be after start" };
 
+  const { data: defaultPlanner } = await supabase
+    .from("planners")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("is_default", true)
+    .maybeSingle();
+
+  if (!defaultPlanner) return { error: "No planner found — refresh and retry" };
+
   const { data: block, error } = await supabase
     .from("planner_blocks")
     .insert({
       user_id: user.id,
+      planner_id: defaultPlanner.id,
       type: data.type,
       title: data.title.trim(),
       emoji: data.emoji ?? null,
