@@ -1,7 +1,7 @@
 "use client";
 
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
-import { useMemo } from "react";
 import type { PlannerEntryStatus } from "@/lib/supabase/types";
 
 interface Props {
@@ -23,7 +23,19 @@ function Zone({
   text,
   childId,
   weekStart,
-}: { status: PlannerEntryStatus; label: string; border: string; bg: string; text: string; childId: string; weekStart: string }) {
+  visible,
+  onIsOver,
+}: {
+  status: PlannerEntryStatus;
+  label: string;
+  border: string;
+  bg: string;
+  text: string;
+  childId: string;
+  weekStart: string;
+  visible: boolean;
+  onIsOver: (status: PlannerEntryStatus, isOver: boolean) => void;
+}) {
   const data = useMemo(
     () => ({ type: "cell-drop" as const, childId, weekStart, status }),
     [childId, weekStart, status]
@@ -32,6 +44,20 @@ function Zone({
     id: `cell-drop-${childId}-${weekStart}-${status}`,
     data,
   });
+
+  useEffect(() => {
+    onIsOver(status, isOver);
+  }, [status, isOver, onIsOver]);
+
+  if (!visible) {
+    return (
+      <div
+        ref={setNodeRef}
+        className="flex-1 opacity-0 pointer-events-none"
+        aria-hidden="true"
+      />
+    );
+  }
 
   return (
     <div
@@ -46,10 +72,32 @@ function Zone({
 }
 
 export function CellDropZones({ childId, weekStart }: Props) {
+  const [overStatus, setOverStatus] = useState<PlannerEntryStatus | null>(null);
+
+  const handleIsOver = useCallback(
+    (status: PlannerEntryStatus, isOver: boolean) => {
+      setOverStatus((prev) => {
+        if (isOver) return status;
+        if (prev === status) return null;
+        return prev;
+      });
+    },
+    []
+  );
+
+  const anyOver = overStatus !== null;
+
   return (
-    <div className="flex gap-1.5">
+    <div className="flex gap-1.5 min-h-[40px]">
       {ZONES.map((z) => (
-        <Zone key={z.status} {...z} childId={childId} weekStart={weekStart} />
+        <Zone
+          key={z.status}
+          {...z}
+          childId={childId}
+          weekStart={weekStart}
+          visible={anyOver}
+          onIsOver={handleIsOver}
+        />
       ))}
     </div>
   );

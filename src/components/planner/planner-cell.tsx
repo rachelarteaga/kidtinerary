@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { CellTimelineGrid, type TimelineEntry } from "./cell-timeline-grid";
 import { ConsideringChips, type ConsideringChip } from "./considering-chips";
 import { CellDropZones } from "./cell-drop-zones";
@@ -44,18 +43,7 @@ export function PlannerCell({
   onEntryClick,
   onAddClick,
 }: Props) {
-  // Track hover via plain pointer events so we don't compete with dnd-kit's
-  // droppable collision detection. A nested droppable here would cause dnd-kit
-  // to flip the "over" target between the cell and the inner drop zones on every
-  // render, producing a Maximum update depth exceeded loop (React error #185).
-  // Stale hover state between drags is harmless: showZones is gated on
-  // isDraggingCamp, so a lingering true hover only matters during the next drag —
-  // where it correctly reflects that the pointer is still over this cell.
-  const [isHovered, setIsHovered] = useState(false);
-
-  const showZones = isDraggingCamp && isHovered;
   const hasContent = timelineEntries.length > 0 || consideringChips.length > 0;
-  const dimmed = isDraggingCamp && !showZones;
 
   function handleSquareClick(_day: DayOfWeek, _slot: ScheduleSlot) {
     if (timelineEntries.length > 0) {
@@ -65,16 +53,10 @@ export function PlannerCell({
     }
   }
 
-  let inner: React.ReactNode;
-  if (showZones) {
-    inner = (
-      <div className="rounded-lg border border-driftwood/30 bg-cream p-2">
-        <CellDropZones childId={childId} weekStart={weekStart} />
-      </div>
-    );
-  } else if (viewMode === "simple") {
+  let content: React.ReactNode;
+  if (viewMode === "simple") {
     if (!hasContent) {
-      inner = (
+      content = (
         <button
           onClick={() => onAddClick(childId, weekStart)}
           className="w-full rounded-lg border border-dashed border-driftwood/40 bg-transparent py-2 text-[11px] text-stone hover:text-bark hover:border-bark font-mono uppercase tracking-wide"
@@ -83,7 +65,7 @@ export function PlannerCell({
         </button>
       );
     } else if (timelineEntries.length === 0) {
-      inner = (
+      content = (
         <div className="rounded-lg border border-driftwood/30 bg-white px-2 py-1.5">
           <div className="font-mono text-[10px] uppercase tracking-wide text-driftwood italic">
             {consideringChips.length} considering
@@ -91,7 +73,7 @@ export function PlannerCell({
         </div>
       );
     } else {
-      inner = (
+      content = (
         <div className="rounded-lg border border-driftwood/30 bg-white px-2 py-1.5 space-y-0.5">
           {legendRows.map((r) => (
             <button
@@ -112,7 +94,7 @@ export function PlannerCell({
       );
     }
   } else if (!hasContent) {
-    inner = (
+    content = (
       <button
         onClick={() => onAddClick(childId, weekStart)}
         className="w-full rounded-lg border border-dashed border-driftwood/50 bg-cream/50 p-3 text-xs text-stone hover:text-bark hover:border-bark font-mono uppercase tracking-widest"
@@ -121,7 +103,7 @@ export function PlannerCell({
       </button>
     );
   } else {
-    inner = (
+    content = (
       <div className="rounded-lg border border-driftwood/30 bg-white p-2">
         <CellTimelineGrid
           entries={timelineEntries}
@@ -156,12 +138,13 @@ export function PlannerCell({
   }
 
   return (
-    <div
-      onPointerEnter={isDraggingCamp ? () => setIsHovered(true) : undefined}
-      onPointerLeave={isDraggingCamp ? () => setIsHovered(false) : undefined}
-      className={`transition-opacity ${dimmed ? "opacity-40" : "opacity-100"}`}
-    >
-      {inner}
+    <div className="relative">
+      <div className={isDraggingCamp ? "opacity-40 pointer-events-none" : ""}>{content}</div>
+      {isDraggingCamp && (
+        <div className="absolute inset-0">
+          <CellDropZones childId={childId} weekStart={weekStart} />
+        </div>
+      )}
     </div>
   );
 }
