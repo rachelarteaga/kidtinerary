@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { PlannerBlockRow, PlannerEntryStatus, ScrapeJobRow } from "@/lib/supabase/types";
+import type { PlannerBlockRow, PlannerEntryStatus, PlannerRow, ScrapeJobRow } from "@/lib/supabase/types";
 
 export interface ActivityFilters {
   keyword?: string;
@@ -327,6 +327,12 @@ export interface PlannerEntryRow {
   sort_order: number;
   notes: string | null;
   created_at: string;
+  planner_id: string;
+  price_cents: number | null;
+  price_unit: "per_week" | "per_day" | null;
+  extras: Array<{ label: string; cost_cents: number; unit: "per_week" | "per_day" }>;
+  session_part: "full" | "am" | "pm";
+  days_of_week: Array<"mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun">;
   session: {
     id: string;
     starts_at: string;
@@ -365,6 +371,7 @@ export async function fetchPlannerEntries(
     .select(
       `
       id, user_id, child_id, session_id, status, sort_order, notes, created_at,
+      planner_id, price_cents, price_unit, extras, session_part, days_of_week,
       session:sessions!inner(
         id, starts_at, ends_at, time_slot, hours_start, hours_end, is_sold_out,
         activity:activities!inner(
@@ -528,6 +535,7 @@ export async function fetchFavoriteActivitiesWithSessions(userId: string) {
 export interface UserCampWithActivity {
   id: string;
   created_at: string;
+  color: string;
   activity: {
     id: string;
     name: string;
@@ -555,7 +563,7 @@ export async function fetchUserCamps(userId: string): Promise<UserCampWithActivi
   const { data, error } = await supabase
     .from("user_camps")
     .select(`
-      id, created_at,
+      id, created_at, color,
       activity:activities!inner(
         id, name, slug, verified, categories,
         organization:organizations(id, name),
@@ -591,6 +599,7 @@ export async function fetchUserCamps(userId: string): Promise<UserCampWithActivi
   return (data ?? []).map((row: any) => ({
     id: row.id,
     created_at: row.created_at,
+    color: row.color,
     activity: row.activity,
     plannerEntryCount: countMap[row.activity.id] ?? 0,
   }));
@@ -606,7 +615,7 @@ export async function fetchPlannerBlocks(userId: string): Promise<PlannerBlockWi
   const { data, error } = await supabase
     .from("planner_blocks")
     .select(`
-      id, user_id, type, title, emoji, start_date, end_date, created_at,
+      id, user_id, type, title, emoji, start_date, end_date, created_at, planner_id,
       planner_block_kids(child_id)
     `)
     .eq("user_id", userId)
@@ -626,6 +635,7 @@ export async function fetchPlannerBlocks(userId: string): Promise<PlannerBlockWi
     start_date: row.start_date,
     end_date: row.end_date,
     created_at: row.created_at,
+    planner_id: row.planner_id,
     child_ids: (row.planner_block_kids ?? []).map((k: any) => k.child_id),
   }));
 }
@@ -646,4 +656,20 @@ export async function fetchScrapeJob(jobId: string, userId: string): Promise<Scr
   }
 
   return data as ScrapeJobRow | null;
+}
+
+export async function fetchDefaultPlanner(userId: string): Promise<PlannerRow | null> {
+  const supabase = (await createClient()) as any;
+  const { data, error } = await supabase
+    .from("planners")
+    .select("id, user_id, name, start_date, end_date, is_default, created_at")
+    .eq("user_id", userId)
+    .eq("is_default", true)
+    .maybeSingle();
+
+  if (error) {
+    console.error("fetchDefaultPlanner error:", error);
+    return null;
+  }
+  return data as PlannerRow | null;
 }
