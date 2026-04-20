@@ -3,6 +3,46 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
+/**
+ * Find-or-create a placeholder activity_location for an activity.
+ * Used when we need to satisfy the sessions.activity_location_id NOT NULL
+ * constraint for user-submitted / week-scoped stub sessions, where we
+ * don't yet have a real address.
+ */
+async function ensureActivityLocation(
+  supabase: any,
+  activityId: string
+): Promise<string | null> {
+  // Look for an existing location for this activity
+  const { data: existing } = await supabase
+    .from("activity_locations")
+    .select("id")
+    .eq("activity_id", activityId)
+    .limit(1)
+    .maybeSingle();
+  if (existing?.id) return existing.id;
+
+  // Create a placeholder location. `location` is NOT NULL (geography point),
+  // so use POINT(0 0) as a sentinel; real locations get filled in by the
+  // scraper pipeline once the activity is verified.
+  const { data: created, error } = await supabase
+    .from("activity_locations")
+    .insert({
+      activity_id: activityId,
+      address: "",
+      location_name: null,
+      location: "POINT(0 0)",
+    })
+    .select("id")
+    .single();
+
+  if (error || !created) {
+    console.error("ensureActivityLocation error:", error);
+    return null;
+  }
+  return created.id;
+}
+
 export async function toggleFavorite(activityId: string) {
   // TODO: remove cast when types are generated
   const supabase = (await createClient()) as any;
@@ -615,10 +655,15 @@ export async function submitCamp(
     let sessionId = matchedSession?.id;
 
     if (!sessionId) {
+      if (!activityId) return { error: "Missing activity for placeholder session" };
+      const locationId = await ensureActivityLocation(supabase, activityId);
+      if (!locationId) return { error: "Could not set up camp location" };
+
       const { data: newSession, error: sessErr } = await supabase
         .from("sessions")
         .insert({
           activity_id: activityId,
+          activity_location_id: locationId,
           starts_at: context.weekStart,
           ends_at: weekEnd.toISOString().split("T")[0],
           time_slot: "full_day",
@@ -708,10 +753,14 @@ export async function assignCampToWeek(
   let sessionId = matchedSession?.id;
 
   if (!sessionId) {
-    const { data: newSession } = await supabase
+    const locationId = await ensureActivityLocation(supabase, uc.activity_id);
+    if (!locationId) return { error: "Could not set up camp location" };
+
+    const { data: newSession, error: sessErr } = await supabase
       .from("sessions")
       .insert({
         activity_id: uc.activity_id,
+        activity_location_id: locationId,
         starts_at: weekStart,
         ends_at: weekEnd.toISOString().split("T")[0],
         time_slot: "full_day",
@@ -719,7 +768,11 @@ export async function assignCampToWeek(
       })
       .select("id")
       .single();
-    sessionId = newSession?.id;
+    if (sessErr || !newSession) {
+      console.error("assignCampToWeek session insert error:", sessErr);
+      return { error: "Failed to create session for week" };
+    }
+    sessionId = newSession.id;
   }
 
   if (!sessionId) return { error: "Could not create session" };

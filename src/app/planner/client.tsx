@@ -92,7 +92,11 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
       overData.weekStart
     ) {
       const result = await assignCampToWeek(activeData.userCampId, overData.childId, overData.weekStart);
-      if (!result.error) router.refresh();
+      if (result.error) {
+        alert(result.error);
+        return;
+      }
+      router.refresh();
       return;
     }
 
