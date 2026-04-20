@@ -267,6 +267,7 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
             camps={userCamps}
             onChipClick={(c) => router.push(`/activity/${c.activity.slug}`)}
             onAddClick={() => setCampModal({ childId: null, weekStart: null })}
+            onChanged={() => router.refresh()}
           />
 
           <div className="w-full md:flex-1 min-w-0">
