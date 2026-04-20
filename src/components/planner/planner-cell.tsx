@@ -1,7 +1,6 @@
 "use client";
 
-import { useDndMonitor, useDroppable } from "@dnd-kit/core";
-import { useState } from "react";
+import { useDroppable } from "@dnd-kit/core";
 import { CellTimelineGrid, type TimelineEntry } from "./cell-timeline-grid";
 import { ConsideringChips, type ConsideringChip } from "./considering-chips";
 import { CellDropZones } from "./cell-drop-zones";
@@ -23,6 +22,7 @@ interface Props {
   plannerStart: Date;
   plannerEnd: Date;
   viewMode: "detail" | "simple";
+  isDraggingCamp: boolean;
   timelineEntries: TimelineEntry[];
   legendRows: CellLegendRow[];
   consideringChips: ConsideringChip[];
@@ -37,31 +37,21 @@ export function PlannerCell({
   plannerStart,
   plannerEnd,
   viewMode,
+  isDraggingCamp,
   timelineEntries,
   legendRows,
   consideringChips,
   onEntryClick,
   onAddClick,
 }: Props) {
-  const [dragging, setDragging] = useState(false);
-
-  useDndMonitor({
-    onDragStart: (event) => {
-      const data = event.active.data.current;
-      if (data?.type === "camp") setDragging(true);
-    },
-    onDragEnd: () => setDragging(false),
-    onDragCancel: () => setDragging(false),
-  });
-
   const { isOver, setNodeRef } = useDroppable({
     id: `cell-hover-${childId}-${weekStart}`,
     data: { type: "cell-hover" },
   });
 
-  const showZones = dragging && isOver;
+  const showZones = isDraggingCamp && isOver;
   const hasContent = timelineEntries.length > 0 || consideringChips.length > 0;
-  const dimmed = dragging && !showZones;
+  const dimmed = isDraggingCamp && !showZones;
 
   function handleSquareClick(_day: DayOfWeek, _slot: ScheduleSlot) {
     if (timelineEntries.length > 0) {
@@ -89,7 +79,6 @@ export function PlannerCell({
         </button>
       );
     } else if (timelineEntries.length === 0) {
-      // only considering — show muted label
       inner = (
         <div className="rounded-lg border border-driftwood/30 bg-white px-2 py-1.5">
           <div className="font-mono text-[10px] uppercase tracking-wide text-driftwood italic">

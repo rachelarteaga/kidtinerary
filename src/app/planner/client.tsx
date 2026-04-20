@@ -54,6 +54,7 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
   const [drawerBlockId, setDrawerBlockId] = useState<string | null>(null);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [draggingCamp, setDraggingCamp] = useState<{ name: string; color: string } | null>(null);
+  const isDraggingCamp = draggingCamp !== null;
   const [viewMode, setViewMode] = useState<"detail" | "simple">("detail");
 
   // Load from localStorage on mount
@@ -310,6 +311,7 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
               plannerStart={plannerStart}
               plannerEnd={plannerEnd}
               viewMode={viewMode}
+              isDraggingCamp={isDraggingCamp}
               onAddCampClick={(childId, weekStart) => setCampModal({ childId, weekStart })}
               onAddBlockClick={(childId, weekStart) => setBlockModal({ childId, weekStart })}
               onEntryClick={(entryId) => setDrawerEntryId(entryId)}
