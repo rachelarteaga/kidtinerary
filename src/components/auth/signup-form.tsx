@@ -2,15 +2,13 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 export function SignupForm() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const [sent, setSent] = useState(false);
   const supabase = createClient();
 
   async function handleSignup(e: React.FormEvent) {
@@ -18,11 +16,11 @@ export function SignupForm() {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signInWithOtp({
       email,
-      password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
+        shouldCreateUser: true,
       },
     });
 
@@ -30,7 +28,8 @@ export function SignupForm() {
       setError(error.message);
       setLoading(false);
     } else {
-      router.push("/onboarding");
+      setSent(true);
+      setLoading(false);
     }
   }
 
@@ -42,6 +41,27 @@ export function SignupForm() {
       },
     });
     if (error) setError(error.message);
+  }
+
+  if (sent) {
+    return (
+      <div className="w-full max-w-sm text-center">
+        <h1 className="font-serif text-3xl mb-2">Check your email</h1>
+        <p className="text-stone mb-6">
+          We sent a sign-in link to <span className="text-bark font-medium">{email}</span>.
+          Click it to finish creating your account.
+        </p>
+        <button
+          onClick={() => {
+            setSent(false);
+            setEmail("");
+          }}
+          className="font-mono text-[10px] uppercase tracking-widest text-sunset hover:underline"
+        >
+          Use a different email
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -81,30 +101,13 @@ export function SignupForm() {
             className="w-full bg-white border border-driftwood rounded-lg px-4 py-2.5 text-bark focus:outline-none focus:border-sunset transition-colors"
           />
         </div>
-        <div>
-          <label
-            htmlFor="signup-password"
-            className="block font-mono text-[10px] uppercase tracking-widest text-stone mb-1"
-          >
-            Password
-          </label>
-          <input
-            id="signup-password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-            className="w-full bg-white border border-driftwood rounded-lg px-4 py-2.5 text-bark focus:outline-none focus:border-sunset transition-colors"
-          />
-        </div>
 
         {error && (
           <p className="text-sm text-red-600">{error}</p>
         )}
 
         <Button type="submit" disabled={loading} className="w-full">
-          {loading ? "Creating account..." : "Get Started"}
+          {loading ? "Sending link..." : "Email me a sign-in link"}
         </Button>
       </form>
 
