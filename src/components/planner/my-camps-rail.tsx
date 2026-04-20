@@ -41,6 +41,7 @@ function DraggableCampItem({ camp, onClick }: { camp: UserCampWithActivity; onCl
       userCampId: camp.id,
       activityId: camp.activity.id,
       name: camp.activity.name,
+      color: camp.color,
     },
   });
 
@@ -50,11 +51,12 @@ function DraggableCampItem({ camp, onClick }: { camp: UserCampWithActivity; onCl
       {...listeners}
       {...attributes}
       onClick={onClick}
-      className={`shrink-0 w-56 md:w-auto rounded-lg border bg-white p-2.5 cursor-grab active:cursor-grabbing select-none transition-all ${
-        camp.activity.verified ? "border-meadow/30" : "border-driftwood/40"
-      } ${isDragging ? "opacity-60 ring-2 ring-sunset/40" : "hover:border-bark"}`}
+      className={`shrink-0 w-56 md:w-auto rounded-lg border bg-white p-2.5 cursor-grab active:cursor-grabbing select-none transition-all border-driftwood/40 ${isDragging ? "opacity-60 ring-2 ring-sunset/40" : "hover:border-bark"}`}
     >
-      <div className="font-medium text-sm text-bark truncate">{camp.activity.name}</div>
+      <div className="flex items-center gap-1.5">
+        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: camp.color }} />
+        <div className="font-medium text-sm text-bark truncate">{camp.activity.name}</div>
+      </div>
       <div className="mt-1 flex items-center gap-2 font-mono text-[10px] uppercase tracking-wide text-stone">
         {camp.plannerEntryCount > 0 && <span>{camp.plannerEntryCount}x</span>}
         {camp.activity.verified && <span className="text-meadow">verified</span>}
