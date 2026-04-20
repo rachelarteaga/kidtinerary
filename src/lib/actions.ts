@@ -3,6 +3,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { paletteColorForCampIndex } from "@/lib/camp-palette";
+import type { SessionPart, DayOfWeek, ExtraItem, PriceUnit } from "@/lib/supabase/types";
+import { normalizeDays } from "@/lib/schedule";
 
 /**
  * Find-or-create a placeholder activity_location for an activity.
@@ -1036,4 +1038,158 @@ export async function updateChildAvatar(
   revalidatePath("/planner");
   revalidatePath("/kids");
   return { url: urlData.publicUrl };
+}
+
+export async function updateEntrySchedule(
+  entryId: string,
+  sessionPart: SessionPart,
+  daysOfWeek: DayOfWeek[]
+): Promise<{ error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("planner_entries")
+    .update({
+      session_part: sessionPart,
+      days_of_week: normalizeDays(daysOfWeek),
+    })
+    .eq("id", entryId)
+    .eq("user_id", user.id);
+
+  if (error) return { error: "Failed to update schedule" };
+  revalidatePath("/planner");
+  return {};
+}
+
+export async function updateEntryPrice(
+  entryId: string,
+  priceCents: number | null,
+  priceUnit: PriceUnit | null
+): Promise<{ error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("planner_entries")
+    .update({ price_cents: priceCents, price_unit: priceUnit })
+    .eq("id", entryId)
+    .eq("user_id", user.id);
+
+  if (error) return { error: "Failed to update price" };
+  revalidatePath("/planner");
+  return {};
+}
+
+export async function updateEntryExtras(
+  entryId: string,
+  extras: ExtraItem[]
+): Promise<{ error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const cleaned = extras
+    .filter((e) => typeof e.label === "string" && e.label.trim().length > 0)
+    .map((e) => ({
+      label: e.label.trim(),
+      cost_cents: Math.max(0, Math.round(e.cost_cents)),
+      unit: e.unit === "per_day" ? "per_day" : "per_week",
+    }));
+
+  const { error } = await supabase
+    .from("planner_entries")
+    .update({ extras: cleaned })
+    .eq("id", entryId)
+    .eq("user_id", user.id);
+
+  if (error) return { error: "Failed to update extras" };
+  revalidatePath("/planner");
+  return {};
+}
+
+export async function updateEntryNotes(
+  entryId: string,
+  notes: string
+): Promise<{ error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("planner_entries")
+    .update({ notes: notes.trim() || null })
+    .eq("id", entryId)
+    .eq("user_id", user.id);
+
+  if (error) return { error: "Failed to update notes" };
+  revalidatePath("/planner");
+  return {};
+}
+
+export async function updatePlannerRange(
+  plannerId: string,
+  startDate: string,
+  endDate: string
+): Promise<{ error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  if (startDate > endDate) return { error: "End date must be on or after start date" };
+
+  const { error } = await supabase
+    .from("planners")
+    .update({ start_date: startDate, end_date: endDate })
+    .eq("id", plannerId)
+    .eq("user_id", user.id);
+
+  if (error) return { error: "Failed to update planner range" };
+  revalidatePath("/planner");
+  return {};
+}
+
+export async function updateBlockDetails(data: {
+  blockId: string;
+  type: "school" | "travel" | "at_home" | "other";
+  title: string;
+  emoji?: string | null;
+  startDate: string;
+  endDate: string;
+  childIds: string[];
+}): Promise<{ error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  if (!data.title.trim()) return { error: "Title required" };
+  if (data.childIds.length === 0) return { error: "Pick at least one kid" };
+  if (data.startDate > data.endDate) return { error: "End date must be on or after start" };
+
+  const { error: updErr } = await supabase
+    .from("planner_blocks")
+    .update({
+      type: data.type,
+      title: data.title.trim(),
+      emoji: data.emoji ?? null,
+      start_date: data.startDate,
+      end_date: data.endDate,
+    })
+    .eq("id", data.blockId)
+    .eq("user_id", user.id);
+
+  if (updErr) return { error: "Failed to update block" };
+
+  // Replace kid join rows
+  await supabase.from("planner_block_kids").delete().eq("block_id", data.blockId);
+  const { error: joinErr } = await supabase
+    .from("planner_block_kids")
+    .insert(data.childIds.map((cid) => ({ block_id: data.blockId, child_id: cid })));
+
+  if (joinErr) return { error: "Failed to update kid assignments" };
+
+  revalidatePath("/planner");
+  return {};
 }
