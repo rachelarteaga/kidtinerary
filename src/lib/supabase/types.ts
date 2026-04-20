@@ -8,3 +8,46 @@ export type Database = {
     Enums: Record<string, unknown>;
   };
 };
+
+// Planner Hero Redesign additions
+export type PlannerEntryStatus = "considering" | "waitlisted" | "registered";
+export type PlannerBlockType = "school" | "travel" | "at_home" | "other";
+export type ScrapeJobStatus = "queued" | "running" | "resolved" | "failed";
+export type ScrapeConfidence = "high" | "partial" | "ambiguous" | "none";
+
+export interface UserCampRow {
+  id: string;
+  user_id: string;
+  activity_id: string;
+  created_at: string;
+}
+
+export interface PlannerBlockRow {
+  id: string;
+  user_id: string;
+  type: PlannerBlockType;
+  title: string;
+  emoji: string | null;
+  start_date: string;
+  end_date: string;
+  created_at: string;
+}
+
+export interface PlannerBlockKidRow {
+  block_id: string;
+  child_id: string;
+}
+
+export interface ScrapeJobRow {
+  id: string;
+  user_id: string;
+  input: string;
+  context: Record<string, unknown>;
+  status: ScrapeJobStatus;
+  activity_id: string | null;
+  confidence: ScrapeConfidence | null;
+  candidates: Array<{ activity_id: string; name: string; score: number }> | null;
+  consent_share: boolean;
+  created_at: string;
+  resolved_at: string | null;
+}
