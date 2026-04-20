@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
@@ -25,6 +25,11 @@ import { reorderKidColumns, assignCampToWeek } from "@/lib/actions";
 import { generateWeeks, getWeekKey } from "@/lib/format";
 import type { PlannerEntryRow, UserCampWithActivity, PlannerBlockWithKids } from "@/lib/queries";
 import type { PlannerRow } from "@/lib/supabase/types";
+
+// Module-level constants so the references stay stable across renders.
+// dnd-kit's useSensor memoizes on these, so a fresh object each render causes
+// the sensor array to churn (and DndContext to resubscribe sensors).
+const POINTER_SENSOR_OPTIONS = { activationConstraint: { distance: 8 } };
 
 interface Kid {
   id: string;
@@ -81,44 +86,49 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
   const [orderedIds, setOrderedIds] = useState(kids.map((c) => c.id));
   useEffect(() => setOrderedIds(kids.map((c) => c.id)), [kids]);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  // Stable sensor options reference so useSensor's memo doesn't thrash.
+  const pointerSensor = useSensor(PointerSensor, POINTER_SENSOR_OPTIONS);
+  const sensors = useSensors(pointerSensor);
 
-  function handleDragStart(event: DragStartEvent) {
+  const handleDragStart = useCallback((event: DragStartEvent) => {
     const data = event.active.data.current;
     if (data?.type === "camp") {
       setDraggingCamp({ name: String(data.name ?? ""), color: String(data.color ?? "#f4b76f") });
     }
-  }
+  }, []);
 
-  async function handleDragEnd(event: DragEndEvent) {
-    setDraggingCamp(null);
-    const { active, over } = event;
-    if (!over) return;
+  const handleDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      setDraggingCamp(null);
+      const { active, over } = event;
+      if (!over) return;
 
-    const activeData = active.data.current as { type?: string; userCampId?: string } | undefined;
-    const overData = over.data.current as { type?: string; childId?: string; weekStart?: string; status?: "considering" | "waitlisted" | "registered" } | undefined;
+      const activeData = active.data.current as { type?: string; userCampId?: string } | undefined;
+      const overData = over.data.current as { type?: string; childId?: string; weekStart?: string; status?: "considering" | "waitlisted" | "registered" } | undefined;
 
-    if (activeData?.type === "camp" && overData?.type === "cell-drop" && overData.childId && overData.weekStart) {
-      const status = overData.status ?? "considering";
-      const result = await assignCampToWeek(activeData.userCampId!, overData.childId, overData.weekStart, status);
-      if (result.error) {
-        alert(result.error);
+      if (activeData?.type === "camp" && overData?.type === "cell-drop" && overData.childId && overData.weekStart) {
+        const status = overData.status ?? "considering";
+        const result = await assignCampToWeek(activeData.userCampId!, overData.childId, overData.weekStart, status);
+        if (result.error) {
+          alert(result.error);
+          return;
+        }
+        router.refresh();
         return;
       }
-      router.refresh();
-      return;
-    }
 
-    if (activeData?.type === "kid-column") {
-      if (active.id === over.id) return;
-      const oldIndex = orderedIds.indexOf(active.id as string);
-      const newIndex = orderedIds.indexOf(over.id as string);
-      if (oldIndex === -1 || newIndex === -1) return;
-      const next = arrayMove(orderedIds, oldIndex, newIndex);
-      setOrderedIds(next);
-      await reorderKidColumns(next);
-    }
-  }
+      if (activeData?.type === "kid-column") {
+        if (active.id === over.id) return;
+        const oldIndex = orderedIds.indexOf(active.id as string);
+        const newIndex = orderedIds.indexOf(over.id as string);
+        if (oldIndex === -1 || newIndex === -1) return;
+        const next = arrayMove(orderedIds, oldIndex, newIndex);
+        setOrderedIds(next);
+        await reorderKidColumns(next);
+      }
+    },
+    [orderedIds, router]
+  );
 
   const plannerStart = useMemo(() => new Date(planner.start_date + "T00:00:00"), [planner.start_date]);
   const plannerEnd = useMemo(() => new Date(planner.end_date + "T23:59:59"), [planner.end_date]);

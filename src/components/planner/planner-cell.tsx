@@ -1,7 +1,6 @@
 "use client";
 
-import { useDroppable } from "@dnd-kit/core";
-import { useMemo } from "react";
+import { useState } from "react";
 import { CellTimelineGrid, type TimelineEntry } from "./cell-timeline-grid";
 import { ConsideringChips, type ConsideringChip } from "./considering-chips";
 import { CellDropZones } from "./cell-drop-zones";
@@ -45,13 +44,16 @@ export function PlannerCell({
   onEntryClick,
   onAddClick,
 }: Props) {
-  const droppableData = useMemo(() => ({ type: "cell-hover" as const }), []);
-  const { isOver, setNodeRef } = useDroppable({
-    id: `cell-hover-${childId}-${weekStart}`,
-    data: droppableData,
-  });
+  // Track hover via plain pointer events so we don't compete with dnd-kit's
+  // droppable collision detection. A nested droppable here would cause dnd-kit
+  // to flip the "over" target between the cell and the inner drop zones on every
+  // render, producing a Maximum update depth exceeded loop (React error #185).
+  // Stale hover state between drags is harmless: showZones is gated on
+  // isDraggingCamp, so a lingering true hover only matters during the next drag —
+  // where it correctly reflects that the pointer is still over this cell.
+  const [isHovered, setIsHovered] = useState(false);
 
-  const showZones = isDraggingCamp && isOver;
+  const showZones = isDraggingCamp && isHovered;
   const hasContent = timelineEntries.length > 0 || consideringChips.length > 0;
   const dimmed = isDraggingCamp && !showZones;
 
@@ -154,7 +156,11 @@ export function PlannerCell({
   }
 
   return (
-    <div ref={setNodeRef} className={`transition-opacity ${dimmed ? "opacity-40" : "opacity-100"}`}>
+    <div
+      onPointerEnter={isDraggingCamp ? () => setIsHovered(true) : undefined}
+      onPointerLeave={isDraggingCamp ? () => setIsHovered(false) : undefined}
+      className={`transition-opacity ${dimmed ? "opacity-40" : "opacity-100"}`}
+    >
       {inner}
     </div>
   );
