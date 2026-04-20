@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import type { PlannerBlockRow, ScrapeJobRow } from "@/lib/supabase/types";
 
 export interface ActivityFilters {
   keyword?: string;
@@ -306,6 +307,7 @@ export async function fetchChildren(userId: string) {
     .from("children")
     .select("id, name, birth_date, interests, created_at")
     .eq("user_id", userId)
+    .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
 
   if (error) {
@@ -522,4 +524,127 @@ export async function fetchFavoriteActivitiesWithSessions(userId: string) {
   }
 
   return (data ?? []) as any[];
+}
+
+export interface UserCampWithActivity {
+  id: string;
+  created_at: string;
+  activity: {
+    id: string;
+    name: string;
+    slug: string;
+    verified: boolean;
+    categories: string[];
+    organization: { id: string; name: string } | null;
+    activity_locations: { id: string; address: string; location_name: string | null }[];
+    price_options: { id: string; label: string; price_cents: number; price_unit: string }[];
+    sessions: {
+      id: string;
+      starts_at: string;
+      ends_at: string;
+      time_slot: string;
+      hours_start: string | null;
+      hours_end: string | null;
+    }[];
+  };
+  plannerEntryCount: number;
+}
+
+export async function fetchUserCamps(userId: string): Promise<UserCampWithActivity[]> {
+  const supabase = (await createClient()) as any;
+
+  const { data, error } = await supabase
+    .from("user_camps")
+    .select(`
+      id, created_at,
+      activity:activities!inner(
+        id, name, slug, verified, categories,
+        organization:organizations(id, name),
+        activity_locations(id, address, location_name),
+        price_options(id, label, price_cents, price_unit),
+        sessions(id, starts_at, ends_at, time_slot, hours_start, hours_end)
+      )
+    `)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("fetchUserCamps error:", error);
+    return [];
+  }
+
+  // Get planner entry counts per activity_id for this user
+  const activityIds = (data ?? []).map((r: any) => r.activity.id);
+  if (activityIds.length === 0) return [];
+
+  const { data: counts } = await supabase
+    .from("planner_entries")
+    .select("session:sessions(activity_id)", { count: "exact" })
+    .eq("user_id", userId)
+    .in("session.activity_id", activityIds);
+
+  const countMap: Record<string, number> = {};
+  for (const row of (counts ?? []) as any[]) {
+    const aid = row.session?.activity_id;
+    if (aid) countMap[aid] = (countMap[aid] ?? 0) + 1;
+  }
+
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    created_at: row.created_at,
+    activity: row.activity,
+    plannerEntryCount: countMap[row.activity.id] ?? 0,
+  }));
+}
+
+export interface PlannerBlockWithKids extends PlannerBlockRow {
+  child_ids: string[];
+}
+
+export async function fetchPlannerBlocks(userId: string): Promise<PlannerBlockWithKids[]> {
+  const supabase = (await createClient()) as any;
+
+  const { data, error } = await supabase
+    .from("planner_blocks")
+    .select(`
+      id, user_id, type, title, emoji, start_date, end_date, created_at,
+      planner_block_kids(child_id)
+    `)
+    .eq("user_id", userId)
+    .order("start_date", { ascending: true });
+
+  if (error) {
+    console.error("fetchPlannerBlocks error:", error);
+    return [];
+  }
+
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    user_id: row.user_id,
+    type: row.type,
+    title: row.title,
+    emoji: row.emoji,
+    start_date: row.start_date,
+    end_date: row.end_date,
+    created_at: row.created_at,
+    child_ids: (row.planner_block_kids ?? []).map((k: any) => k.child_id),
+  }));
+}
+
+export async function fetchScrapeJob(jobId: string, userId: string): Promise<ScrapeJobRow | null> {
+  const supabase = (await createClient()) as any;
+
+  const { data, error } = await supabase
+    .from("scrape_jobs")
+    .select("*")
+    .eq("id", jobId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("fetchScrapeJob error:", error);
+    return null;
+  }
+
+  return data as ScrapeJobRow | null;
 }
