@@ -1,24 +1,42 @@
 @import "tailwindcss";
 
 @theme {
-  --color-cream: #ECE8DF;
-  --color-bark: #2C261B;
-  --color-sunset: #E07845;
-  --color-campfire: #D4A574;
-  --color-meadow: #5A8F6E;
-  --color-lake: #6B8CBB;
-  --color-driftwood: #C4BFB4;
-  --color-sand: #F5E4C4;
-  --color-stone: #5A5348;
+  /* Core palette — kawe.ski-inspired with Kidtinerary-specific tuning */
+  --color-base: #f7f8fa;
+  --color-surface: #ffffff;
+  --color-ink: #151515;
+  --color-ink-2: #666666;
+  --color-ink-3: #c0c0c0;
+  --color-ink-inverse: #ffffff;
 
-  --font-serif: "DM Serif Display", serif;
-  --font-sans: "Inter", sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  /* Hero yellow — restricted to nav + Registered pill + rare featured moments */
+  --color-hero: #fbbf0e;
+  --color-hero-light: #ffe082;
+
+  /* Status pills */
+  --color-status-considering: #e8edf1;
+  --color-status-waitlisted: #ffd4b8;
+  --color-status-registered: #fbbf0e;
+
+  /* Camp palette — 4 cool pastels used only in timeline grid fills + camp dots */
+  --color-camp-periwinkle: #8fa8d4;
+  --color-camp-mint: #8ec4ad;
+  --color-camp-lilac: #b095d4;
+  --color-camp-rose: #d49bbe;
+
+  /* Utility */
+  --color-disabled: #eeeeee;
+  --color-disabled-accent: #c0c0c0;
+  --color-conflict: #ef8c8f;
+
+  /* Fonts */
+  --font-display: "Figtree", sans-serif;
+  --font-sans: "Outfit", sans-serif;
 }
 
 body {
-  background-color: var(--color-cream);
-  color: var(--color-bark);
+  background-color: var(--color-surface);
+  color: var(--color-ink);
   font-family: var(--font-sans);
 }
 
