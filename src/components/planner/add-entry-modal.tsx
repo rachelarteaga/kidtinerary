@@ -43,28 +43,28 @@ function AddEntryModalInner({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-bark/40" onClick={onClose} />
-      <div className="relative bg-cream rounded-2xl shadow-xl w-full max-w-md p-6">
+      <div className="absolute inset-0 bg-ink/40" onClick={onClose} />
+      <div className="relative bg-base rounded-2xl shadow-xl w-full max-w-md p-6">
         <div className="flex items-center justify-between mb-4">
-          <div className="inline-flex rounded-full border border-driftwood/40 bg-white overflow-hidden">
+          <div className="inline-flex rounded-full border border-ink-3 bg-surface overflow-hidden">
             <button
               onClick={() => setTab("camp")}
-              className={`font-mono text-[11px] uppercase tracking-widest px-3 py-1.5 transition-colors ${
-                tab === "camp" ? "bg-bark text-cream" : "text-stone hover:text-bark"
+              className={`font-sans text-[11px] uppercase tracking-widest px-3 py-1.5 transition-colors ${
+                tab === "camp" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
               }`}
             >
               Camp
             </button>
             <button
               onClick={() => setTab("block")}
-              className={`font-mono text-[11px] uppercase tracking-widest px-3 py-1.5 transition-colors ${
-                tab === "block" ? "bg-bark text-cream" : "text-stone hover:text-bark"
+              className={`font-sans text-[11px] uppercase tracking-widest px-3 py-1.5 transition-colors ${
+                tab === "block" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
               }`}
             >
               Block
             </button>
           </div>
-          <button onClick={onClose} aria-label="Close" className="text-stone hover:text-bark text-lg">✕</button>
+          <button onClick={onClose} aria-label="Close" className="text-ink-2 hover:text-ink text-lg">✕</button>
         </div>
 
         {tab === "camp" ? (
