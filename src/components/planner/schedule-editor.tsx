@@ -44,8 +44,8 @@ export function ScheduleEditor({
             onClick={() => togglePart(p)}
             className={`flex-1 rounded-lg border px-3 py-2 text-sm transition-colors ${
               sessionPart === p
-                ? "border-campfire bg-campfire/10 text-bark font-medium"
-                : "border-driftwood/40 bg-white text-stone hover:text-bark hover:border-driftwood"
+                ? "border-ink bg-ink/10 text-ink font-medium"
+                : "border-ink-3 bg-surface text-ink-2 hover:text-ink hover:border-ink"
             }`}
           >
             {p === "full" ? "Full day" : p === "am" ? "AM only" : "PM only"}
@@ -62,10 +62,10 @@ export function ScheduleEditor({
               onClick={() => toggleDay(d.value)}
               className={`flex-1 rounded-md border px-0 py-1.5 text-xs font-medium transition-colors ${
                 selected
-                  ? "border-campfire bg-campfire/10 text-bark"
+                  ? "border-ink bg-ink/10 text-ink"
                   : d.isWeekend
-                    ? "border-driftwood/30 bg-white text-driftwood"
-                    : "border-driftwood/40 bg-white text-stone hover:text-bark"
+                    ? "border-ink-3 bg-surface text-ink-3"
+                    : "border-ink-3 bg-surface text-ink-2 hover:text-ink"
               }`}
             >
               {d.label}
