@@ -43,7 +43,7 @@ export function PriceTable({ priceOptions }: PriceTableProps) {
             <tr key={option.id}>
               <td className="py-3 pr-4 font-medium">{option.label}</td>
               <td className="py-3 pr-4 text-right">
-                <span className="font-mono font-medium">
+                <span className="font-sans font-medium">
                   {formatPrice(option.price_cents)}
                 </span>
                 <span className="font-sans text-[10px] text-ink-2 uppercase tracking-wide ml-0.5">

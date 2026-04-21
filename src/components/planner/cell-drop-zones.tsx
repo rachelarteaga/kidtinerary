@@ -62,7 +62,7 @@ function Zone({
   return (
     <div
       ref={setNodeRef}
-      className={`flex-1 rounded border-2 border-dashed px-2 py-2 text-center font-mono text-[10px] uppercase tracking-widest transition-colors ${border} ${bg} ${text} ${
+      className={`flex-1 rounded border-2 border-dashed px-2 py-2 text-center font-sans text-[10px] uppercase tracking-widest transition-colors ${border} ${bg} ${text} ${
         isOver ? "border-solid scale-[1.02]" : ""
       }`}
     >
