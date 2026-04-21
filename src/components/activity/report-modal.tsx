@@ -47,7 +47,7 @@ export function ReportModal({ activityId }: ReportModalProps) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="font-mono text-[10px] uppercase tracking-wide text-stone hover:text-bark underline underline-offset-2"
+        className="font-sans text-[10px] uppercase tracking-wide text-ink-2 hover:text-ink underline underline-offset-2"
       >
         Report an issue
       </button>
@@ -58,13 +58,13 @@ export function ReportModal({ activityId }: ReportModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-bark/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-ink/40 backdrop-blur-sm"
         onClick={() => setIsOpen(false)}
       />
 
       {/* Modal */}
-      <div className="relative bg-cream rounded-2xl border border-driftwood/30 shadow-xl p-6 w-full max-w-md">
-        <h3 className="font-serif text-xl mb-4">Report an issue</h3>
+      <div className="relative bg-surface rounded-2xl border border-ink-3 shadow-xl p-6 w-full max-w-md">
+        <h3 className="font-display font-extrabold text-xl mb-4">Report an issue</h3>
 
         <div className="space-y-3 mb-4">
           {REPORT_REASONS.map((r) => (
@@ -72,8 +72,8 @@ export function ReportModal({ activityId }: ReportModalProps) {
               key={r}
               className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
                 reason === r
-                  ? "border-sunset bg-sunset/5"
-                  : "border-driftwood/30 hover:border-stone"
+                  ? "border-ink bg-ink/5"
+                  : "border-ink-3 hover:border-ink-2"
               }`}
             >
               <input
@@ -82,7 +82,7 @@ export function ReportModal({ activityId }: ReportModalProps) {
                 value={r}
                 checked={reason === r}
                 onChange={() => setReason(r)}
-                className="accent-sunset"
+                className="accent-ink"
               />
               <span className="text-sm">{REASON_LABELS[r]}</span>
             </label>
@@ -94,7 +94,7 @@ export function ReportModal({ activityId }: ReportModalProps) {
           onChange={(e) => setDetails(e.target.value)}
           placeholder="Any additional details? (optional)"
           rows={3}
-          className="w-full px-3 py-2 rounded-lg border border-driftwood/50 bg-white text-bark placeholder:text-driftwood text-sm focus:outline-none focus:border-sunset focus:ring-1 focus:ring-sunset/30 mb-4 resize-none"
+          className="w-full px-3 py-2 rounded-lg border border-ink-3 bg-surface text-ink placeholder:text-ink-3 text-sm focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink/30 mb-4 resize-none"
         />
 
         <div className="flex gap-3">
