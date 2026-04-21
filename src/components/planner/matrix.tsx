@@ -103,10 +103,10 @@ export function PlannerMatrix({
         <div className="flex items-center justify-end">
           <AddKidMenu plannerId={plannerId} availableKids={availableKids} />
         </div>
-        <div className="rounded-lg border border-dashed border-driftwood/50 bg-white/30 p-8 text-center">
-          <p className="font-serif text-xl text-bark mb-1">No kids on this planner yet</p>
-          <p className="text-stone text-sm">
-            Use the <span className="font-mono">+</span> button above to pick someone from your profile.
+        <div className="rounded-lg border border-dashed border-ink-3 bg-surface/30 p-8 text-center">
+          <p className="font-display font-extrabold text-xl text-ink mb-1">No kids on this planner yet</p>
+          <p className="text-ink-2 text-sm">
+            Use the <span className="font-sans">+</span> button above to pick someone from your profile.
           </p>
         </div>
       </div>
@@ -122,10 +122,9 @@ export function PlannerMatrix({
             <button
               key={c.id}
               onClick={() => setFocusedKidId(c.id)}
-              className={`shrink-0 rounded-full border px-3 py-1.5 text-sm flex items-center gap-2 ${c.id === focusedKidId ? "bg-white" : "bg-white opacity-60"}`}
-              style={{ borderColor: c.id === focusedKidId ? c.color : "#d9c9b0" }}
+              className={`shrink-0 rounded-full border px-3 py-1.5 text-sm flex items-center gap-2 ${c.id === focusedKidId ? "bg-white border-ink" : "bg-white opacity-60 border-ink-3"}`}
             >
-              <KidAvatar name={c.name} color={c.color} index={i} avatarUrl={c.avatar_url} size={22} />
+              <KidAvatar name={c.name} index={i} avatarUrl={c.avatar_url} size={22} />
               {c.name}
             </button>
           ))}
@@ -141,7 +140,7 @@ export function PlannerMatrix({
             if (w.fullRowBlock) {
               return (
                 <div key={weekKey}>
-                  <div className="font-mono text-[11px] uppercase tracking-widest text-stone mb-1 whitespace-nowrap">
+                  <div className="font-sans text-[11px] font-semibold uppercase tracking-widest text-ink-2 mb-1 whitespace-nowrap">
                     {weekLabel}
                   </div>
                   <BlockCard
@@ -225,7 +224,7 @@ export function PlannerMatrix({
         if (w.fullRowBlock) {
           return (
             <div key={weekKey} className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
-              <div className="font-mono text-[11px] uppercase tracking-widest text-stone self-stretch flex items-center pl-1.5 pr-3 border-r border-driftwood/30 whitespace-nowrap text-left">
+              <div className="font-sans text-[11px] font-semibold uppercase tracking-widest text-ink-2 self-stretch flex items-center pl-1.5 pr-3 border-r border-ink-3 whitespace-nowrap text-left">
                 {weekLabel}
               </div>
               <div style={{ gridColumn: `2 / span ${cols}` }}>
