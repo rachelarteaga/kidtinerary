@@ -270,51 +270,8 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <main className="md:h-[calc(100dvh-73px)] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:overflow-hidden">
-        <header className="bg-surface flex items-start justify-between flex-wrap gap-3 pt-[22px] pb-[18px] flex-shrink-0">
-          <div>
-            <div className="mb-1">
-              <PlannerTitle plannerId={planner.id} name={planner.name} />
-            </div>
-            <p className="text-ink-2">{kids.length} kid{kids.length === 1 ? "" : "s"} · {weekStarts.length} weeks</p>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <div className="inline-flex rounded-full border border-ink bg-surface overflow-hidden">
-              <button
-                onClick={() => setViewMode("detail")}
-                className={`font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 transition-colors ${
-                  viewMode === "detail" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
-                }`}
-              >
-                Detail
-              </button>
-              <button
-                onClick={() => setViewMode("simple")}
-                className={`font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 transition-colors ${
-                  viewMode === "simple" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
-                }`}
-              >
-                Simple
-              </button>
-            </div>
-            <PlannerRangePicker
-              plannerId={planner.id}
-              startDate={planner.start_date}
-              endDate={planner.end_date}
-              entries={rangePickerEntries}
-              blocks={rangePickerBlocks}
-              onChanged={() => router.refresh()}
-            />
-            <button
-              onClick={() => setEntryModal({ childId: null, weekStart: null, tab: "camp" })}
-              className="font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-[#333] border border-ink shadow-[3px_3px_0_0_rgba(0,0,0,0.15)]"
-            >
-              + Add
-            </button>
-          </div>
-        </header>
-
-        <div className="flex flex-col md:flex-row gap-6 items-start flex-1 min-h-0 pb-4">
+      <main className="md:h-[calc(100dvh-73px)] flex flex-col md:overflow-hidden">
+        <div className="flex flex-col md:flex-row flex-1 min-h-0">
           <MyCampsRail
             camps={userCamps}
             onChipClick={(c) => router.push(`/activity/${c.activity.slug}`)}
@@ -322,24 +279,69 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
             onChanged={() => router.refresh()}
           />
 
-          <div className="w-full md:flex-1 min-w-0 flex flex-col md:h-full">
-            <div className="border-y-[1.5px] border-ink pt-5 pb-4 flex-1 min-h-0 flex flex-col">
-              <PlannerMatrix
-                children={kids}
-                allUserKids={allUserKids}
-                plannerId={planner.id}
-                weeks={weeks}
-                orderedIds={orderedIds}
-                plannerStart={plannerStart}
-                plannerEnd={plannerEnd}
-                viewMode={viewMode}
-                isDraggingCamp={isDraggingCamp}
-                onAddCampClick={(childId, weekStart) => setEntryModal({ childId, weekStart, tab: "camp" })}
-                onAddBlockClick={(childId, weekStart) => setEntryModal({ childId, weekStart, tab: "block" })}
-                onEntryClick={(entryId) => setDrawerEntryId(entryId)}
-                onBlockClick={(blockId) => setDrawerBlockId(blockId)}
-                onRemoveKid={handleRemoveKid}
-              />
+          <div className="flex-1 min-w-0 flex flex-col md:h-full md:overflow-hidden">
+            <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0">
+              <header className="bg-surface flex items-start justify-between flex-wrap gap-3 pt-[22px] pb-[18px] flex-shrink-0">
+                <div>
+                  <div className="mb-1">
+                    <PlannerTitle plannerId={planner.id} name={planner.name} />
+                  </div>
+                  <p className="text-ink-2">{kids.length} kid{kids.length === 1 ? "" : "s"} · {weekStarts.length} weeks</p>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <div className="inline-flex rounded-full border border-ink bg-surface overflow-hidden">
+                    <button
+                      onClick={() => setViewMode("detail")}
+                      className={`font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 transition-colors ${
+                        viewMode === "detail" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
+                      }`}
+                    >
+                      Detail
+                    </button>
+                    <button
+                      onClick={() => setViewMode("simple")}
+                      className={`font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 transition-colors ${
+                        viewMode === "simple" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
+                      }`}
+                    >
+                      Simple
+                    </button>
+                  </div>
+                  <PlannerRangePicker
+                    plannerId={planner.id}
+                    startDate={planner.start_date}
+                    endDate={planner.end_date}
+                    entries={rangePickerEntries}
+                    blocks={rangePickerBlocks}
+                    onChanged={() => router.refresh()}
+                  />
+                  <button
+                    onClick={() => setEntryModal({ childId: null, weekStart: null, tab: "camp" })}
+                    className="font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-[#333] border border-ink shadow-[3px_3px_0_0_rgba(0,0,0,0.15)]"
+                  >
+                    + Add
+                  </button>
+                </div>
+              </header>
+
+              <div className="border-y-[1.5px] border-ink pt-5 pb-4 flex-1 min-h-0 flex flex-col">
+                <PlannerMatrix
+                  children={kids}
+                  allUserKids={allUserKids}
+                  plannerId={planner.id}
+                  weeks={weeks}
+                  orderedIds={orderedIds}
+                  plannerStart={plannerStart}
+                  plannerEnd={plannerEnd}
+                  viewMode={viewMode}
+                  isDraggingCamp={isDraggingCamp}
+                  onAddCampClick={(childId, weekStart) => setEntryModal({ childId, weekStart, tab: "camp" })}
+                  onAddBlockClick={(childId, weekStart) => setEntryModal({ childId, weekStart, tab: "block" })}
+                  onEntryClick={(entryId) => setDrawerEntryId(entryId)}
+                  onBlockClick={(blockId) => setDrawerBlockId(blockId)}
+                  onRemoveKid={handleRemoveKid}
+                />
+              </div>
             </div>
           </div>
         </div>
