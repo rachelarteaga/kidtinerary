@@ -22,10 +22,10 @@ describe("Tag", () => {
     expect(tag.className).toContain("text-[#4a6d8c]");
   });
 
-  it("uses mono font and uppercase", () => {
+  it("uses sans font and uppercase", () => {
     render(<Tag type="age" label="Test" />);
     const tag = screen.getByText("Test");
-    expect(tag.className).toContain("font-mono");
+    expect(tag.className).toContain("font-sans");
     expect(tag.className).toContain("uppercase");
   });
 });
