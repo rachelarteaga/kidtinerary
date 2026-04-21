@@ -321,7 +321,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           />
 
           <div className="w-full md:flex-1 min-w-0 flex flex-col md:h-full">
-            <div className="bg-base border border-ink rounded-2xl pt-5 px-4 pb-4 flex-1 min-h-0 flex flex-col">
+            <div className="border-y-[1.5px] border-ink pt-5 pb-4 flex-1 min-h-0 flex flex-col">
               <PlannerMatrix
                 children={kids}
                 allUserKids={allUserKids}
