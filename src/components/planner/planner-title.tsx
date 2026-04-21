@@ -66,9 +66,9 @@ export function PlannerTitle({ plannerId, name }: Props) {
           }}
           maxLength={50}
           disabled={isPending}
-          className="font-serif text-4xl bg-transparent border-b-2 border-bark/40 focus:border-bark outline-none min-w-[200px]"
+          className="font-display font-extrabold text-4xl text-ink bg-transparent border-b-2 border-ink-3 focus:border-ink outline-none min-w-[200px] tracking-tight"
         />
-        {error && <p className="text-sm text-red-600 mt-1">{error}</p>}
+        {error && <p className="text-sm text-[#ef8c8f] mt-1">{error}</p>}
       </div>
     );
   }
@@ -76,13 +76,13 @@ export function PlannerTitle({ plannerId, name }: Props) {
   return (
     <button
       onClick={() => setEditing(true)}
-      className="font-serif text-4xl hover:underline decoration-bark/30 decoration-2 underline-offset-4 inline-flex items-center gap-2 group"
+      className="font-display font-extrabold text-4xl text-ink tracking-tight hover:underline decoration-ink-3 decoration-2 underline-offset-4 inline-flex items-center gap-2 group"
       aria-label="Edit planner name"
     >
       <span>{name}</span>
       <span
         aria-hidden="true"
-        className="text-base text-stone opacity-0 group-hover:opacity-100 transition-opacity"
+        className="text-base text-ink-3 opacity-0 group-hover:opacity-100 transition-opacity"
       >
         ✎
       </span>
