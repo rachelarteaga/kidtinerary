@@ -37,8 +37,8 @@ export function KidsPageClient({ initialChildren }: KidsPageClientProps) {
     <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="font-serif text-4xl mb-2">My Kids</h1>
-          <p className="text-stone text-lg">
+          <h1 className="font-display font-extrabold text-4xl mb-2">My Kids</h1>
+          <p className="text-ink-2 text-lg">
             Manage your kids&apos; profiles and interests.
           </p>
         </div>
@@ -62,8 +62,8 @@ export function KidsPageClient({ initialChildren }: KidsPageClientProps) {
       ) : (
         !showForm && (
           <div className="text-center py-16">
-            <p className="font-serif text-2xl mb-2">No kids added yet</p>
-            <p className="text-stone mb-6">
+            <p className="font-display font-extrabold text-2xl mb-2">No kids added yet</p>
+            <p className="text-ink-2 mb-6">
               Add your kids to get personalized activity recommendations.
             </p>
             <Button onClick={() => setShowForm(true)}>Add Your First Kid</Button>
