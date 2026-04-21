@@ -5,8 +5,9 @@ interface Props {
 export function SharedBadge({ sharedWith }: Props) {
   if (sharedWith.length === 0) return null;
   return (
-    <div className="font-mono text-[9px] uppercase tracking-widest text-meadow mt-1">
-      ✦ shared w/ {sharedWith.join(", ")}
+    <div className="font-sans text-[11px] font-semibold text-ink mt-1 flex items-center gap-1">
+      <span>✦</span>
+      <span>shared with {sharedWith.join(", ")}</span>
     </div>
   );
 }
