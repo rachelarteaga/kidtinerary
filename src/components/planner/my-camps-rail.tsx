@@ -34,12 +34,12 @@ export function MyCampsRail({ camps, onChipClick, onAddClick, onChanged }: Props
   }
 
   return (
-    <aside className="w-full md:w-60 shrink-0 md:sticky md:top-[120px] md:self-start">
-      <h2 className="font-mono text-[10px] uppercase tracking-widest text-stone mb-3">My camps</h2>
+    <aside className="w-full md:w-60 shrink-0 md:h-full md:overflow-y-auto md:flex md:flex-col">
+      <h2 className="font-mono text-[10px] uppercase tracking-widest text-stone mb-3 flex-shrink-0">My camps</h2>
 
       <button
         onClick={onAddClick}
-        className="w-full mb-3 rounded-lg border border-dashed border-driftwood/60 text-stone hover:border-bark hover:text-bark transition-colors font-mono text-[11px] uppercase tracking-wide py-2"
+        className="w-full mb-3 rounded-lg border border-dashed border-driftwood/60 text-stone hover:border-bark hover:text-bark transition-colors font-mono text-[11px] uppercase tracking-wide py-2 flex-shrink-0"
       >
         + Add camp
       </button>

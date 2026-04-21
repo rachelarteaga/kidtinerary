@@ -64,53 +64,51 @@ export function PlannerCell({
       content = (
         <button
           onClick={() => onAddClick(childId, weekStart)}
-          className="w-full rounded-lg border border-dashed border-driftwood/40 bg-transparent py-2 text-[11px] text-stone hover:text-bark hover:border-bark font-mono uppercase tracking-wide"
+          className="w-full h-full rounded-lg border border-dashed border-driftwood/40 bg-transparent py-1.5 text-[11px] text-stone hover:text-bark hover:border-bark font-mono uppercase tracking-wide"
         >
           + Add
         </button>
       );
     } else if (timelineEntries.length === 0) {
       content = (
-        <div className="rounded-lg border border-driftwood/30 bg-white px-2 py-1.5">
-          <div className="font-mono text-[10px] uppercase tracking-wide text-driftwood italic">
+        <div className="rounded-lg border border-driftwood/30 bg-white px-2 py-1.5 h-full flex items-center">
+          <div className="font-mono text-[10px] uppercase tracking-wide text-driftwood italic truncate">
             {consideringChips.length} considering
           </div>
         </div>
       );
     } else {
+      const first = legendRows[0];
+      const extraCount = legendRows.length - 1;
+      const s = STATUS_STYLE[first.status];
       content = (
-        <div className="rounded-lg border border-driftwood/30 bg-white px-2 py-1.5 space-y-0.5">
-          {legendRows.map((r) => {
-            const s = STATUS_STYLE[r.status];
-            return (
-              <button
-                key={r.entryId}
-                onClick={() => onEntryClick(r.entryId)}
-                className="w-full flex items-center gap-1.5 text-left text-xs text-bark hover:underline"
-              >
-                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: r.color }} />
-                <span className="truncate">{r.activityName}</span>
-                <span className={`ml-auto font-mono text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full ${s.bg} ${s.text}`}>
-                  {r.status}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        <button
+          onClick={() => onEntryClick(first.entryId)}
+          className="w-full h-full rounded-lg border border-driftwood/30 bg-white px-2 py-1.5 flex items-center gap-1.5 text-xs text-bark hover:underline text-left"
+        >
+          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: first.color }} />
+          <span className="truncate flex-1">
+            {first.activityName}
+            {extraCount > 0 && <span className="text-stone font-mono text-[10px] ml-1">+{extraCount}</span>}
+          </span>
+          <span className={`font-mono text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-shrink-0 ${s.bg} ${s.text}`}>
+            {first.status}
+          </span>
+        </button>
       );
     }
   } else if (!hasContent) {
     content = (
       <button
         onClick={() => onAddClick(childId, weekStart)}
-        className="w-full rounded-lg border border-dashed border-driftwood/50 bg-cream/50 p-3 text-xs text-stone hover:text-bark hover:border-bark font-mono uppercase tracking-widest"
+        className="w-full h-full rounded-lg border border-dashed border-driftwood/50 bg-cream/50 p-3 text-xs text-stone hover:text-bark hover:border-bark font-mono uppercase tracking-widest"
       >
         + Add
       </button>
     );
   } else {
     content = (
-      <div className="rounded-lg border border-driftwood/30 bg-white p-2">
+      <div className="rounded-lg border border-driftwood/30 bg-white p-2 h-full">
         <CellTimelineGrid
           entries={timelineEntries}
           weekStart={weekStartDate}
@@ -144,8 +142,8 @@ export function PlannerCell({
   }
 
   return (
-    <div className="relative">
-      <div className={isDraggingCamp ? "opacity-40 pointer-events-none" : ""}>{content}</div>
+    <div className="relative h-full">
+      <div className={`h-full ${isDraggingCamp ? "opacity-40 pointer-events-none" : ""}`}>{content}</div>
       {isDraggingCamp && (
         <div className="absolute inset-0">
           <CellDropZones childId={childId} weekStart={weekStart} />

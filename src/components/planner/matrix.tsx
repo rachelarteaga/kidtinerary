@@ -116,8 +116,8 @@ export function PlannerMatrix({
   if (narrow && orderedChildren.length > 1) {
     const focused = orderedChildren.find((c) => c.id === focusedKidId) ?? orderedChildren[0];
     return (
-      <div className="space-y-3">
-        <div className="flex gap-2 overflow-x-auto pb-1 items-stretch">
+      <div className="flex flex-col md:h-full min-h-0 w-full">
+        <div className="flex gap-2 overflow-x-auto pb-1 items-stretch flex-shrink-0 mb-3">
           {orderedChildren.map((c) => (
             <button
               key={c.id}
@@ -133,7 +133,7 @@ export function PlannerMatrix({
             <AddKidMenu plannerId={plannerId} availableKids={availableKids} />
           </div>
         </div>
-        <div className="space-y-3">
+        <div className="md:flex-1 md:overflow-y-auto min-h-0 space-y-3">
           {weeks.map((w) => {
             const weekKey = getWeekKey(w.weekStart);
             const weekStartStr = w.weekStart.toISOString().split("T")[0];
@@ -192,8 +192,8 @@ export function PlannerMatrix({
   }
 
   return (
-    <div className="space-y-3">
-      <div className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
+    <div className="flex flex-col md:h-full min-h-0 w-full">
+      <div className="grid gap-2 mb-3 flex-shrink-0" style={{ gridTemplateColumns: gridTemplate }}>
         <div />
         <SortableContext items={orderedIds} strategy={horizontalListSortingStrategy}>
           {orderedChildren.map((c) => (
@@ -210,6 +210,7 @@ export function PlannerMatrix({
         </div>
       </div>
 
+      <div className="md:flex-1 md:overflow-y-auto min-h-0 space-y-2">
       {weeks.map((w) => {
         const weekKey = getWeekKey(w.weekStart);
         const weekStartStr = w.weekStart.toISOString().split("T")[0];
@@ -279,6 +280,7 @@ export function PlannerMatrix({
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

@@ -202,7 +202,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
     for (const b of overlaps) {
       const coversAll = kids.every((k) => b.child_ids.includes(k.id));
       if (coversAll) {
-        fullRowBlock = { blockId: b.id, type: b.type, title: b.title, emoji: b.emoji, subtitle: `${b.child_ids.length} kids` };
+        fullRowBlock = { blockId: b.id, type: b.type, title: b.title, emoji: b.emoji };
       } else {
         for (const cid of b.child_ids) partialBlocksByChild[cid] = { blockId: b.id, type: b.type, title: b.title, emoji: b.emoji };
       }
@@ -268,8 +268,8 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <header className="sticky top-0 z-30 bg-cream flex items-start justify-between mb-6 flex-wrap gap-3 pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 pt-6">
+      <main className="md:h-[calc(100vh-64px)] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:overflow-hidden">
+        <header className="bg-cream flex items-start justify-between flex-wrap gap-3 py-4 flex-shrink-0">
           <div>
             <div className="mb-1">
               <PlannerTitle plannerId={planner.id} name={planner.name} />
@@ -312,7 +312,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           </div>
         </header>
 
-        <div className="flex flex-col md:flex-row gap-6 items-start">
+        <div className="flex flex-col md:flex-row gap-6 items-start flex-1 min-h-0 pb-4">
           <MyCampsRail
             camps={userCamps}
             onChipClick={(c) => router.push(`/activity/${c.activity.slug}`)}
@@ -320,7 +320,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
             onChanged={() => router.refresh()}
           />
 
-          <div className="w-full md:flex-1 min-w-0">
+          <div className="w-full md:flex-1 min-w-0 flex flex-col md:h-full">
             <PlannerMatrix
               children={kids}
               allUserKids={allUserKids}
