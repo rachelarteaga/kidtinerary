@@ -52,7 +52,6 @@ export function AuthCluster({ user, onLogOut }: Props) {
             <p className="font-sans text-[11px] font-medium text-ink-2 truncate">{user.email}</p>
           </div>
           <Link href="/kids" className="block px-3 py-2 rounded-md font-sans text-[13px] font-medium text-ink hover:bg-base">My kids</Link>
-          <Link href="/account" className="block px-3 py-2 rounded-md font-sans text-[13px] font-medium text-ink hover:bg-base">Account settings</Link>
           <Link href="/account/sharing" className="block px-3 py-2 rounded-md font-sans text-[13px] font-medium text-ink hover:bg-base">Share preferences</Link>
           <hr className="border-t border-disabled mx-2 my-1" />
           <button
