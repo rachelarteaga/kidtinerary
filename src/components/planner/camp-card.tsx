@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import Link from "next/link";
 import { StateBadge } from "./state-badge";
 import { SharedBadge } from "./shared-badge";
+import { KidShape } from "@/components/ui/kid-shape";
 import { updatePlannerEntryStatus, removePlannerEntry } from "@/lib/actions";
 import type { PlannerEntryStatus } from "@/lib/supabase/types";
 
@@ -16,6 +17,8 @@ interface CampCardProps {
   priceLabel?: string | null;
   sharedWith: string[];
   isLoading: boolean;
+  /** Sort-order index of the owning kid — drives the shape marker. */
+  ownerIndex: number;
   onChanged: () => void;
 }
 
@@ -34,6 +37,7 @@ export function CampCard({
   priceLabel,
   sharedWith,
   isLoading,
+  ownerIndex,
   onChanged,
 }: CampCardProps) {
   const [isPending, startTransition] = useTransition();
@@ -52,24 +56,20 @@ export function CampCard({
     });
   }
 
-  const bg =
-    status === "registered" ? "bg-meadow/5 border-meadow/30"
-    : sharedWith.length > 0 ? "bg-meadow/5 border-meadow/20"
-    : "bg-white border-driftwood/30";
-
   return (
-    <div className={`rounded-lg border p-3 transition-opacity ${bg} ${isPending ? "opacity-60 pointer-events-none" : ""}`}>
+    <div className={`rounded-xl border border-ink p-3 bg-surface transition-opacity ${isPending ? "opacity-60 pointer-events-none" : ""}`}>
       <div className="flex items-start justify-between gap-2">
         <Link
           href={`/activity/${activitySlug}`}
-          className="flex-1 font-medium text-sm text-bark hover:text-sunset transition-colors truncate"
+          className="flex-1 font-sans font-bold text-sm text-ink hover:underline truncate flex items-center gap-1.5"
         >
-          {activityName}
+          <KidShape index={ownerIndex} size={10} dotOnly stroke={false} />
+          <span className="truncate">{activityName}</span>
         </Link>
         <button
           onClick={handleRemove}
           aria-label="Remove"
-          className="text-driftwood hover:text-red-500 text-xs"
+          className="text-ink-3 hover:text-[#ef8c8f] text-xs"
         >
           ✕
         </button>
@@ -77,11 +77,11 @@ export function CampCard({
 
       {isLoading ? (
         <div className="mt-2 space-y-1.5">
-          <div className="h-2 bg-driftwood/20 rounded w-2/3 animate-pulse"></div>
-          <div className="h-2 bg-driftwood/20 rounded w-1/2 animate-pulse"></div>
+          <div className="h-2 bg-disabled rounded w-2/3 animate-pulse"></div>
+          <div className="h-2 bg-disabled rounded w-1/2 animate-pulse"></div>
         </div>
       ) : (
-        <div className="mt-1.5 font-mono text-[10px] uppercase tracking-wide text-stone">
+        <div className="mt-1.5 font-sans text-[11px] uppercase tracking-wide text-ink-2 font-semibold">
           {[timeLabel, priceLabel].filter(Boolean).join(" · ") || "Details loading…"}
         </div>
       )}
