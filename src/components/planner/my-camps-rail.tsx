@@ -135,14 +135,14 @@ function DraggableCampItem({
       onClick={onClick}
       className={`group relative rounded-lg border bg-white p-2.5 cursor-grab active:cursor-grabbing select-none transition-all border-ink-3 ${isDragging ? "opacity-60 ring-2 ring-hero-light/40" : "hover:border-ink"}`}
     >
-      <div className="flex items-center gap-1.5 pr-5">
-        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: camp.color }} />
-        <div className="font-medium text-sm text-ink truncate">{camp.activity.name}</div>
+      <div className="flex items-start gap-1.5 pr-5">
+        <span className="w-2 h-2 mt-1.5 rounded-full flex-shrink-0" style={{ background: camp.color }} />
+        <div className="font-medium text-sm text-ink break-words">{camp.activity.name}</div>
       </div>
       {camp.activity.organization?.name &&
         camp.activity.organization.name !== camp.activity.name &&
         camp.activity.organization.name !== "User-submitted" && (
-          <div className="pl-3.5 mt-0.5 font-sans text-[11px] text-ink-2 truncate">
+          <div className="pl-3.5 mt-0.5 font-sans text-[11px] text-ink-2 break-words">
             {camp.activity.organization.name}
           </div>
         )}
