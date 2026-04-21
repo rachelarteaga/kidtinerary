@@ -21,9 +21,10 @@ import { BlockDetailDrawer } from "@/components/planner/block-detail-drawer";
 import { PlannerRangePicker } from "@/components/planner/planner-range-picker";
 import { PlannerTitle } from "@/components/planner/planner-title";
 import { CampQuickViewModal } from "@/components/planner/camp-quick-view-modal";
+import { ScrapeConfirmDrawer } from "@/components/planner/scrape-confirm-drawer";
 import { useScrapeJob } from "@/lib/use-scrape-job";
 import { reorderKidColumns, assignCampToWeek, removeKidFromPlanner } from "@/lib/actions";
-import { generateWeeks, getWeekKey } from "@/lib/format";
+import { generateWeeks, getWeekKey, formatWeekRange } from "@/lib/format";
 import { extrasTotalCents } from "@/lib/extras-calc";
 import type { PlannerEntryRow, UserCampWithActivity, PlannerBlockWithKids } from "@/lib/queries";
 import type { PlannerRow } from "@/lib/supabase/types";
@@ -61,6 +62,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
   const [drawerBlockId, setDrawerBlockId] = useState<string | null>(null);
   const [quickViewCampId, setQuickViewCampId] = useState<string | null>(null);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [scrapeDrawer, setScrapeDrawer] = useState<{ jobId: string; url: string; scopeLabel: string | null } | null>(null);
   const [draggingCamp, setDraggingCamp] = useState<{ name: string; color: string } | null>(null);
   const isDraggingCamp = draggingCamp !== null;
   const [viewMode, setViewMode] = useState<"detail" | "simple">("detail");
@@ -188,6 +190,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           return {
             entryId: e.id,
             activityName: e.session.activity.name,
+            orgName: e.session.activity.organization?.name ?? null,
             color: colorByActivityId.get(e.session.activity.id) ?? "#f4b76f",
             status: e.status,
             isOvernight: e.session_part === "overnight",
@@ -420,7 +423,24 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           kids={kids}
           initialTab={entryModal?.tab ?? "camp"}
           onCampSubmitted={(result) => {
-            if (result.jobId) setActiveJobId(result.jobId);
+            if (result.url && result.jobId) {
+              // URL flow: open the scrape-confirm drawer and let it poll. Skip
+              // setting activeJobId so we don't double-poll.
+              const kid = result.url && entryModal?.childId
+                ? kids.find((k) => k.id === entryModal.childId)
+                : null;
+              const weekLabel = entryModal?.weekStart
+                ? `Week of ${formatWeekRange(new Date(entryModal.weekStart + "T00:00:00"))}`
+                : null;
+              const scopeLabel = kid && weekLabel
+                ? `${kid.name} · ${weekLabel}`
+                : kid
+                ? kid.name
+                : weekLabel;
+              setScrapeDrawer({ jobId: result.jobId, url: result.url, scopeLabel });
+            } else if (result.jobId) {
+              setActiveJobId(result.jobId);
+            }
             setEntryModal(null);
             router.refresh();
           }}
@@ -447,6 +467,13 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
         <CampQuickViewModal
           camp={userCamps.find((c) => c.id === quickViewCampId) ?? null}
           onClose={() => setQuickViewCampId(null)}
+        />
+        <ScrapeConfirmDrawer
+          open={scrapeDrawer !== null}
+          jobId={scrapeDrawer?.jobId ?? null}
+          inputUrl={scrapeDrawer?.url ?? ""}
+          scopeLabel={scrapeDrawer?.scopeLabel ?? null}
+          onClose={() => setScrapeDrawer(null)}
         />
       </main>
 

@@ -15,9 +15,19 @@ interface Props {
   onClose: () => void;
   scope: { childId: string | null; weekStart: string | null };
   shareCampsDefault: boolean;
-  onSubmitted: (result: { jobId?: string; userCampId?: string; plannerEntryId?: string | null }) => void;
+  /** `url` is set when the user submitted a URL; the parent opens the scrape-confirm drawer in that case. */
+  onSubmitted: (result: {
+    jobId?: string;
+    userCampId?: string;
+    plannerEntryId?: string | null;
+    url?: string;
+  }) => void;
   /** When true, skip the outer modal backdrop/wrapper — parent is responsible for chrome. */
   embedded?: boolean;
+}
+
+function isUrlLike(input: string) {
+  return /^https?:\/\//i.test(input.trim());
 }
 
 export function AddCampModal({ open, onClose, scope, shareCampsDefault, onSubmitted, embedded = false }: Props) {
@@ -52,7 +62,9 @@ export function AddCampModal({ open, onClose, scope, shareCampsDefault, onSubmit
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!input.trim()) return;
+    const trimmed = input.trim();
+    if (!trimmed) return;
+    const urlInput = isUrlLike(trimmed) ? trimmed : undefined;
     startTransition(async () => {
       const result = await submitCamp(
         input,
@@ -70,7 +82,7 @@ export function AddCampModal({ open, onClose, scope, shareCampsDefault, onSubmit
           body: JSON.stringify({ jobId: result.jobId }),
         }).catch(() => {});
       }
-      onSubmitted(result);
+      onSubmitted({ ...result, url: urlInput });
       onClose();
     });
   }

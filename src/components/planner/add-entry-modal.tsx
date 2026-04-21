@@ -18,7 +18,12 @@ interface Props {
   shareCampsDefault: boolean;
   kids: ChildLite[];
   initialTab?: "camp" | "block";
-  onCampSubmitted: (result: { jobId?: string; userCampId?: string; plannerEntryId?: string | null }) => void;
+  onCampSubmitted: (result: {
+    jobId?: string;
+    userCampId?: string;
+    plannerEntryId?: string | null;
+    url?: string;
+  }) => void;
   onBlockSubmitted: () => void;
 }
 
