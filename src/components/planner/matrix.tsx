@@ -6,6 +6,7 @@ import { KidColumnHeader } from "./kid-column-header";
 import { PlannerCell, type CellLegendRow } from "./planner-cell";
 import { BlockCard } from "./block-card";
 import { KidAvatar } from "./kid-avatar";
+import { AddKidMenu } from "./add-kid-menu";
 import { formatWeekRange, getWeekKey } from "@/lib/format";
 import type { PlannerBlockType } from "@/lib/supabase/types";
 import type { TimelineEntry } from "./cell-timeline-grid";
@@ -36,6 +37,8 @@ export interface WeekRow {
 
 interface Props {
   children: Child[];
+  allUserKids: Child[];
+  plannerId: string;
   weeks: WeekRow[];
   orderedIds: string[];
   plannerStart: Date;
@@ -46,6 +49,7 @@ interface Props {
   onAddBlockClick: (childId: string | null, weekStart: string | null) => void;
   onEntryClick: (entryId: string) => void;
   onBlockClick: (blockId: string) => void;
+  onRemoveKid: (childId: string) => void;
 }
 
 function ageYears(birthDate: string): number {
@@ -55,6 +59,8 @@ function ageYears(birthDate: string): number {
 
 export function PlannerMatrix({
   children,
+  allUserKids,
+  plannerId,
   weeks,
   orderedIds,
   plannerStart,
@@ -65,9 +71,13 @@ export function PlannerMatrix({
   onAddBlockClick,
   onEntryClick,
   onBlockClick,
+  onRemoveKid,
 }: Props) {
   const childById = new Map(children.map((c) => [c.id, c]));
   const orderedChildren = orderedIds.map((id) => childById.get(id)!).filter(Boolean);
+  const memberIdSet = new Set(orderedIds);
+  const availableKids = allUserKids.filter((k) => !memberIdSet.has(k.id));
+  const allowRemove = orderedChildren.length > 1;
 
   const [narrow, setNarrow] = useState(false);
   useEffect(() => {
@@ -85,12 +95,35 @@ export function PlannerMatrix({
 
   const cols = orderedChildren.length;
   const gridTemplate = `100px ${"1fr ".repeat(cols).trim()}`;
+  const headerGridTemplate = cols > 0
+    ? `100px ${"1fr ".repeat(cols)}auto`
+    : `100px auto`;
+
+  // Empty-planner state: no kids assigned yet. Show only the header row with Add Kid.
+  if (orderedChildren.length === 0) {
+    return (
+      <div className="space-y-3">
+        <div className="grid gap-2" style={{ gridTemplateColumns: headerGridTemplate }}>
+          <div />
+          <div className="min-w-[160px]">
+            <AddKidMenu plannerId={plannerId} availableKids={availableKids} />
+          </div>
+        </div>
+        <div className="rounded-lg border border-dashed border-driftwood/50 bg-white/30 p-8 text-center">
+          <p className="font-serif text-xl text-bark mb-1">No kids on this planner yet</p>
+          <p className="text-stone text-sm">
+            Use <span className="font-mono">+ Add kid</span> above to pick someone from your profile.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (narrow && orderedChildren.length > 1) {
     const focused = orderedChildren.find((c) => c.id === focusedKidId) ?? orderedChildren[0];
     return (
       <div className="space-y-3">
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="flex gap-2 overflow-x-auto pb-1 items-stretch">
           {orderedChildren.map((c) => (
             <button
               key={c.id}
@@ -102,6 +135,9 @@ export function PlannerMatrix({
               {c.name}
             </button>
           ))}
+          <div className="shrink-0 w-[140px]">
+            <AddKidMenu plannerId={plannerId} availableKids={availableKids} />
+          </div>
         </div>
         <div className="space-y-3">
           {weeks.map((w) => {
@@ -163,13 +199,21 @@ export function PlannerMatrix({
 
   return (
     <div className="space-y-3">
-      <div className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
+      <div className="grid gap-2" style={{ gridTemplateColumns: headerGridTemplate }}>
         <div />
         <SortableContext items={orderedIds} strategy={horizontalListSortingStrategy}>
           {orderedChildren.map((c) => (
-            <KidColumnHeader key={c.id} child={c} ageYears={ageYears(c.birth_date)} />
+            <KidColumnHeader
+              key={c.id}
+              child={c}
+              ageYears={ageYears(c.birth_date)}
+              onRemove={allowRemove ? () => onRemoveKid(c.id) : undefined}
+            />
           ))}
         </SortableContext>
+        <div className="min-w-[160px]">
+          <AddKidMenu plannerId={plannerId} availableKids={availableKids} />
+        </div>
       </div>
 
       {weeks.map((w) => {

@@ -6,6 +6,7 @@ import {
   fetchUserCamps,
   fetchPlannerBlocks,
   fetchDefaultPlanner,
+  fetchPlannerKids,
 } from "@/lib/queries";
 import { PlannerClient } from "./client";
 
@@ -16,11 +17,14 @@ export default async function PlannerPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  const children = await fetchChildren(user.id);
-  if (children.length === 0) redirect("/kids");
-
   const planner = await fetchDefaultPlanner(user.id);
   if (!planner) redirect("/auth/login");
+
+  // Kids on THIS planner (may be empty — user can add via the header).
+  const children = await fetchPlannerKids(planner.id, user.id);
+
+  // All the user's kids from their profile — used by the "+ Add kid" menu.
+  const allUserKids = await fetchChildren(user.id);
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -38,6 +42,7 @@ export default async function PlannerPage() {
   return (
     <PlannerClient
       kids={children}
+      allUserKids={allUserKids}
       entries={allEntries}
       userCamps={userCamps}
       blocks={blocks}

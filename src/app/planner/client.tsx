@@ -21,7 +21,7 @@ import { CampDetailDrawer } from "@/components/planner/camp-detail-drawer";
 import { BlockDetailDrawer } from "@/components/planner/block-detail-drawer";
 import { PlannerRangePicker } from "@/components/planner/planner-range-picker";
 import { useScrapeJob } from "@/lib/use-scrape-job";
-import { reorderKidColumns, assignCampToWeek } from "@/lib/actions";
+import { reorderKidColumns, assignCampToWeek, removeKidFromPlanner } from "@/lib/actions";
 import { generateWeeks, getWeekKey } from "@/lib/format";
 import type { PlannerEntryRow, UserCampWithActivity, PlannerBlockWithKids } from "@/lib/queries";
 import type { PlannerRow } from "@/lib/supabase/types";
@@ -43,6 +43,7 @@ interface Kid {
 
 interface Props {
   kids: Kid[];
+  allUserKids: Kid[];
   entries: PlannerEntryRow[];
   userCamps: UserCampWithActivity[];
   blocks: PlannerBlockWithKids[];
@@ -50,7 +51,7 @@ interface Props {
   planner: PlannerRow;
 }
 
-export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefault, planner }: Props) {
+export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, shareCampsDefault, planner }: Props) {
   const router = useRouter();
 
   const [campModal, setCampModal] = useState<{ childId: string | null; weekStart: string | null } | null>(null);
@@ -124,10 +125,22 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
         if (oldIndex === -1 || newIndex === -1) return;
         const next = arrayMove(orderedIds, oldIndex, newIndex);
         setOrderedIds(next);
-        await reorderKidColumns(next);
+        await reorderKidColumns(planner.id, next);
       }
     },
-    [orderedIds, router]
+    [orderedIds, router, planner.id]
+  );
+
+  const handleRemoveKid = useCallback(
+    async (childId: string) => {
+      const result = await removeKidFromPlanner(planner.id, childId);
+      if (result.error) {
+        alert(result.error);
+        return;
+      }
+      router.refresh();
+    },
+    [planner.id, router]
   );
 
   const plannerStart = useMemo(() => new Date(planner.start_date + "T00:00:00"), [planner.start_date]);
@@ -316,6 +329,8 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
           <div className="w-full md:flex-1 min-w-0">
             <PlannerMatrix
               children={kids}
+              allUserKids={allUserKids}
+              plannerId={planner.id}
               weeks={weeks}
               orderedIds={orderedIds}
               plannerStart={plannerStart}
@@ -326,6 +341,7 @@ export function PlannerClient({ kids, entries, userCamps, blocks, shareCampsDefa
               onAddBlockClick={(childId, weekStart) => setBlockModal({ childId, weekStart })}
               onEntryClick={(entryId) => setDrawerEntryId(entryId)}
               onBlockClick={(blockId) => setDrawerBlockId(blockId)}
+              onRemoveKid={handleRemoveKid}
             />
           </div>
         </div>

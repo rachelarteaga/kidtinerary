@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { KidAvatar } from "./kid-avatar";
@@ -18,9 +18,10 @@ interface Child {
 interface Props {
   child: Child;
   ageYears: number;
+  onRemove?: () => void;
 }
 
-export function KidColumnHeader({ child, ageYears }: Props) {
+export function KidColumnHeader({ child, ageYears, onRemove }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: child.id,
     data: { type: "kid-column" },
@@ -36,7 +37,18 @@ export function KidColumnHeader({ child, ageYears }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handler(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
 
   function handleAvatarClick(e: React.MouseEvent) {
     e.stopPropagation();
@@ -101,6 +113,39 @@ export function KidColumnHeader({ child, ageYears }: Props) {
       >
         ⋮⋮
       </button>
+
+      {onRemove && (
+        <div className="relative flex-shrink-0" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label="More options"
+            className="text-stone/60 hover:text-stone px-1 leading-none"
+          >
+            ⋯
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-full mt-1 bg-white border border-driftwood/30 rounded-lg shadow-lg p-1 min-w-[180px] z-20">
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  if (
+                    confirm(
+                      `Remove ${child.name} from this planner? Their profile stays intact.`
+                    )
+                  ) {
+                    onRemove();
+                  }
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-red-50 text-sm text-red-600"
+              >
+                Remove from planner
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {uploadError && (
         <div className="absolute -bottom-6 left-0 right-0 text-[10px] text-red-600 text-center">

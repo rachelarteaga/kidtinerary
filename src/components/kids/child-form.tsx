@@ -15,9 +15,11 @@ interface ChildFormProps {
     interests: string[];
   } | null;
   onDone: () => void;
+  /** Called after a brand-new child is created, before onDone. Not called when editing. */
+  onCreated?: (childId: string) => Promise<void> | void;
 }
 
-export function ChildForm({ editingChild, onDone }: ChildFormProps) {
+export function ChildForm({ editingChild, onDone, onCreated }: ChildFormProps) {
   const [name, setName] = useState(editingChild?.name ?? "");
   const [birthDate, setBirthDate] = useState(editingChild?.birth_date ?? "");
   const [interests, setInterests] = useState<Category[]>(
@@ -58,6 +60,12 @@ export function ChildForm({ editingChild, onDone }: ChildFormProps) {
           : `${name} has been added!`,
         "success"
       );
+
+      // Only fires on create, and only if the action returned an id.
+      if (!editingChild && onCreated && "childId" in result && result.childId) {
+        await onCreated(result.childId);
+      }
+
       onDone();
     });
   }

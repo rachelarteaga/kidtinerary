@@ -155,7 +155,11 @@ export async function submitCampUrl(url: string) {
   return { success: true };
 }
 
-export async function addChild(name: string, birthDate: string, interests: string[]) {
+export async function addChild(
+  name: string,
+  birthDate: string,
+  interests: string[]
+): Promise<{ success?: boolean; error?: string; childId?: string }> {
   // TODO: remove cast when types are generated
   const supabase = (await createClient()) as any;
 
@@ -167,12 +171,16 @@ export async function addChild(name: string, birthDate: string, interests: strin
     return { error: "Not authenticated" };
   }
 
-  const { error } = await supabase.from("children").insert({
-    user_id: user.id,
-    name,
-    birth_date: birthDate,
-    interests,
-  });
+  const { data, error } = await supabase
+    .from("children")
+    .insert({
+      user_id: user.id,
+      name,
+      birth_date: birthDate,
+      interests,
+    })
+    .select("id")
+    .single();
 
   if (error) {
     console.error("addChild error:", error);
@@ -180,7 +188,7 @@ export async function addChild(name: string, birthDate: string, interests: strin
   }
 
   revalidatePath("/kids");
-  return { success: true };
+  return { success: true, childId: data?.id };
 }
 
 export async function updateChild(
@@ -945,23 +953,112 @@ export async function removePlannerBlock(blockId: string): Promise<{ error?: str
 }
 
 export async function reorderKidColumns(
+  plannerId: string,
   orderedChildIds: string[]
 ): Promise<{ error?: string }> {
   const supabase = (await createClient()) as any;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
+  const { data: planner } = await supabase
+    .from("planners")
+    .select("id")
+    .eq("id", plannerId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!planner) return { error: "Planner not found" };
+
   const updates = orderedChildIds.map((childId, idx) =>
     supabase
-      .from("children")
+      .from("planner_kids")
       .update({ sort_order: idx })
-      .eq("id", childId)
-      .eq("user_id", user.id)
+      .eq("planner_id", plannerId)
+      .eq("child_id", childId)
   );
-
   const results = await Promise.all(updates);
   const firstError = results.find((r: any) => r.error);
   if (firstError) return { error: "Failed to save order" };
+
+  revalidatePath("/planner");
+  return {};
+}
+
+export async function addKidToPlanner(
+  plannerId: string,
+  childId: string
+): Promise<{ error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  // Verify planner + child belong to user
+  const { data: planner } = await supabase
+    .from("planners")
+    .select("id")
+    .eq("id", plannerId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!planner) return { error: "Planner not found" };
+
+  const { data: child } = await supabase
+    .from("children")
+    .select("id")
+    .eq("id", childId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!child) return { error: "Child not found" };
+
+  // Determine next sort_order
+  const { data: max } = await supabase
+    .from("planner_kids")
+    .select("sort_order")
+    .eq("planner_id", plannerId)
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const nextSort = (max?.sort_order ?? -1) + 1;
+
+  const { error } = await supabase
+    .from("planner_kids")
+    .upsert(
+      { planner_id: plannerId, child_id: childId, sort_order: nextSort },
+      { onConflict: "planner_id,child_id", ignoreDuplicates: true }
+    );
+  if (error) {
+    console.error("addKidToPlanner error:", error);
+    return { error: "Failed to add kid to planner" };
+  }
+
+  revalidatePath("/planner");
+  return {};
+}
+
+export async function removeKidFromPlanner(
+  plannerId: string,
+  childId: string
+): Promise<{ error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  // Verify planner ownership
+  const { data: planner } = await supabase
+    .from("planners")
+    .select("id")
+    .eq("id", plannerId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!planner) return { error: "Planner not found" };
+
+  const { error } = await supabase
+    .from("planner_kids")
+    .delete()
+    .eq("planner_id", plannerId)
+    .eq("child_id", childId);
+  if (error) {
+    console.error("removeKidFromPlanner error:", error);
+    return { error: "Failed to remove kid from planner" };
+  }
 
   revalidatePath("/planner");
   return {};

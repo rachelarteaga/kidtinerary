@@ -318,6 +318,28 @@ export async function fetchChildren(userId: string) {
   return data ?? [];
 }
 
+export async function fetchPlannerKids(plannerId: string, _userId: string) {
+  const supabase = (await createClient()) as any;
+
+  const { data, error } = await supabase
+    .from("planner_kids")
+    .select(`
+      child_id, sort_order,
+      child:children!inner(id, name, birth_date, interests, color, sort_order, avatar_url, created_at)
+    `)
+    .eq("planner_id", plannerId)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("fetchPlannerKids error:", error);
+    return [];
+  }
+
+  const rows = (data ?? []).filter((r: any) => r.child && r.child.id);
+  return rows.map((r: any) => r.child);
+}
+
 export interface PlannerEntryRow {
   id: string;
   user_id: string;
