@@ -57,11 +57,11 @@ export function FilterSidebar() {
   return (
     <aside className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="font-mono text-xs uppercase tracking-widest text-stone">Filters</h3>
+        <h3 className="font-sans text-xs uppercase tracking-widest text-ink-2">Filters</h3>
         {hasFilters && (
           <button
             onClick={clearAll}
-            className="font-mono text-[10px] uppercase tracking-wide text-sunset hover:underline"
+            className="font-sans text-[10px] uppercase tracking-wide text-ink hover:underline"
           >
             Clear all
           </button>
@@ -70,7 +70,7 @@ export function FilterSidebar() {
 
       {/* Categories */}
       <div>
-        <h4 className="font-mono text-[10px] uppercase tracking-wide text-stone mb-2">
+        <h4 className="font-sans text-[10px] uppercase tracking-wide text-ink-2 mb-2">
           Category
         </h4>
         <div className="space-y-1">
@@ -82,8 +82,8 @@ export function FilterSidebar() {
                 onClick={() => toggleCategory(cat)}
                 className={`block w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors ${
                   isActive
-                    ? "bg-sunset/10 text-sunset font-medium"
-                    : "text-bark hover:bg-bark/5"
+                    ? "bg-ink/10 text-ink font-medium"
+                    : "text-ink hover:bg-ink/5"
                 }`}
               >
                 {categoryLabel(cat)}
@@ -95,14 +95,14 @@ export function FilterSidebar() {
 
       {/* Indoor/Outdoor */}
       <div>
-        <h4 className="font-mono text-[10px] uppercase tracking-wide text-stone mb-2">
+        <h4 className="font-sans text-[10px] uppercase tracking-wide text-ink-2 mb-2">
           Setting
         </h4>
         <div className="space-y-1">
           <button
             onClick={() => updateParam("indoor_outdoor", "")}
             className={`block w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              !activeIndoorOutdoor ? "bg-bark/8 text-bark font-medium" : "text-bark hover:bg-bark/5"
+              !activeIndoorOutdoor ? "bg-ink/8 text-ink font-medium" : "text-ink hover:bg-ink/5"
             }`}
           >
             All
@@ -113,8 +113,8 @@ export function FilterSidebar() {
               onClick={() => updateParam("indoor_outdoor", io)}
               className={`block w-full text-left px-3 py-1.5 rounded-lg text-sm capitalize transition-colors ${
                 activeIndoorOutdoor === io
-                  ? "bg-sunset/10 text-sunset font-medium"
-                  : "text-bark hover:bg-bark/5"
+                  ? "bg-ink/10 text-ink font-medium"
+                  : "text-ink hover:bg-ink/5"
               }`}
             >
               {io}
@@ -125,14 +125,14 @@ export function FilterSidebar() {
 
       {/* Time Slot */}
       <div>
-        <h4 className="font-mono text-[10px] uppercase tracking-wide text-stone mb-2">
+        <h4 className="font-sans text-[10px] uppercase tracking-wide text-ink-2 mb-2">
           Schedule
         </h4>
         <div className="space-y-1">
           <button
             onClick={() => updateParam("time_slot", "")}
             className={`block w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              !activeTimeSlot ? "bg-bark/8 text-bark font-medium" : "text-bark hover:bg-bark/5"
+              !activeTimeSlot ? "bg-ink/8 text-ink font-medium" : "text-ink hover:bg-ink/5"
             }`}
           >
             Any
@@ -143,8 +143,8 @@ export function FilterSidebar() {
               onClick={() => updateParam("time_slot", slot)}
               className={`block w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors ${
                 activeTimeSlot === slot
-                  ? "bg-sunset/10 text-sunset font-medium"
-                  : "text-bark hover:bg-bark/5"
+                  ? "bg-ink/10 text-ink font-medium"
+                  : "text-ink hover:bg-ink/5"
               }`}
             >
               {formatTimeSlot(slot)}
@@ -156,7 +156,7 @@ export function FilterSidebar() {
       {/* Radius (only shown when a location is active) */}
       {hasLocation && (
         <div>
-          <h4 className="font-mono text-[10px] uppercase tracking-wide text-stone mb-2">
+          <h4 className="font-sans text-[10px] uppercase tracking-wide text-ink-2 mb-2">
             Radius
           </h4>
           <div className="flex flex-wrap gap-1.5">
@@ -165,10 +165,10 @@ export function FilterSidebar() {
                 key={mi}
                 type="button"
                 onClick={() => setRadius(mi)}
-                className={`px-3 py-1.5 rounded-full font-mono text-xs transition-colors ${
+                className={`px-3 py-1.5 rounded-full font-sans text-xs transition-colors ${
                   activeRadius === mi
-                    ? "bg-sunset text-white"
-                    : "bg-cream border border-driftwood/50 text-bark hover:border-sunset/50"
+                    ? "bg-ink text-ink-inverse"
+                    : "bg-surface border border-ink-3 text-ink hover:border-ink/50"
                 }`}
               >
                 {mi} mi
