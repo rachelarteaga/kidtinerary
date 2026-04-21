@@ -78,12 +78,12 @@ export function SearchBar() {
   }, [keyword, category, ageMin, ageMax, address, selectedLat, selectedLng, radius, router]);
 
   return (
-    <div className="bg-white rounded-2xl border border-driftwood/30 shadow-sm p-4 sm:p-6">
+    <div className="bg-surface rounded-2xl border border-ink-3 shadow-sm p-4 sm:p-6">
       {/* Row 1: Keyword + Category + Age Range */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {/* Keyword */}
         <div>
-          <label className="block font-mono text-[10px] uppercase tracking-wide text-stone mb-1.5">
+          <label className="block font-sans text-[10px] uppercase tracking-wide text-ink-2 mb-1.5">
             Search
           </label>
           <input
@@ -92,19 +92,19 @@ export function SearchBar() {
             onChange={(e) => setKeyword(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             placeholder="Soccer, art, STEM..."
-            className="w-full px-3 py-2 rounded-lg border border-driftwood/50 bg-cream/50 text-bark placeholder:text-driftwood text-sm focus:outline-none focus:border-sunset focus:ring-1 focus:ring-sunset/30"
+            className="w-full px-3 py-2 rounded-lg border border-ink-3 bg-surface/50 text-ink placeholder:text-ink-3 text-sm focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink/30"
           />
         </div>
 
         {/* Category */}
         <div>
-          <label className="block font-mono text-[10px] uppercase tracking-wide text-stone mb-1.5">
+          <label className="block font-sans text-[10px] uppercase tracking-wide text-ink-2 mb-1.5">
             Category
           </label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-driftwood/50 bg-cream/50 text-bark text-sm focus:outline-none focus:border-sunset focus:ring-1 focus:ring-sunset/30"
+            className="w-full px-3 py-2 rounded-lg border border-ink-3 bg-surface/50 text-ink text-sm focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink/30"
           >
             <option value="">All Categories</option>
             {CATEGORIES.map((cat) => (
@@ -118,7 +118,7 @@ export function SearchBar() {
         {/* Age Range */}
         <div className="flex gap-2">
           <div className="flex-1">
-            <label className="block font-mono text-[10px] uppercase tracking-wide text-stone mb-1.5">
+            <label className="block font-sans text-[10px] uppercase tracking-wide text-ink-2 mb-1.5">
               Age Min
             </label>
             <input
@@ -128,11 +128,11 @@ export function SearchBar() {
               value={ageMin}
               onChange={(e) => setAgeMin(e.target.value)}
               placeholder="3"
-              className="w-full px-3 py-2 rounded-lg border border-driftwood/50 bg-cream/50 text-bark text-sm focus:outline-none focus:border-sunset focus:ring-1 focus:ring-sunset/30"
+              className="w-full px-3 py-2 rounded-lg border border-ink-3 bg-surface/50 text-ink text-sm focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink/30"
             />
           </div>
           <div className="flex-1">
-            <label className="block font-mono text-[10px] uppercase tracking-wide text-stone mb-1.5">
+            <label className="block font-sans text-[10px] uppercase tracking-wide text-ink-2 mb-1.5">
               Age Max
             </label>
             <input
@@ -142,7 +142,7 @@ export function SearchBar() {
               value={ageMax}
               onChange={(e) => setAgeMax(e.target.value)}
               placeholder="12"
-              className="w-full px-3 py-2 rounded-lg border border-driftwood/50 bg-cream/50 text-bark text-sm focus:outline-none focus:border-sunset focus:ring-1 focus:ring-sunset/30"
+              className="w-full px-3 py-2 rounded-lg border border-ink-3 bg-surface/50 text-ink text-sm focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink/30"
             />
           </div>
         </div>
@@ -152,7 +152,7 @@ export function SearchBar() {
       <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Address input with autocomplete */}
         <div>
-          <label className="block font-mono text-[10px] uppercase tracking-wide text-stone mb-1.5">
+          <label className="block font-sans text-[10px] uppercase tracking-wide text-ink-2 mb-1.5">
             Near Address
           </label>
           <AddressInput
@@ -172,13 +172,13 @@ export function SearchBar() {
             onError={setGeocodeError}
           />
           {geocodeError && (
-            <p className="mt-1 font-mono text-[10px] text-sunset">{geocodeError}</p>
+            <p className="mt-1 font-sans text-[10px] text-ink">{geocodeError}</p>
           )}
         </div>
 
         {/* Radius pill buttons */}
         <div>
-          <label className="block font-mono text-[10px] uppercase tracking-wide text-stone mb-1.5">
+          <label className="block font-sans text-[10px] uppercase tracking-wide text-ink-2 mb-1.5">
             Radius
           </label>
           <div className="flex gap-1.5 flex-wrap">
@@ -187,10 +187,10 @@ export function SearchBar() {
                 key={mi}
                 type="button"
                 onClick={() => setRadius(mi)}
-                className={`px-3 py-1.5 rounded-full font-mono text-xs transition-colors ${
+                className={`px-3 py-1.5 rounded-full font-sans text-xs transition-colors ${
                   radius === mi
-                    ? "bg-sunset text-white"
-                    : "bg-cream border border-driftwood/50 text-bark hover:border-sunset/50"
+                    ? "bg-ink text-ink-inverse"
+                    : "bg-surface border border-ink-3 text-ink hover:border-ink/50"
                 }`}
               >
                 {mi} mi
