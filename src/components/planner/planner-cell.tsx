@@ -14,9 +14,9 @@ export interface CellLegendRow {
 }
 
 const STATUS_STYLE: Record<PlannerEntryStatus, { bg: string; text: string }> = {
-  considering: { bg: "bg-[#fdf0de]", text: "text-[#a08045]" },
-  waitlisted:  { bg: "bg-[#faf1dc]", text: "text-[#7a5e2a]" },
-  registered:  { bg: "bg-meadow/15", text: "text-meadow" },
+  considering: { bg: "bg-status-considering", text: "text-ink" },
+  waitlisted:  { bg: "bg-status-waitlisted",  text: "text-ink" },
+  registered:  { bg: "bg-status-registered",  text: "text-ink" },
 };
 
 interface Props {
@@ -64,15 +64,15 @@ export function PlannerCell({
       content = (
         <button
           onClick={() => onAddClick(childId, weekStart)}
-          className="w-full h-full rounded-lg border border-dashed border-driftwood/40 bg-transparent py-1.5 text-[11px] text-stone hover:text-bark hover:border-bark font-mono uppercase tracking-wide"
+          className="w-full h-full rounded-lg border border-dashed border-ink-3 bg-transparent py-1.5 text-[11px] text-ink-2 hover:text-ink hover:border-ink font-sans uppercase tracking-wide font-bold"
         >
           + Add
         </button>
       );
     } else if (timelineEntries.length === 0) {
       content = (
-        <div className="rounded-lg border border-driftwood/30 bg-white px-2 py-1.5 h-full flex items-center">
-          <div className="font-mono text-[10px] uppercase tracking-wide text-driftwood italic truncate">
+        <div className="rounded-lg border border-ink-3 bg-white px-2 py-1.5 h-full flex items-center">
+          <div className="font-sans text-[11px] uppercase tracking-wide text-ink-3 font-semibold italic truncate">
             {consideringChips.length} considering
           </div>
         </div>
@@ -84,14 +84,14 @@ export function PlannerCell({
       content = (
         <button
           onClick={() => onEntryClick(first.entryId)}
-          className="w-full h-full rounded-lg border border-driftwood/30 bg-white px-2 py-1.5 flex items-center gap-1.5 text-xs text-bark hover:underline text-left"
+          className="w-full h-full rounded-lg border border-ink bg-surface px-2 py-1.5 flex items-center gap-1.5 text-xs text-ink hover:underline text-left"
         >
           <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: first.color }} />
           <span className="truncate flex-1">
             {first.activityName}
-            {extraCount > 0 && <span className="text-stone font-mono text-[10px] ml-1">+{extraCount}</span>}
+            {extraCount > 0 && <span className="text-ink-2 font-sans text-[10px] font-semibold ml-1">+{extraCount}</span>}
           </span>
-          <span className={`font-mono text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-shrink-0 ${s.bg} ${s.text}`}>
+          <span className={`font-sans font-semibold text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full border border-ink flex-shrink-0 ${s.bg} ${s.text}`}>
             {first.status}
           </span>
         </button>
@@ -101,14 +101,14 @@ export function PlannerCell({
     content = (
       <button
         onClick={() => onAddClick(childId, weekStart)}
-        className="w-full h-full rounded-lg border border-dashed border-driftwood/50 bg-cream/50 p-3 text-xs text-stone hover:text-bark hover:border-bark font-mono uppercase tracking-widest"
+        className="w-full h-full rounded-lg border border-dashed border-ink-3 bg-surface p-3 text-xs text-ink-2 hover:text-ink hover:border-ink font-sans font-bold uppercase tracking-widest"
       >
         + Add
       </button>
     );
   } else {
     content = (
-      <div className="rounded-lg border border-driftwood/30 bg-white p-2 h-full">
+      <div className="rounded-lg border border-ink bg-surface p-2 h-full">
         <CellTimelineGrid
           entries={timelineEntries}
           weekStart={weekStartDate}
@@ -124,11 +124,11 @@ export function PlannerCell({
                 <button
                   key={r.entryId}
                   onClick={() => onEntryClick(r.entryId)}
-                  className="w-full flex items-center gap-1.5 text-left text-xs text-bark hover:underline"
+                  className="w-full flex items-center gap-1.5 text-left text-xs text-ink hover:underline"
                 >
                   <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: r.color }} />
                   <span className="truncate">{r.activityName}</span>
-                  <span className={`ml-auto font-mono text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full ${s.bg} ${s.text}`}>
+                  <span className={`ml-auto font-sans font-semibold text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full border border-ink ${s.bg} ${s.text}`}>
                     {r.status}
                   </span>
                 </button>
