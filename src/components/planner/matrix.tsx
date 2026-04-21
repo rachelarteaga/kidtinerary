@@ -7,7 +7,7 @@ import { PlannerCell, type CellLegendRow } from "./planner-cell";
 import { BlockCard } from "./block-card";
 import { KidAvatar } from "./kid-avatar";
 import { AddKidMenu } from "./add-kid-menu";
-import { formatWeekLabelParts, formatWeekLabelCompact, getWeekKey } from "@/lib/format";
+import { formatWeekLabelParts, getWeekKey } from "@/lib/format";
 import type { PlannerBlockType } from "@/lib/supabase/types";
 import type { TimelineEntry } from "./cell-timeline-grid";
 import type { ConsideringChip } from "./considering-chips";
@@ -137,18 +137,15 @@ export function PlannerMatrix({
           {weeks.map((w) => {
             const weekKey = getWeekKey(w.weekStart);
             const weekStartStr = w.weekStart.toISOString().split("T")[0];
-            const compactLabel = viewMode === "simple" ? formatWeekLabelCompact(w.weekStart) : null;
-            const labelParts = viewMode !== "simple" ? formatWeekLabelParts(w.weekStart) : null;
+            const labelParts = formatWeekLabelParts(w.weekStart);
             if (w.fullRowBlock) {
               return (
                 <div key={weekKey}>
                   <div className="font-mono text-[10px] uppercase tracking-widest text-stone mb-1 whitespace-nowrap">
-                    {compactLabel ?? (
-                      <span className="flex flex-col leading-tight">
-                        <span>{labelParts!.month}</span>
-                        <span>{labelParts!.days}</span>
-                      </span>
-                    )}
+                    <span className="flex flex-col leading-tight">
+                      <span>{labelParts.month}</span>
+                      <span>{labelParts.days}</span>
+                    </span>
                   </div>
                   <BlockCard
                     blockId={w.fullRowBlock.blockId}
@@ -167,12 +164,10 @@ export function PlannerMatrix({
             return (
               <div key={weekKey}>
                 <div className="font-mono text-[10px] uppercase tracking-widest text-stone mb-1 whitespace-nowrap">
-                  {compactLabel ?? (
-                    <span className="flex flex-col leading-tight">
-                      <span>{labelParts!.month}</span>
-                      <span>{labelParts!.days}</span>
-                    </span>
-                  )}
+                  <span className="flex flex-col leading-tight">
+                    <span>{labelParts.month}</span>
+                    <span>{labelParts.days}</span>
+                  </span>
                 </div>
                 {partial ? (
                   <BlockCard
@@ -230,19 +225,16 @@ export function PlannerMatrix({
       {weeks.map((w) => {
         const weekKey = getWeekKey(w.weekStart);
         const weekStartStr = w.weekStart.toISOString().split("T")[0];
-        const compactLabel = viewMode === "simple" ? formatWeekLabelCompact(w.weekStart) : null;
-        const labelParts = viewMode !== "simple" ? formatWeekLabelParts(w.weekStart) : null;
+        const labelParts = formatWeekLabelParts(w.weekStart);
 
         if (w.fullRowBlock) {
           return (
             <div key={weekKey} className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
               <div className="font-mono text-[10px] uppercase tracking-widest text-stone self-center px-1.5 whitespace-nowrap">
-                {compactLabel ?? (
-                  <span className="flex flex-col leading-tight">
-                    <span>{labelParts!.month}</span>
-                    <span>{labelParts!.days}</span>
-                  </span>
-                )}
+                <span className="flex flex-col leading-tight">
+                  <span>{labelParts.month}</span>
+                  <span>{labelParts.days}</span>
+                </span>
               </div>
               <div style={{ gridColumn: `2 / span ${cols}` }}>
                 <BlockCard
@@ -263,12 +255,10 @@ export function PlannerMatrix({
         return (
           <div key={weekKey} className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
             <div className="font-mono text-[10px] uppercase tracking-widest text-stone self-center px-1.5 whitespace-nowrap">
-              {compactLabel ?? (
-                <span className="flex flex-col leading-tight">
-                  <span>{labelParts!.month}</span>
-                  <span>{labelParts!.days}</span>
-                </span>
-              )}
+              <span className="flex flex-col leading-tight">
+                <span>{labelParts.month}</span>
+                <span>{labelParts.days}</span>
+              </span>
             </div>
             {orderedChildren.map((child) => {
               const partial = w.partialBlocksByChild[child.id];
