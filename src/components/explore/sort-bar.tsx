@@ -20,17 +20,17 @@ export function SortBar({ total }: SortBarProps) {
 
   return (
     <div className="flex items-center justify-between mb-4">
-      <p className="font-mono text-xs text-stone uppercase tracking-wide">
+      <p className="font-sans text-xs text-ink-2 uppercase tracking-wide">
         {total} {total === 1 ? "activity" : "activities"} found
       </p>
       <div className="flex items-center gap-2">
-        <label className="font-mono text-[10px] text-stone uppercase tracking-wide">
+        <label className="font-sans text-[10px] text-ink-2 uppercase tracking-wide">
           Sort by
         </label>
         <select
           value={currentSort}
           onChange={(e) => handleSort(e.target.value)}
-          className="px-2 py-1 rounded-lg border border-driftwood/50 bg-cream/50 text-bark text-xs focus:outline-none focus:border-sunset"
+          className="px-2 py-1 rounded-lg border border-ink-3 bg-surface/50 text-ink text-xs focus:outline-none focus:border-ink"
         >
           <option value="name">Name</option>
           <option value="price_low">Price: Low to High</option>
