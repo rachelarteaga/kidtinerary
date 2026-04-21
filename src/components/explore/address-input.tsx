@@ -104,7 +104,7 @@ export function AddressInput({
   return (
     <div ref={containerRef} className="relative">
       {/* Pin icon */}
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-driftwood pointer-events-none z-10">
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none z-10">
         {loading ? (
           // Small spinner
           <svg
@@ -154,19 +154,19 @@ export function AddressInput({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         autoComplete="off"
-        className={`w-full pl-9 pr-3 py-2 rounded-lg border border-driftwood/50 bg-cream/50 text-bark placeholder:text-driftwood text-sm focus:outline-none focus:border-sunset focus:ring-1 focus:ring-sunset/30 font-mono ${className}`}
+        className={`w-full pl-9 pr-3 py-2 rounded-lg border border-ink-3 bg-surface/50 text-ink placeholder:text-ink-3 text-sm focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink/30 font-sans ${className}`}
       />
 
       {/* Suggestion dropdown */}
       {open && suggestion && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-cream border border-driftwood rounded-lg shadow-md overflow-hidden">
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-surface border border-ink rounded-lg shadow-md overflow-hidden">
           <button
             type="button"
             onMouseDown={(e) => {
               e.preventDefault(); // prevent blur from firing before click
               handleSelect();
             }}
-            className="w-full text-left px-3 py-2.5 font-mono text-xs text-bark hover:bg-bark/5 transition-colors"
+            className="w-full text-left px-3 py-2.5 font-sans text-xs text-ink hover:bg-ink/5 transition-colors"
           >
             {suggestion.formatted_address}
           </button>
