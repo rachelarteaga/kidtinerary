@@ -25,11 +25,11 @@ export function CampCard({ activity, distance }: CampCardProps) {
   return (
     <Link
       href={`/activity/${activity.slug}`}
-      className="group block bg-white rounded-2xl border border-driftwood/30 shadow-sm hover:shadow-md transition-all overflow-hidden"
+      className="group block bg-surface rounded-2xl border border-ink-3 shadow-sm hover:shadow-md transition-all overflow-hidden"
     >
       {/* Category color bar */}
       <div
-        className={`h-1.5 w-full ${categoryColor?.bg ?? "bg-driftwood/20"}`}
+        className={`h-1.5 w-full ${categoryColor?.bg ?? "bg-ink-3"}`}
         style={{
           backgroundColor: primaryCategory
             ? `color-mix(in srgb, ${getHex(primaryCategory)} 30%, transparent)`
@@ -53,11 +53,11 @@ export function CampCard({ activity, distance }: CampCardProps) {
 
         {/* Org and activity name — visually separate, nearly equal prominence */}
         {activity.organization && (
-          <p className="font-sans text-sm font-semibold text-bark/70 mb-0.5">
+          <p className="font-sans text-sm font-semibold text-ink/70 mb-0.5">
             {(activity.organization as any).name}
           </p>
         )}
-        <h3 className="font-serif text-lg leading-tight mb-3 group-hover:text-sunset transition-colors">
+        <h3 className="font-display font-extrabold text-lg leading-tight mb-3 group-hover:text-ink transition-colors">
           {activity.name}
         </h3>
 
@@ -74,14 +74,14 @@ export function CampCard({ activity, distance }: CampCardProps) {
 
         {/* Location */}
         {(location || distance != null) && (
-          <p className="text-xs text-stone mb-3 flex items-center gap-1.5 overflow-hidden">
+          <p className="text-xs text-ink-2 mb-3 flex items-center gap-1.5 overflow-hidden">
             {location && (
               <span className="truncate min-w-0">
                 {(location as any).location_name ?? (location as any).address}
               </span>
             )}
             {distance != null && (
-              <span className="font-mono text-[10px] text-driftwood whitespace-nowrap shrink-0">
+              <span className="font-sans text-[10px] text-ink-3 whitespace-nowrap shrink-0">
                 {distance.toFixed(1)} mi
               </span>
             )}
@@ -89,21 +89,21 @@ export function CampCard({ activity, distance }: CampCardProps) {
         )}
 
         {/* Bottom row: price + sessions */}
-        <div className="flex items-end justify-between pt-2 border-t border-driftwood/20">
+        <div className="flex items-end justify-between pt-2 border-t border-ink-3">
           {lowestPrice ? (
             <div>
-              <span className="font-mono text-base font-medium text-bark">
+              <span className="font-sans text-base font-medium text-ink">
                 {formatPrice(lowestPrice.price_cents)}
               </span>
-              <span className="font-mono text-[10px] text-stone uppercase tracking-wide ml-0.5">
+              <span className="font-sans text-[10px] text-ink-2 uppercase tracking-wide ml-0.5">
                 {formatPriceUnit(lowestPrice.price_unit as any)}
               </span>
             </div>
           ) : (
-            <span className="font-mono text-xs text-stone uppercase">Price TBD</span>
+            <span className="font-sans text-xs text-ink-2 uppercase">Price TBD</span>
           )}
           {sessionCount > 0 && (
-            <span className="font-mono text-[10px] text-stone uppercase tracking-wide">
+            <span className="font-sans text-[10px] text-ink-2 uppercase tracking-wide">
               {sessionCount} {sessionCount === 1 ? "session" : "sessions"}
             </span>
           )}
