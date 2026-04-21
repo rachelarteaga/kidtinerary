@@ -97,9 +97,16 @@ export function PlannerRangePicker({
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-white border border-ink-3 text-ink hover:border-ink"
+        className="font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-white border border-ink-3 text-ink hover:border-ink inline-flex items-center gap-1.5"
       >
-        📅 {formatRange(startDate, endDate)} ▾
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="#151515" aria-hidden>
+          <rect x="1.5" y="3" width="13" height="12" rx="1.5" />
+          <rect x="4" y="1" width="1.5" height="3" />
+          <rect x="10.5" y="1" width="1.5" height="3" />
+          <rect x="1.5" y="6" width="13" height="1" fill="#ffffff" />
+        </svg>
+        <span>{formatRange(startDate, endDate)}</span>
+        <span aria-hidden>▾</span>
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-2 bg-white border border-ink-3 rounded-lg shadow-lg p-4 z-20 min-w-[280px]">
