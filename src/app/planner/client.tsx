@@ -317,7 +317,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
                       <>
                         {" · "}
                         <span className="text-ink font-semibold">
-                          ${Math.round(committedCents / 100).toLocaleString()} committed
+                          ${Math.round(committedCents / 100).toLocaleString()} spent
                         </span>
                       </>
                     )}
