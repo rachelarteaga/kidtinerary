@@ -197,7 +197,7 @@ export function PlannerMatrix({
 
   return (
     <div className="flex flex-col md:h-full min-h-0 w-full">
-      <div className="grid gap-2 mb-3 flex-shrink-0" style={{ gridTemplateColumns: gridTemplate }}>
+      <div className="grid gap-2 mb-[14px] flex-shrink-0" style={{ gridTemplateColumns: gridTemplate }}>
         <div />
         <SortableContext items={orderedIds} strategy={horizontalListSortingStrategy}>
           {orderedChildren.map((c, i) => (
