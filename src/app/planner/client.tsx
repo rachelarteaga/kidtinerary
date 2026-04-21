@@ -190,6 +190,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           return {
             entryId: e.id,
             activityName: e.session.activity.name,
+            orgName: e.session.activity.organization?.name ?? null,
             color: colorByActivityId.get(e.session.activity.id) ?? "#f4b76f",
             status: e.status,
             isOvernight: e.session_part === "overnight",

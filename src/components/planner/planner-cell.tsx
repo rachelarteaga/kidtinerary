@@ -9,11 +9,21 @@ import type { ScheduleSlot } from "@/lib/schedule";
 export interface CellLegendRow {
   entryId: string;
   activityName: string;
+  /** Hosting organization. Null/empty, matching the activity name, or the
+   * placeholder "User-submitted" suppresses the subtitle. */
+  orgName: string | null;
   color: string;
   status: PlannerEntryStatus;
   isOvernight: boolean;
   /** Weekly total in cents (base + extras). Null if no price set. Only shown when status === "registered". */
   priceWeeklyCents: number | null;
+}
+
+function shouldShowOrg(orgName: string | null | undefined, activityName: string): boolean {
+  if (!orgName) return false;
+  if (orgName === activityName) return false;
+  if (orgName === "User-submitted") return false;
+  return true;
 }
 
 const STATUS_STYLE: Record<PlannerEntryStatus, { bg: string; text: string }> = {
@@ -84,22 +94,28 @@ export function PlannerCell({
       const first = legendRows[0];
       const extraCount = legendRows.length - 1;
       const s = STATUS_STYLE[first.status];
+      const showOrg = shouldShowOrg(first.orgName, first.activityName);
       content = (
         <button
           onClick={() => onEntryClick(first.entryId)}
-          className="w-full h-full rounded-lg border border-ink-3 bg-surface px-2 py-1.5 flex items-center gap-1.5 text-xs text-ink hover:underline text-left"
+          className="w-full h-full rounded-lg border border-ink-3 bg-surface px-2 py-1.5 flex items-start gap-1.5 text-xs text-ink hover:underline text-left"
         >
-          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: first.color }} />
-          <span className="truncate flex-1 inline-flex items-center gap-1">
-            <span className="truncate">{first.activityName}</span>
-            {first.isOvernight ? (
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="#151515" className="flex-shrink-0" aria-label="Overnight">
-                <path d="M14 2 A 10 10 0 1 0 22 13 A 8 8 0 0 1 14 2 Z" />
-              </svg>
-            ) : null}
-            {extraCount > 0 && <span className="text-ink-2 font-sans text-[10px] font-semibold ml-1">+{extraCount}</span>}
+          <span className="w-2 h-2 mt-1 rounded-full flex-shrink-0" style={{ background: first.color }} />
+          <span className="flex-1 min-w-0">
+            <span className="flex items-center gap-1">
+              <span className="truncate">{first.activityName}</span>
+              {first.isOvernight ? (
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="#151515" className="flex-shrink-0" aria-label="Overnight">
+                  <path d="M14 2 A 10 10 0 1 0 22 13 A 8 8 0 0 1 14 2 Z" />
+                </svg>
+              ) : null}
+              {extraCount > 0 && <span className="text-ink-2 font-sans text-[10px] font-semibold ml-1">+{extraCount}</span>}
+            </span>
+            {showOrg && (
+              <span className="block truncate font-sans text-[10px] text-ink-2 leading-tight">{first.orgName}</span>
+            )}
           </span>
-          <span className={`font-sans font-semibold text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full border border-ink flex-shrink-0 ${s.bg} ${s.text}`}>
+          <span className={`font-sans font-semibold text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full border border-ink flex-shrink-0 mt-0.5 ${s.bg} ${s.text}`}>
             {first.status}
           </span>
         </button>
@@ -125,28 +141,36 @@ export function PlannerCell({
           onSquareClick={handleSquareClick}
         />
         {legendRows.length > 0 && (
-          <div className="mt-1.5 space-y-0.5">
+          <div className="mt-1.5 space-y-1">
             {legendRows.map((r) => {
               const s = STATUS_STYLE[r.status];
+              const showOrg = shouldShowOrg(r.orgName, r.activityName);
               return (
                 <button
                   key={r.entryId}
                   onClick={() => onEntryClick(r.entryId)}
-                  className="w-full flex items-center gap-1.5 text-left text-xs text-ink hover:underline"
+                  className="w-full flex items-start gap-1.5 text-left text-xs text-ink hover:underline"
                 >
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: r.color }} />
-                  <span className="truncate">{r.activityName}</span>
-                  {r.isOvernight ? (
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="#151515" className="flex-shrink-0" aria-label="Overnight">
-                      <path d="M14 2 A 10 10 0 1 0 22 13 A 8 8 0 0 1 14 2 Z" />
-                    </svg>
-                  ) : null}
+                  <span className="w-2 h-2 mt-1 rounded-full flex-shrink-0" style={{ background: r.color }} />
+                  <span className="flex-1 min-w-0">
+                    <span className="flex items-center gap-1">
+                      <span className="truncate">{r.activityName}</span>
+                      {r.isOvernight ? (
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="#151515" className="flex-shrink-0" aria-label="Overnight">
+                          <path d="M14 2 A 10 10 0 1 0 22 13 A 8 8 0 0 1 14 2 Z" />
+                        </svg>
+                      ) : null}
+                    </span>
+                    {showOrg && (
+                      <span className="block truncate font-sans text-[10px] text-ink-2 leading-tight">{r.orgName}</span>
+                    )}
+                  </span>
                   {r.priceWeeklyCents != null ? (
-                    <span className="ml-auto font-sans text-[10px] font-semibold text-ink-2 flex-shrink-0">
+                    <span className="font-sans text-[10px] font-semibold text-ink-2 flex-shrink-0 mt-0.5">
                       ${Math.round(r.priceWeeklyCents / 100)}
                     </span>
                   ) : null}
-                  <span className={`${r.priceWeeklyCents != null ? "" : "ml-auto "}font-sans font-semibold text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full border border-ink ${s.bg} ${s.text}`}>
+                  <span className={`font-sans font-semibold text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full border border-ink flex-shrink-0 mt-0.5 ${s.bg} ${s.text}`}>
                     {r.status}
                   </span>
                 </button>
