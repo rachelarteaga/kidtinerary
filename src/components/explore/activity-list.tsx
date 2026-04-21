@@ -32,8 +32,8 @@ export function ActivityList({
   if (activities.length === 0) {
     return (
       <div className="text-center py-16">
-        <h3 className="font-serif text-2xl mb-2">No activities found</h3>
-        <p className="text-stone">
+        <h3 className="font-display font-extrabold text-2xl mb-2">No activities found</h3>
+        <p className="text-ink-2">
           Try adjusting your filters or search for something else.
         </p>
       </div>
@@ -62,7 +62,7 @@ export function ActivityList({
           >
             Previous
           </Button>
-          <span className="font-mono text-xs text-stone uppercase tracking-wide px-3">
+          <span className="font-sans text-xs text-ink-2 uppercase tracking-wide px-3">
             Page {page} of {totalPages}
           </span>
           <Button
