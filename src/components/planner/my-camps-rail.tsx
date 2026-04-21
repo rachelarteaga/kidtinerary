@@ -145,15 +145,17 @@ function DraggableCampItem({
           ⋮⋮
         </button>
         <div className="flex-1 min-w-0 pr-5">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: camp.color }} />
+          <div className="flex items-start gap-1.5">
+            <span className="w-2 h-2 mt-1.5 rounded-full flex-shrink-0" style={{ background: camp.color }} />
             <div className="font-medium text-sm text-ink break-words">{camp.activity.name}</div>
           </div>
-          {camp.activity.organization?.name && (
-            <div className="mt-0.5 pl-3.5 text-[11px] text-ink-2 truncate">
-              {camp.activity.organization.name}
-            </div>
-          )}
+          {camp.activity.organization?.name &&
+            camp.activity.organization.name !== camp.activity.name &&
+            camp.activity.organization.name !== "User-submitted" && (
+              <div className="mt-0.5 pl-3.5 font-sans text-[11px] text-ink-2 break-words">
+                {camp.activity.organization.name}
+              </div>
+            )}
           <div className="mt-1 pl-3.5 flex items-center gap-2 font-sans text-[10px] uppercase tracking-wide text-ink-2">
             {camp.plannerEntryCount > 0 && <span>{camp.plannerEntryCount}x</span>}
             {camp.activity.verified && <span className="text-[#5fc39c]">verified</span>}
