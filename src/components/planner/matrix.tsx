@@ -94,7 +94,7 @@ export function PlannerMatrix({
   }, [orderedIds, focusedKidId]);
 
   const cols = orderedChildren.length;
-  const gridTemplate = `100px ${"1fr ".repeat(cols).trim()} 48px`;
+  const gridTemplate = `140px ${"1fr ".repeat(cols).trim()} 48px`;
 
   // Empty-planner state: no kids assigned yet. Show only the header row with Add Kid.
   if (orderedChildren.length === 0) {
@@ -141,7 +141,7 @@ export function PlannerMatrix({
             if (w.fullRowBlock) {
               return (
                 <div key={weekKey}>
-                  <div className="font-mono text-[10px] uppercase tracking-widest text-stone mb-1 whitespace-nowrap">
+                  <div className="font-mono text-[11px] uppercase tracking-widest text-stone mb-1 whitespace-nowrap">
                     {weekLabel}
                   </div>
                   <BlockCard
@@ -224,7 +224,7 @@ export function PlannerMatrix({
         if (w.fullRowBlock) {
           return (
             <div key={weekKey} className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
-              <div className="font-mono text-[10px] uppercase tracking-widest text-stone self-center px-1.5 whitespace-nowrap">
+              <div className="font-mono text-[11px] uppercase tracking-widest text-stone self-center pr-3 border-r border-driftwood/30 whitespace-nowrap text-right">
                 {weekLabel}
               </div>
               <div style={{ gridColumn: `2 / span ${cols}` }}>
