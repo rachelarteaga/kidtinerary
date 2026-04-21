@@ -44,14 +44,14 @@ export function ExtrasEditor({ extras, onChange }: Props) {
     <div className="space-y-2">
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center justify-between rounded-lg border border-driftwood/40 bg-white px-3 py-2 text-sm text-bark hover:border-driftwood"
+        className="w-full flex items-center justify-between rounded-lg border border-ink-3 bg-surface px-3 py-2 text-sm text-ink hover:border-ink"
       >
-        <span>+ Extras <span className="text-stone">({summary})</span></span>
-        <span className="text-stone">{expanded ? "▴" : "▾"}</span>
+        <span>+ Extras <span className="text-ink-2">({summary})</span></span>
+        <span className="text-ink-2">{expanded ? "▴" : "▾"}</span>
       </button>
 
       {expanded && (
-        <div className="space-y-2 rounded-lg border border-driftwood/30 bg-cream/50 p-3">
+        <div className="space-y-2 rounded-lg border border-ink-3 bg-surface/50 p-3">
           {extras.map((e, idx) => (
             <div key={idx} className="flex items-center gap-1.5">
               <input
@@ -59,20 +59,20 @@ export function ExtrasEditor({ extras, onChange }: Props) {
                 value={e.label}
                 onChange={(ev) => updateItem(idx, { label: ev.target.value })}
                 placeholder="Label"
-                className="flex-1 rounded-md border border-driftwood/40 bg-white px-2 py-1 text-sm"
+                className="flex-1 rounded-md border border-ink-3 bg-surface px-2 py-1 text-sm"
               />
-              <span className="text-sm text-bark">$</span>
+              <span className="text-sm text-ink">$</span>
               <input
                 type="number"
                 value={formatCents(e.cost_cents)}
                 onChange={(ev) => updateItem(idx, { cost_cents: parseCents(ev.target.value) })}
-                className="w-16 rounded-md border border-driftwood/40 bg-white px-2 py-1 text-sm text-right"
+                className="w-16 rounded-md border border-ink-3 bg-surface px-2 py-1 text-sm text-right"
                 min="0"
               />
               <select
                 value={e.unit}
                 onChange={(ev) => updateItem(idx, { unit: ev.target.value as "per_week" | "per_day" })}
-                className="rounded-md border border-driftwood/40 bg-white px-2 py-1 text-xs"
+                className="rounded-md border border-ink-3 bg-surface px-2 py-1 text-xs"
               >
                 <option value="per_week">/wk</option>
                 <option value="per_day">/day</option>
@@ -80,7 +80,7 @@ export function ExtrasEditor({ extras, onChange }: Props) {
               <button
                 onClick={() => removeItem(idx)}
                 aria-label="Remove extra"
-                className="text-driftwood hover:text-red-500 text-sm px-1"
+                className="text-ink-3 hover:text-[#ef8c8f] text-sm px-1"
               >
                 ✕
               </button>
@@ -88,7 +88,7 @@ export function ExtrasEditor({ extras, onChange }: Props) {
           ))}
           <button
             onClick={addItem}
-            className="font-mono text-[11px] uppercase tracking-widest text-campfire hover:text-bark"
+            className="font-sans text-[11px] uppercase tracking-widest text-ink hover:text-ink/70"
           >
             + Add another
           </button>
