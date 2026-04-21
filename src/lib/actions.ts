@@ -613,12 +613,25 @@ export async function submitCamp(
     if (stubOrg) {
       orgId = stubOrg.id;
     } else {
-      const { data: newOrg } = await supabase
+      // Upsert against the unique(name) constraint so concurrent first-time
+      // submissions don't race each other into a duplicate-name error.
+      const { data: newOrg, error: orgErr } = await supabase
         .from("organizations")
-        .insert({ name: "User-submitted", is_active: true })
+        .upsert(
+          { name: "User-submitted" },
+          { onConflict: "name" }
+        )
         .select("id")
         .single();
-      orgId = newOrg?.id ?? null;
+      if (orgErr || !newOrg) {
+        console.error("submitCamp organization upsert error:", orgErr);
+        return { error: "Failed to create camp entry" };
+      }
+      orgId = newOrg.id;
+    }
+    if (!orgId) {
+      console.error("submitCamp: organization lookup returned no id");
+      return { error: "Failed to create camp entry" };
     }
 
     const slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80) + "-" + Date.now().toString(36);
@@ -725,7 +738,11 @@ export async function submitCamp(
       .select("id")
       .single();
 
-    if (!entryErr && entry) plannerEntryId = entry.id;
+    if (entryErr || !entry) {
+      console.error("submitCamp planner entry insert error:", entryErr);
+      return { error: "Saved camp to shortlist, but couldn't place it in that week" };
+    }
+    plannerEntryId = entry.id;
   }
 
   // Enqueue scrape job.
