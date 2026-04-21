@@ -18,6 +18,8 @@ interface Props {
   children: ChildLite[];
   scope: { childId: string | null; weekStart: string | null };
   onSubmitted: () => void;
+  /** When true, skip the outer modal backdrop/wrapper — parent is responsible for chrome. */
+  embedded?: boolean;
 }
 
 const TYPES: { id: PlannerBlockType; label: string; sub: string; emoji: string }[] = [
@@ -33,7 +35,7 @@ function addDays(ymd: string, days: number): string {
   return d.toISOString().split("T")[0];
 }
 
-export function AddBlockModal({ open, onClose, children, scope, onSubmitted }: Props) {
+export function AddBlockModal({ open, onClose, children, scope, onSubmitted, embedded = false }: Props) {
   const [step, setStep] = useState<1 | 2>(1);
   const [type, setType] = useState<PlannerBlockType>("travel");
   const [title, setTitle] = useState("");
@@ -78,16 +80,14 @@ export function AddBlockModal({ open, onClose, children, scope, onSubmitted }: P
     });
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-bark/40" onClick={onClose} />
-      <div className="relative bg-cream rounded-2xl shadow-xl w-full max-w-md p-6">
-        <h2 className="font-serif text-2xl mb-1">Add a block</h2>
-        <p className="font-mono text-[10px] uppercase tracking-widest text-stone mb-4">
-          Besides a camp
-        </p>
+  const body = (
+    <>
+      <h2 className="font-serif text-2xl mb-1">Add a block</h2>
+      <p className="font-mono text-[10px] uppercase tracking-widest text-stone mb-4">
+        Besides a camp
+      </p>
 
-        {step === 1 && (
+      {step === 1 && (
           <div className="grid grid-cols-2 gap-2">
             {TYPES.map((t) => (
               <button
@@ -178,6 +178,16 @@ export function AddBlockModal({ open, onClose, children, scope, onSubmitted }: P
             </div>
           </div>
         )}
+    </>
+  );
+
+  if (embedded) return body;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-bark/40" onClick={onClose} />
+      <div className="relative bg-cream rounded-2xl shadow-xl w-full max-w-md p-6">
+        {body}
       </div>
     </div>
   );

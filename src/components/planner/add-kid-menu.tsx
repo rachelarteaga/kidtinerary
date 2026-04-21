@@ -110,6 +110,7 @@ export function AddKidMenu({ plannerId, availableKids }: Props) {
               </button>
             </div>
             <ChildForm
+              hideHeading
               onCreated={async (createdChildId: string) => {
                 await addKidToPlanner(plannerId, createdChildId);
               }}

@@ -15,11 +15,11 @@ import {
 import { arrayMove } from "@dnd-kit/sortable";
 import { PlannerMatrix, type WeekRow } from "@/components/planner/matrix";
 import { MyCampsRail } from "@/components/planner/my-camps-rail";
-import { AddCampModal } from "@/components/planner/add-camp-modal";
-import { AddBlockModal } from "@/components/planner/add-block-modal";
+import { AddEntryModal } from "@/components/planner/add-entry-modal";
 import { CampDetailDrawer } from "@/components/planner/camp-detail-drawer";
 import { BlockDetailDrawer } from "@/components/planner/block-detail-drawer";
 import { PlannerRangePicker } from "@/components/planner/planner-range-picker";
+import { PlannerTitle } from "@/components/planner/planner-title";
 import { useScrapeJob } from "@/lib/use-scrape-job";
 import { reorderKidColumns, assignCampToWeek, removeKidFromPlanner } from "@/lib/actions";
 import { generateWeeks, getWeekKey } from "@/lib/format";
@@ -54,8 +54,7 @@ interface Props {
 export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, shareCampsDefault, planner }: Props) {
   const router = useRouter();
 
-  const [campModal, setCampModal] = useState<{ childId: string | null; weekStart: string | null } | null>(null);
-  const [blockModal, setBlockModal] = useState<{ childId: string | null; weekStart: string | null } | null>(null);
+  const [entryModal, setEntryModal] = useState<{ childId: string | null; weekStart: string | null; tab: "camp" | "block" } | null>(null);
   const [drawerEntryId, setDrawerEntryId] = useState<string | null>(null);
   const [drawerBlockId, setDrawerBlockId] = useState<string | null>(null);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -178,8 +177,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           entryId: e.id,
           activityName: e.session.activity.name,
           color: colorByActivityId.get(e.session.activity.id) ?? "#f4b76f",
-          description: `${e.session_part === "full" ? "Full" : e.session_part.toUpperCase()} · ${e.status}`,
-          isWaitlisted: e.status === "waitlisted",
+          status: e.status,
         }));
 
       const consideringChips = kidEntries
@@ -273,7 +271,9 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <header className="sticky top-0 z-30 bg-cream flex items-start justify-between mb-6 flex-wrap gap-3 pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 pt-6">
           <div>
-            <h1 className="font-serif text-4xl mb-1">{planner.name}</h1>
+            <div className="mb-1">
+              <PlannerTitle plannerId={planner.id} name={planner.name} />
+            </div>
             <p className="text-stone">{kids.length} kid{kids.length === 1 ? "" : "s"} · {weekStarts.length} weeks</p>
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -304,16 +304,10 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
               onChanged={() => router.refresh()}
             />
             <button
-              onClick={() => setCampModal({ childId: null, weekStart: null })}
+              onClick={() => setEntryModal({ childId: null, weekStart: null, tab: "camp" })}
               className="font-mono text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-bark text-cream hover:bg-bark/90"
             >
-              + Add camp
-            </button>
-            <button
-              onClick={() => setBlockModal({ childId: null, weekStart: null })}
-              className="font-mono text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-white border border-driftwood text-bark hover:border-bark"
-            >
-              + Add block
+              + Add
             </button>
           </div>
         </header>
@@ -322,7 +316,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           <MyCampsRail
             camps={userCamps}
             onChipClick={(c) => router.push(`/activity/${c.activity.slug}`)}
-            onAddClick={() => setCampModal({ childId: null, weekStart: null })}
+            onAddClick={() => setEntryModal({ childId: null, weekStart: null, tab: "camp" })}
             onChanged={() => router.refresh()}
           />
 
@@ -337,8 +331,8 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
               plannerEnd={plannerEnd}
               viewMode={viewMode}
               isDraggingCamp={isDraggingCamp}
-              onAddCampClick={(childId, weekStart) => setCampModal({ childId, weekStart })}
-              onAddBlockClick={(childId, weekStart) => setBlockModal({ childId, weekStart })}
+              onAddCampClick={(childId, weekStart) => setEntryModal({ childId, weekStart, tab: "camp" })}
+              onAddBlockClick={(childId, weekStart) => setEntryModal({ childId, weekStart, tab: "block" })}
               onEntryClick={(entryId) => setDrawerEntryId(entryId)}
               onBlockClick={(blockId) => setDrawerBlockId(blockId)}
               onRemoveKid={handleRemoveKid}
@@ -346,22 +340,22 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           </div>
         </div>
 
-        <AddCampModal
-          open={campModal !== null}
-          onClose={() => setCampModal(null)}
-          scope={campModal ?? { childId: null, weekStart: null }}
+        <AddEntryModal
+          open={entryModal !== null}
+          onClose={() => setEntryModal(null)}
+          scope={entryModal ?? { childId: null, weekStart: null }}
           shareCampsDefault={shareCampsDefault}
-          onSubmitted={(result) => {
+          kids={kids}
+          initialTab={entryModal?.tab ?? "camp"}
+          onCampSubmitted={(result) => {
             if (result.jobId) setActiveJobId(result.jobId);
+            setEntryModal(null);
             router.refresh();
           }}
-        />
-        <AddBlockModal
-          open={blockModal !== null}
-          onClose={() => setBlockModal(null)}
-          children={kids}
-          scope={blockModal ?? { childId: null, weekStart: null }}
-          onSubmitted={() => router.refresh()}
+          onBlockSubmitted={() => {
+            setEntryModal(null);
+            router.refresh();
+          }}
         />
 
         <CampDetailDrawer

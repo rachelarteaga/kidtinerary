@@ -3,16 +3,21 @@
 import { CellTimelineGrid, type TimelineEntry } from "./cell-timeline-grid";
 import { ConsideringChips, type ConsideringChip } from "./considering-chips";
 import { CellDropZones } from "./cell-drop-zones";
-import type { DayOfWeek } from "@/lib/supabase/types";
+import type { DayOfWeek, PlannerEntryStatus } from "@/lib/supabase/types";
 import type { ScheduleSlot } from "@/lib/schedule";
 
 export interface CellLegendRow {
   entryId: string;
   activityName: string;
   color: string;
-  description: string;
-  isWaitlisted: boolean;
+  status: PlannerEntryStatus;
 }
+
+const STATUS_STYLE: Record<PlannerEntryStatus, { bg: string; text: string }> = {
+  considering: { bg: "bg-[#fdf0de]", text: "text-[#a08045]" },
+  waitlisted:  { bg: "bg-[#faf1dc]", text: "text-[#7a5e2a]" },
+  registered:  { bg: "bg-meadow/15", text: "text-meadow" },
+};
 
 interface Props {
   childId: string;
@@ -75,21 +80,22 @@ export function PlannerCell({
     } else {
       content = (
         <div className="rounded-lg border border-driftwood/30 bg-white px-2 py-1.5 space-y-0.5">
-          {legendRows.map((r) => (
-            <button
-              key={r.entryId}
-              onClick={() => onEntryClick(r.entryId)}
-              className="w-full flex items-center gap-1.5 text-left text-xs text-bark hover:underline"
-            >
-              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: r.color }} />
-              <span className="truncate">{r.activityName}</span>
-              {r.isWaitlisted && (
-                <span className="ml-auto font-mono text-[9px] uppercase tracking-wide text-campfire bg-campfire/10 px-1.5 py-0.5 rounded-full">
-                  pending
+          {legendRows.map((r) => {
+            const s = STATUS_STYLE[r.status];
+            return (
+              <button
+                key={r.entryId}
+                onClick={() => onEntryClick(r.entryId)}
+                className="w-full flex items-center gap-1.5 text-left text-xs text-bark hover:underline"
+              >
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: r.color }} />
+                <span className="truncate">{r.activityName}</span>
+                <span className={`ml-auto font-mono text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full ${s.bg} ${s.text}`}>
+                  {r.status}
                 </span>
-              )}
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       );
     }
@@ -99,7 +105,7 @@ export function PlannerCell({
         onClick={() => onAddClick(childId, weekStart)}
         className="w-full rounded-lg border border-dashed border-driftwood/50 bg-cream/50 p-3 text-xs text-stone hover:text-bark hover:border-bark font-mono uppercase tracking-widest"
       >
-        + Add camp
+        + Add
       </button>
     );
   } else {
@@ -114,22 +120,22 @@ export function PlannerCell({
         />
         {legendRows.length > 0 && (
           <div className="mt-1.5 space-y-0.5">
-            {legendRows.map((r) => (
-              <button
-                key={r.entryId}
-                onClick={() => onEntryClick(r.entryId)}
-                className="w-full flex items-center gap-1.5 text-left text-xs text-bark hover:underline"
-              >
-                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: r.color }} />
-                <span className="truncate">{r.activityName}</span>
-                {r.isWaitlisted && (
-                  <span className="ml-auto font-mono text-[9px] uppercase tracking-wide text-campfire bg-campfire/10 px-1.5 py-0.5 rounded-full">
-                    pending
+            {legendRows.map((r) => {
+              const s = STATUS_STYLE[r.status];
+              return (
+                <button
+                  key={r.entryId}
+                  onClick={() => onEntryClick(r.entryId)}
+                  className="w-full flex items-center gap-1.5 text-left text-xs text-bark hover:underline"
+                >
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: r.color }} />
+                  <span className="truncate">{r.activityName}</span>
+                  <span className={`ml-auto font-mono text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full ${s.bg} ${s.text}`}>
+                    {r.status}
                   </span>
-                )}
-                {!r.isWaitlisted && <span className="ml-auto font-mono text-[9px] text-stone">{r.description}</span>}
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         )}
         <ConsideringChips chips={consideringChips} onChipClick={onEntryClick} />

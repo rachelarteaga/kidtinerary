@@ -140,7 +140,7 @@ export function PlannerMatrix({
             if (w.fullRowBlock) {
               return (
                 <div key={weekKey}>
-                  <div className="font-mono text-[10px] uppercase tracking-widest text-stone mb-1">{formatWeekRange(w.weekStart)}</div>
+                  <div className="font-mono text-[10px] uppercase tracking-widest text-stone mb-1 whitespace-nowrap">{formatWeekRange(w.weekStart)}</div>
                   <BlockCard
                     blockId={w.fullRowBlock.blockId}
                     type={w.fullRowBlock.type}
@@ -157,7 +157,7 @@ export function PlannerMatrix({
             const focusedCell = w.cells.find((c) => c.childId === focused.id);
             return (
               <div key={weekKey}>
-                <div className="font-mono text-[10px] uppercase tracking-widest text-stone mb-1">{formatWeekRange(w.weekStart)}</div>
+                <div className="font-mono text-[10px] uppercase tracking-widest text-stone mb-1 whitespace-nowrap">{formatWeekRange(w.weekStart)}</div>
                 {partial ? (
                   <BlockCard
                     blockId={partial.blockId}
@@ -217,7 +217,7 @@ export function PlannerMatrix({
         if (w.fullRowBlock) {
           return (
             <div key={weekKey} className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
-              <div className="font-mono text-[10px] uppercase tracking-widest text-stone self-center px-1.5">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-stone self-center px-1.5 whitespace-nowrap">
                 {formatWeekRange(w.weekStart)}
               </div>
               <div style={{ gridColumn: `2 / span ${cols}` }}>
@@ -238,7 +238,7 @@ export function PlannerMatrix({
 
         return (
           <div key={weekKey} className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
-            <div className="font-mono text-[10px] uppercase tracking-widest text-stone self-center px-1.5">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-stone self-center px-1.5 whitespace-nowrap">
               {formatWeekRange(w.weekStart)}
             </div>
             {orderedChildren.map((child) => {

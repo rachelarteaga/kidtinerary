@@ -39,11 +39,11 @@ export function KidsPageClient({ initialChildren }: KidsPageClientProps) {
         <div>
           <h1 className="font-serif text-4xl mb-2">My Kids</h1>
           <p className="text-stone text-lg">
-            Manage your children&apos;s profiles and interests.
+            Manage your kids&apos; profiles and interests.
           </p>
         </div>
         {!showForm && (
-          <Button onClick={() => setShowForm(true)}>Add Child</Button>
+          <Button onClick={() => setShowForm(true)}>Add Kid</Button>
         )}
       </div>
 
@@ -64,9 +64,9 @@ export function KidsPageClient({ initialChildren }: KidsPageClientProps) {
           <div className="text-center py-16">
             <p className="font-serif text-2xl mb-2">No kids added yet</p>
             <p className="text-stone mb-6">
-              Add your children to get personalized activity recommendations.
+              Add your kids to get personalized activity recommendations.
             </p>
-            <Button onClick={() => setShowForm(true)}>Add Your First Child</Button>
+            <Button onClick={() => setShowForm(true)}>Add Your First Kid</Button>
           </div>
         )
       )}

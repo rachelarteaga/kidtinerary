@@ -17,9 +17,11 @@ interface ChildFormProps {
   onDone: () => void;
   /** Called after a brand-new child is created, before onDone. Not called when editing. */
   onCreated?: (childId: string) => Promise<void> | void;
+  /** When true, the form does not render its own heading (useful when embedded in a modal that already has one). */
+  hideHeading?: boolean;
 }
 
-export function ChildForm({ editingChild, onDone, onCreated }: ChildFormProps) {
+export function ChildForm({ editingChild, onDone, onCreated, hideHeading = false }: ChildFormProps) {
   const [name, setName] = useState(editingChild?.name ?? "");
   const [birthDate, setBirthDate] = useState(editingChild?.birth_date ?? "");
   const [interests, setInterests] = useState<Category[]>(
@@ -72,9 +74,11 @@ export function ChildForm({ editingChild, onDone, onCreated }: ChildFormProps) {
 
   return (
     <div className="bg-white rounded-2xl border border-driftwood/30 p-5">
-      <h3 className="font-serif text-xl mb-4">
-        {editingChild ? `Edit ${editingChild.name}` : "Add a child"}
-      </h3>
+      {!hideHeading && (
+        <h3 className="font-serif text-xl mb-4">
+          {editingChild ? `Edit ${editingChild.name}` : "Add a kid"}
+        </h3>
+      )}
 
       <div className="space-y-4">
         {/* Name */}
@@ -137,7 +141,7 @@ export function ChildForm({ editingChild, onDone, onCreated }: ChildFormProps) {
           Cancel
         </Button>
         <Button onClick={handleSubmit} disabled={isPending} className="flex-1">
-          {isPending ? "Saving..." : editingChild ? "Save Changes" : "Add Child"}
+          {isPending ? "Saving..." : editingChild ? "Save Changes" : "Add Kid"}
         </Button>
       </div>
     </div>

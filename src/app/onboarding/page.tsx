@@ -72,7 +72,7 @@ export default function OnboardingPage() {
     });
 
     if (childError) {
-      setError("Failed to save child profile. Please try again.");
+      setError("Failed to save kid profile. Please try again.");
       return;
     }
 

@@ -1226,6 +1226,30 @@ export async function updateEntryNotes(
   return {};
 }
 
+export async function updatePlannerName(
+  plannerId: string,
+  name: string
+): Promise<{ error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const trimmed = name.trim();
+  if (trimmed.length === 0) return { error: "Name required" };
+  if (trimmed.length > 50) return { error: "Name must be 50 characters or fewer" };
+  if (!/^[a-zA-Z0-9 \-']+$/.test(trimmed)) return { error: "Use letters, numbers, spaces, hyphens, or apostrophes" };
+
+  const { error } = await supabase
+    .from("planners")
+    .update({ name: trimmed })
+    .eq("id", plannerId)
+    .eq("user_id", user.id);
+
+  if (error) return { error: "Failed to update name" };
+  revalidatePath("/planner");
+  return {};
+}
+
 export async function updatePlannerRange(
   plannerId: string,
   startDate: string,
