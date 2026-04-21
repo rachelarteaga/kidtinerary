@@ -144,8 +144,18 @@ export function formatWeekLabelParts(weekStart: Date): { month: string; days: st
   return { month: sMonth, days: `${sDay}–${eMonth} ${eDay}` };
 }
 
-/** Compact single-line form like "JUN 15–19" or "JUN 29–JUL 3". */
+/**
+ * Single-line fixed-width label. Always shows month + zero-padded day
+ * for both start and end, so every label is 15 chars wide regardless
+ * of whether the week crosses months. Example: "JUN 03 – JUN 09" or
+ * "JUN 29 – JUL 03".
+ */
 export function formatWeekLabelCompact(weekStart: Date): string {
-  const { month, days } = formatWeekLabelParts(weekStart);
-  return `${month} ${days}`;
+  const end = new Date(weekStart);
+  end.setDate(end.getDate() + 4); // Friday
+  const sMonth = weekStart.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
+  const eMonth = end.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
+  const sDay = String(weekStart.getDate()).padStart(2, "0");
+  const eDay = String(end.getDate()).padStart(2, "0");
+  return `${sMonth} ${sDay} – ${eMonth} ${eDay}`;
 }
