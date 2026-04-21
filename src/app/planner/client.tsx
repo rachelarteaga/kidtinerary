@@ -24,6 +24,7 @@ import { CampQuickViewModal } from "@/components/planner/camp-quick-view-modal";
 import { useScrapeJob } from "@/lib/use-scrape-job";
 import { reorderKidColumns, assignCampToWeek, removeKidFromPlanner } from "@/lib/actions";
 import { generateWeeks, getWeekKey } from "@/lib/format";
+import { extrasTotalCents } from "@/lib/extras-calc";
 import type { PlannerEntryRow, UserCampWithActivity, PlannerBlockWithKids } from "@/lib/queries";
 import type { PlannerRow } from "@/lib/supabase/types";
 
@@ -175,13 +176,24 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
 
       const legendRows = kidEntries
         .filter((e) => e.status !== "considering")
-        .map((e) => ({
-          entryId: e.id,
-          activityName: e.session.activity.name,
-          color: colorByActivityId.get(e.session.activity.id) ?? "#f4b76f",
-          status: e.status,
-          isOvernight: e.session_part === "overnight",
-        }));
+        .map((e) => {
+          let priceWeeklyCents: number | null = null;
+          if (e.price_cents != null) {
+            const daysPerWeek = e.days_of_week.length;
+            const basePerWeek =
+              e.price_unit === "per_day" ? e.price_cents * daysPerWeek : e.price_cents;
+            const extrasCents = extrasTotalCents(e.extras, daysPerWeek);
+            priceWeeklyCents = basePerWeek + extrasCents;
+          }
+          return {
+            entryId: e.id,
+            activityName: e.session.activity.name,
+            color: colorByActivityId.get(e.session.activity.id) ?? "#f4b76f",
+            status: e.status,
+            isOvernight: e.session_part === "overnight",
+            priceWeeklyCents,
+          };
+        });
 
       const consideringChips = kidEntries
         .filter((e) => e.status === "considering")
