@@ -241,16 +241,19 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
             <section>
               <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Also add for</h3>
               <div className="flex gap-1.5 flex-wrap">
-                {kids.filter((k) => k.id !== local.childId).map((k) => (
+                {kids.filter((k) => k.id !== local.childId).map((k) => {
+                  const kidIndex = kids.findIndex((kk) => kk.id === k.id);
+                  return (
                   <button
                     key={k.id}
                     onClick={() => addForKid(k.id)}
                     className="flex items-center gap-1.5 rounded-full border border-ink-3 bg-surface px-3 py-1 text-xs hover:border-ink"
                   >
-                    <KidAvatar name={k.name} color={k.color} index={0} avatarUrl={k.avatar_url} size={18} />
+                    <KidAvatar name={k.name} color={k.color} index={kidIndex} avatarUrl={k.avatar_url} size={18} />
                     {k.name} <span className="text-ink-2">+</span>
                   </button>
-                ))}
+                  );
+                })}
               </div>
               <p className="text-[11px] text-ink-2 italic mt-1.5">Copies schedule, price, extras.</p>
             </section>

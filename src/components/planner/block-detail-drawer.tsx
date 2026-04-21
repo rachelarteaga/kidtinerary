@@ -164,7 +164,7 @@ export function BlockDetailDrawer({ open, onClose, block, kids, onChanged }: Pro
           <section>
             <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Who</h3>
             <div className="flex gap-1.5 flex-wrap">
-              {kids.map((k) => {
+              {kids.map((k, i) => {
                 const on = local.childIds.includes(k.id);
                 return (
                   <button
@@ -174,7 +174,7 @@ export function BlockDetailDrawer({ open, onClose, block, kids, onChanged }: Pro
                       on ? "border-ink bg-ink/10" : "border-ink-3 bg-surface opacity-60"
                     }`}
                   >
-                    <KidAvatar name={k.name} color={k.color} index={0} avatarUrl={k.avatar_url} size={18} />
+                    <KidAvatar name={k.name} color={k.color} index={i} avatarUrl={k.avatar_url} size={18} />
                     {k.name} {on && <span className="text-[#5fc39c]">✓</span>}
                   </button>
                 );
