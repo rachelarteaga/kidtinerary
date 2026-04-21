@@ -32,9 +32,13 @@ function foldLine(line: string): string {
 
 const DAY_NAMES = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
-function timeRange(part: "full" | "am" | "pm" | null | undefined): [string, string] {
+function timeRange(
+  part: "full" | "am" | "pm" | "overnight" | null | undefined
+): [string, string] {
   if (part === "am") return ["090000", "120000"];
   if (part === "pm") return ["130000", "170000"];
+  // overnight camps run 24/7 — export as midnight-to-midnight (all-day equivalent)
+  if (part === "overnight") return ["000000", "235959"];
   return ["090000", "170000"];
 }
 

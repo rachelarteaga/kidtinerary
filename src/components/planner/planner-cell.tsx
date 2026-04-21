@@ -11,6 +11,7 @@ export interface CellLegendRow {
   activityName: string;
   color: string;
   status: PlannerEntryStatus;
+  isOvernight: boolean;
 }
 
 const STATUS_STYLE: Record<PlannerEntryStatus, { bg: string; text: string }> = {
@@ -87,8 +88,13 @@ export function PlannerCell({
           className="w-full h-full rounded-lg border border-ink bg-surface px-2 py-1.5 flex items-center gap-1.5 text-xs text-ink hover:underline text-left"
         >
           <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: first.color }} />
-          <span className="truncate flex-1">
-            {first.activityName}
+          <span className="truncate flex-1 inline-flex items-center gap-1">
+            <span className="truncate">{first.activityName}</span>
+            {first.isOvernight ? (
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="#151515" className="flex-shrink-0" aria-label="Overnight">
+                <path d="M14 2 A 10 10 0 1 0 22 13 A 8 8 0 0 1 14 2 Z" />
+              </svg>
+            ) : null}
             {extraCount > 0 && <span className="text-ink-2 font-sans text-[10px] font-semibold ml-1">+{extraCount}</span>}
           </span>
           <span className={`font-sans font-semibold text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full border border-ink flex-shrink-0 ${s.bg} ${s.text}`}>
@@ -128,6 +134,11 @@ export function PlannerCell({
                 >
                   <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: r.color }} />
                   <span className="truncate">{r.activityName}</span>
+                  {r.isOvernight ? (
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="#151515" className="flex-shrink-0" aria-label="Overnight">
+                      <path d="M14 2 A 10 10 0 1 0 22 13 A 8 8 0 0 1 14 2 Z" />
+                    </svg>
+                  ) : null}
                   <span className={`ml-auto font-sans font-semibold text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full border border-ink ${s.bg} ${s.text}`}>
                     {r.status}
                   </span>

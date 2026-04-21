@@ -353,7 +353,7 @@ export interface PlannerEntryRow {
   price_cents: number | null;
   price_unit: "per_week" | "per_day" | null;
   extras: Array<{ label: string; cost_cents: number; unit: "per_week" | "per_day" }>;
-  session_part: "full" | "am" | "pm";
+  session_part: "full" | "am" | "pm" | "overnight";
   days_of_week: Array<"mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun">;
   session: {
     id: string;

@@ -4,6 +4,7 @@ export interface ConsideringChip {
   entryId: string;
   activityName: string;
   color: string;
+  isOvernight: boolean;
 }
 
 interface Props {
@@ -28,6 +29,11 @@ export function ConsideringChips({ chips, onChipClick }: Props) {
           >
             <span className="w-1.5 h-1.5 rounded-full" style={{ background: c.color }} />
             {c.activityName}
+            {c.isOvernight ? (
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="#151515" aria-label="Overnight">
+                <path d="M14 2 A 10 10 0 1 0 22 13 A 8 8 0 0 1 14 2 Z" />
+              </svg>
+            ) : null}
           </button>
         ))}
       </div>

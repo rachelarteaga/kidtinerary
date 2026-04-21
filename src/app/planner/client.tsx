@@ -178,6 +178,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           activityName: e.session.activity.name,
           color: colorByActivityId.get(e.session.activity.id) ?? "#f4b76f",
           status: e.status,
+          isOvernight: e.session_part === "overnight",
         }));
 
       const consideringChips = kidEntries
@@ -186,6 +187,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           entryId: e.id,
           activityName: e.session.activity.name,
           color: colorByActivityId.get(e.session.activity.id) ?? "#f4b76f",
+          isOvernight: e.session_part === "overnight",
         }));
 
       return { childId: kid.id, timelineEntries, legendRows, consideringChips };
