@@ -4,27 +4,57 @@ import { useTransition } from "react";
 import { removePlannerBlock } from "@/lib/actions";
 import type { PlannerBlockType } from "@/lib/supabase/types";
 
-const TYPE_STYLES: Record<PlannerBlockType, { bg: string; border: string; emoji: string }> = {
-  school:  { bg: "bg-amber-50",  border: "border-amber-200",  emoji: "🏫" },
-  travel:  { bg: "bg-purple-50", border: "border-purple-200", emoji: "✈" },
-  at_home: { bg: "bg-orange-50", border: "border-orange-200", emoji: "🏡" },
-  other:   { bg: "bg-stone-50",  border: "border-stone-200",  emoji: "⭐" },
+const BLOCK_FILL_STYLE: React.CSSProperties = {
+  backgroundImage: "radial-gradient(rgba(21,21,21,0.09) 0.7px, transparent 0.7px)",
+  backgroundSize: "5px 5px",
+  backgroundColor: "rgba(21,21,21,0.04)",
 };
+
+function BlockIcon({ type }: { type: PlannerBlockType }) {
+  const common = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "#151515" };
+  switch (type) {
+    case "school":
+      return (
+        <svg {...common} aria-hidden>
+          <path d="M12 2 L1 7 L12 12 L21 8.1 L21 14 L23 14 L23 7 Z" />
+          <path d="M5 10.5 L5 15.5 C5 17.5 8.5 19 12 19 C15.5 19 19 17.5 19 15.5 L19 10.5 L12 14 Z" />
+        </svg>
+      );
+    case "travel":
+      return (
+        <svg {...common} aria-hidden>
+          <path d="M22 2 L2 10 L10 13 L13 22 Z" />
+        </svg>
+      );
+    case "at_home":
+      return (
+        <svg {...common} aria-hidden>
+          <path d="M12 3 L2 11 L4.5 11 L4.5 20 L9 20 L9 14 L15 14 L15 20 L19.5 20 L19.5 11 L22 11 Z" />
+          <rect x={16} y={5} width={2} height={3.5} />
+        </svg>
+      );
+    case "other":
+    default:
+      return (
+        <svg {...common} aria-hidden>
+          <polygon points="12,2 14.5,9 22,9 16,13.5 18.5,21 12,16.5 5.5,21 8,13.5 2,9 9.5,9" />
+        </svg>
+      );
+  }
+}
 
 interface Props {
   blockId: string;
   type: PlannerBlockType;
   title: string;
-  emoji?: string | null;
+  emoji?: string | null; // deprecated — ignored
   subtitle?: string;
   onClick?: () => void;
   onChanged: () => void;
 }
 
-export function BlockCard({ blockId, type, title, emoji, subtitle, onClick, onChanged }: Props) {
+export function BlockCard({ blockId, type, title, subtitle, onClick, onChanged }: Props) {
   const [isPending, startTransition] = useTransition();
-  const t = TYPE_STYLES[type];
-  const icon = emoji || t.emoji;
 
   function handleRemove(e: React.MouseEvent) {
     e.stopPropagation();
@@ -38,19 +68,20 @@ export function BlockCard({ blockId, type, title, emoji, subtitle, onClick, onCh
   return (
     <div
       onClick={onClick}
-      className={`rounded-lg border p-3 flex items-start gap-3 cursor-pointer ${t.bg} ${t.border} ${isPending ? "opacity-60" : ""}`}
+      className={`rounded-xl border border-ink p-3 flex items-start gap-3 cursor-pointer ${isPending ? "opacity-60" : ""}`}
+      style={BLOCK_FILL_STYLE}
     >
-      <span className="text-lg shrink-0">{icon}</span>
+      <span className="shrink-0 leading-none"><BlockIcon type={type} /></span>
       <div className="flex-1 min-w-0">
-        <div className="font-medium text-sm text-bark truncate">{title}</div>
+        <div className="font-sans font-bold text-sm text-ink truncate">{title}</div>
         {subtitle && (
-          <div className="font-mono text-[10px] uppercase tracking-wide text-stone mt-0.5">{subtitle}</div>
+          <div className="font-sans text-[11px] font-medium text-ink-2 mt-0.5">{subtitle}</div>
         )}
       </div>
       <button
         onClick={handleRemove}
         aria-label="Remove block"
-        className="text-driftwood hover:text-red-500 text-xs"
+        className="text-ink-3 hover:text-[#ef8c8f] text-xs"
       >
         ✕
       </button>
