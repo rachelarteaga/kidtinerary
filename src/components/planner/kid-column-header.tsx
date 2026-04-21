@@ -81,6 +81,15 @@ export function KidColumnHeader({ child, ageYears, onRemove }: Props) {
         className="bg-white border border-driftwood/30 border-l-4 rounded-lg px-2.5 py-2 flex items-center gap-2 relative"
       >
         <button
+          {...attributes}
+          {...listeners}
+          aria-label="Drag to reorder"
+          className="text-stone/60 hover:text-stone cursor-grab active:cursor-grabbing flex-shrink-0 px-1"
+        >
+          ⋮⋮
+        </button>
+
+        <button
           type="button"
           onClick={handleAvatarClick}
           className="relative group flex-shrink-0"
@@ -105,15 +114,6 @@ export function KidColumnHeader({ child, ageYears, onRemove }: Props) {
           <div className="font-mono text-[10px] uppercase tracking-wide text-stone">{ageYears} yrs</div>
         </div>
 
-        <button
-          {...attributes}
-          {...listeners}
-          aria-label="Drag to reorder"
-          className="text-stone/60 hover:text-stone cursor-grab active:cursor-grabbing flex-shrink-0 px-1"
-        >
-          ⋮⋮
-        </button>
-
         {onRemove && (
           <div className="relative flex-shrink-0" ref={menuRef}>
             <button
@@ -132,7 +132,7 @@ export function KidColumnHeader({ child, ageYears, onRemove }: Props) {
                     setMenuOpen(false);
                     if (
                       confirm(
-                        `Remove ${child.name} from this planner? Their profile stays intact.`
+                        `Remove ${child.name} from this planner? All their camps and blocks in this planner will also be deleted. ${child.name} stays in your profile.`
                       )
                     ) {
                       onRemove();
