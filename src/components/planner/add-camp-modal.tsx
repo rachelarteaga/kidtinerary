@@ -88,8 +88,8 @@ export function AddCampModal({ open, onClose, scope, shareCampsDefault, onSubmit
 
   const body = (
     <>
-      <h2 className="font-serif text-2xl mb-1">Add a camp</h2>
-      <p className="font-mono text-[10px] uppercase tracking-widest text-stone mb-4">
+      <h2 className="font-display font-extrabold text-2xl mb-1">Add a camp</h2>
+      <p className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-4">
         Tell us the camp name or drop a URL
       </p>
 
@@ -100,28 +100,28 @@ export function AddCampModal({ open, onClose, scope, shareCampsDefault, onSubmit
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="YMCA Camp Kanata · sciencecamp.com · Art Studio Summer"
-            className="w-full bg-white border border-driftwood rounded-lg px-4 py-2.5 text-bark focus:outline-none focus:border-sunset transition-colors"
+            className="w-full bg-surface border border-ink rounded-lg px-4 py-2.5 text-ink focus:outline-none focus:border-ink transition-colors"
             autoComplete="off"
           />
-          <p className="font-mono text-[10px] uppercase tracking-widest text-stone mt-1.5">
+          <p className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mt-1.5">
             Got a link handy? Paste it for the best match.
           </p>
         </div>
 
         {hits.length > 0 && (
-          <div className="border border-driftwood/30 rounded-lg bg-white overflow-hidden">
+          <div className="border border-ink-3 rounded-lg bg-surface overflow-hidden">
             {hits.map((h) => (
               <button
                 type="button"
                 key={h.id}
                 onClick={() => handleHitClick(h)}
-                className="w-full text-left px-3 py-2 hover:bg-driftwood/10 border-b border-driftwood/20 last:border-b-0"
+                className="w-full text-left px-3 py-2 hover:bg-ink-3/10 border-b border-ink-3/20 last:border-b-0"
               >
-                <div className="font-medium text-sm text-bark">
-                  {h.name} {h.verified && <span className="font-mono text-[9px] text-meadow uppercase tracking-wide ml-1">verified</span>}
+                <div className="font-medium text-sm text-ink">
+                  {h.name} {h.verified && <span className="font-sans text-[9px] text-[#5fc39c] uppercase tracking-wide ml-1">verified</span>}
                 </div>
                 {h.organization && (
-                  <div className="font-mono text-[10px] uppercase tracking-wide text-stone">{h.organization.name}</div>
+                  <div className="font-sans text-[10px] uppercase tracking-wide text-ink-2">{h.organization.name}</div>
                 )}
               </button>
             ))}
@@ -135,19 +135,19 @@ export function AddCampModal({ open, onClose, scope, shareCampsDefault, onSubmit
             onChange={(e) => setConsent(e.target.checked)}
             className="mt-0.5"
           />
-          <span className="text-sm text-bark">
+          <span className="text-sm text-ink">
             Share this camp with Kidtinerary&apos;s directory so other parents can find it. We&apos;ll verify the details before publishing.
           </span>
         </label>
 
         <div className="flex gap-2 justify-end">
-          <button type="button" onClick={onClose} className="font-mono text-[11px] uppercase tracking-widest px-4 py-2 text-stone hover:text-bark">
+          <button type="button" onClick={onClose} className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 text-ink-2 hover:text-ink">
             Cancel
           </button>
           <button
             type="submit"
             disabled={isPending || !input.trim()}
-            className="font-mono text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-bark text-cream hover:bg-bark/90 disabled:opacity-50"
+            className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-ink/90 disabled:opacity-50"
           >
             {isPending ? "Adding…" : "Add to planner"}
           </button>
@@ -160,8 +160,8 @@ export function AddCampModal({ open, onClose, scope, shareCampsDefault, onSubmit
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-bark/40" onClick={onClose} />
-      <div className="relative bg-cream rounded-2xl shadow-xl w-full max-w-md p-6">
+      <div className="absolute inset-0 bg-ink/40" onClick={onClose} />
+      <div className="relative bg-base rounded-2xl shadow-xl w-full max-w-md p-6">
         {body}
       </div>
     </div>
