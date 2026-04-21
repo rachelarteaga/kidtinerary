@@ -47,23 +47,23 @@ export default async function ActivityDetailPage({ params }: ActivityDetailPageP
       {/* Description */}
       {activity.description && (
         <section className="mb-8">
-          <h2 className="font-serif text-xl mb-3">About this activity</h2>
-          <p className="text-bark/80 leading-relaxed">{activity.description}</p>
+          <h2 className="font-display font-extrabold text-xl mb-3">About this activity</h2>
+          <p className="text-ink/80 leading-relaxed">{activity.description}</p>
         </section>
       )}
 
       {/* Location */}
       {location && (
         <section className="mb-8">
-          <h2 className="font-serif text-xl mb-3">Location</h2>
-          <div className="bg-white rounded-xl border border-driftwood/30 p-4">
+          <h2 className="font-display font-extrabold text-xl mb-3">Location</h2>
+          <div className="bg-surface rounded-xl border border-ink-3 p-4">
             {(location as any).location_name && (
               <p className="font-medium mb-1">{(location as any).location_name}</p>
             )}
-            <p className="text-stone text-sm">{(location as any).address}</p>
+            <p className="text-ink-2 text-sm">{(location as any).address}</p>
             {/* Map placeholder */}
-            <div className="mt-3 h-40 bg-driftwood/10 rounded-lg flex items-center justify-center">
-              <span className="font-mono text-[10px] uppercase tracking-wide text-stone">
+            <div className="mt-3 h-40 bg-ink-3/10 rounded-lg flex items-center justify-center">
+              <span className="font-sans text-[10px] uppercase tracking-wide text-ink-2">
                 Map view coming soon
               </span>
             </div>
@@ -73,34 +73,34 @@ export default async function ActivityDetailPage({ params }: ActivityDetailPageP
 
       {/* Sessions */}
       <section className="mb-8">
-        <h2 className="font-serif text-xl mb-3">Sessions</h2>
-        <div className="bg-white rounded-xl border border-driftwood/30 p-4">
+        <h2 className="font-display font-extrabold text-xl mb-3">Sessions</h2>
+        <div className="bg-surface rounded-xl border border-ink-3 p-4">
           <SessionTable sessions={activity.sessions ?? []} />
         </div>
       </section>
 
       {/* Pricing */}
       <section className="mb-8">
-        <h2 className="font-serif text-xl mb-3">Pricing</h2>
-        <div className="bg-white rounded-xl border border-driftwood/30 p-4">
+        <h2 className="font-display font-extrabold text-xl mb-3">Pricing</h2>
+        <div className="bg-surface rounded-xl border border-ink-3 p-4">
           <PriceTable priceOptions={activity.price_options ?? []} />
         </div>
       </section>
 
       {/* Data freshness + report */}
-      <section className="flex items-center justify-between pt-6 border-t border-driftwood/30">
+      <section className="flex items-center justify-between pt-6 border-t border-ink-3">
         <div className="flex items-center gap-3 flex-wrap">
           <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-            freshness.includes("stale") ? "bg-campfire" : "bg-meadow"
+            freshness.includes("stale") ? "bg-hero-light" : "bg-[#8ec4ad]"
           }`} />
           {(activity as any).source_url ? (
-            <span className="font-mono text-[10px] uppercase tracking-wide text-stone">
+            <span className="font-sans text-[10px] uppercase tracking-wide text-ink-2">
               Info sourced from{" "}
               <a
                 href={(activity as any).source_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sunset hover:underline normal-case"
+                className="text-ink hover:underline normal-case"
               >
                 {(() => {
                   try {
@@ -114,7 +114,7 @@ export default async function ActivityDetailPage({ params }: ActivityDetailPageP
               {freshness.replace("Updated ", "").replace("Data may be stale", "may be stale")}
             </span>
           ) : (
-            <span className="font-mono text-[10px] uppercase tracking-wide text-stone">
+            <span className="font-sans text-[10px] uppercase tracking-wide text-ink-2">
               {freshness}
             </span>
           )}
@@ -123,7 +123,7 @@ export default async function ActivityDetailPage({ params }: ActivityDetailPageP
               href={activity.registration_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-mono text-[10px] uppercase tracking-wide text-sunset hover:underline"
+              className="font-sans text-[10px] uppercase tracking-wide text-ink hover:underline"
             >
               Verify on camp website
             </a>
