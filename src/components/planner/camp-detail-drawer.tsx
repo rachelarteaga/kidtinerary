@@ -164,20 +164,20 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
 
   return (
     <>
-      <div className="fixed inset-0 bg-bark/25 z-40" onClick={onClose} />
-      <aside className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-cream shadow-2xl z-50 overflow-y-auto">
-        <header className="bg-white px-5 py-4 border-b border-driftwood/30">
+      <div className="fixed inset-0 bg-ink/25 z-40" onClick={onClose} />
+      <aside className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-base shadow-2xl z-50 overflow-y-auto">
+        <header className="bg-surface px-5 py-4 border-b border-ink-3">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <div className="font-mono text-[10px] uppercase tracking-widest text-stone mb-0.5">
+              <div className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-0.5">
                 {kidName} · {formatWeekRange(local.weekStart)}
               </div>
-              <h2 className="font-serif text-2xl text-bark leading-tight">{local.activityName}</h2>
-              <div className="font-mono text-[10px] uppercase tracking-wide text-stone mt-1">
-                {local.orgName ?? ""} {local.verified && <span className="text-meadow">· verified ✓</span>}
+              <h2 className="font-display font-extrabold text-2xl text-ink leading-tight">{local.activityName}</h2>
+              <div className="font-sans text-[10px] uppercase tracking-wide text-ink-2 mt-1">
+                {local.orgName ?? ""} {local.verified && <span className="text-[#5fc39c]">· verified ✓</span>}
               </div>
             </div>
-            <button onClick={onClose} aria-label="Close" className="text-stone hover:text-bark text-lg">✕</button>
+            <button onClick={onClose} aria-label="Close" className="text-ink-2 hover:text-ink text-lg">✕</button>
           </div>
           <div className="mt-3">
             <StatusDropdown status={local.status} onChange={persistStatus} />
@@ -186,7 +186,7 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
 
         <div className="p-5 space-y-5">
           <section>
-            <h3 className="font-mono text-[10px] uppercase tracking-widest text-stone mb-2">Schedule</h3>
+            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Schedule</h3>
             <ScheduleEditor
               sessionPart={local.sessionPart}
               daysOfWeek={local.daysOfWeek}
@@ -196,9 +196,9 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
           </section>
 
           <section>
-            <h3 className="font-mono text-[10px] uppercase tracking-widest text-stone mb-2">Price</h3>
+            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Price</h3>
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-bark text-sm">$</span>
+              <span className="text-ink text-sm">$</span>
               <input
                 type="number"
                 value={local.priceCents == null ? "" : (local.priceCents / 100).toFixed(0)}
@@ -207,72 +207,72 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
                   const cents = raw === "" ? null : Math.max(0, Math.round(parseFloat(raw) * 100));
                   persistPrice(cents, cents == null ? null : local.priceUnit ?? "per_week");
                 }}
-                className="flex-1 rounded-md border border-driftwood/40 bg-white px-2 py-1.5 text-sm"
+                className="flex-1 rounded-md border border-ink-3 bg-surface px-2 py-1.5 text-sm"
                 placeholder="0"
                 min="0"
               />
               <select
                 value={local.priceUnit ?? "per_week"}
                 onChange={(e) => persistPrice(local.priceCents, e.target.value as PriceUnit)}
-                className="rounded-md border border-driftwood/40 bg-white px-2 py-1.5 text-xs"
+                className="rounded-md border border-ink-3 bg-surface px-2 py-1.5 text-xs"
               >
                 <option value="per_week">per week</option>
                 <option value="per_day">per day</option>
               </select>
             </div>
             <ExtrasEditor extras={local.extras} onChange={persistExtras} />
-            <div className="mt-2 flex justify-between items-center px-3 py-2 bg-driftwood/10 rounded-md">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-stone">This week</span>
-              <span className="text-sm text-bark font-medium">{weekTotalDisplay}</span>
+            <div className="mt-2 flex justify-between items-center px-3 py-2 bg-ink-3/10 rounded-md">
+              <span className="font-sans text-[10px] uppercase tracking-widest text-ink-2">This week</span>
+              <span className="text-sm text-ink font-medium">{weekTotalDisplay}</span>
             </div>
           </section>
 
           <section>
-            <h3 className="font-mono text-[10px] uppercase tracking-widest text-stone mb-2">Notes (optional)</h3>
+            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Notes (optional)</h3>
             <textarea
               value={local.notes ?? ""}
               onChange={(e) => persistNotes(e.target.value)}
-              className="w-full rounded-md border border-driftwood/40 bg-white px-3 py-2 text-sm min-h-[64px]"
+              className="w-full rounded-md border border-ink-3 bg-surface px-3 py-2 text-sm min-h-[64px]"
               placeholder="Pack swimsuit Monday, needs bug spray…"
             />
           </section>
 
           {kids.length > 1 && (
             <section>
-              <h3 className="font-mono text-[10px] uppercase tracking-widest text-stone mb-2">Also add for</h3>
+              <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Also add for</h3>
               <div className="flex gap-1.5 flex-wrap">
                 {kids.filter((k) => k.id !== local.childId).map((k) => (
                   <button
                     key={k.id}
                     onClick={() => addForKid(k.id)}
-                    className="flex items-center gap-1.5 rounded-full border border-driftwood/40 bg-white px-3 py-1 text-xs hover:border-bark"
+                    className="flex items-center gap-1.5 rounded-full border border-ink-3 bg-surface px-3 py-1 text-xs hover:border-ink"
                   >
-                    <KidAvatar name={k.name} color={k.color} index={0} avatarUrl={k.avatar_url} size={18} />{/* TODO: wire real index */}
-                    {k.name} <span className="text-stone">+</span>
+                    <KidAvatar name={k.name} color={k.color} index={0} avatarUrl={k.avatar_url} size={18} />
+                    {k.name} <span className="text-ink-2">+</span>
                   </button>
                 ))}
               </div>
-              <p className="text-[11px] text-stone italic mt-1.5">Copies schedule, price, extras.</p>
+              <p className="text-[11px] text-ink-2 italic mt-1.5">Copies schedule, price, extras.</p>
             </section>
           )}
 
           <section>
-            <h3 className="font-mono text-[10px] uppercase tracking-widest text-stone mb-2">Camp info</h3>
+            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Camp info</h3>
             {local.activityDescription && (
-              <p className="text-sm text-bark mb-2">{local.activityDescription}</p>
+              <p className="text-sm text-ink mb-2">{local.activityDescription}</p>
             )}
             {local.activityUrl && (
-              <Link href={local.activityUrl} target="_blank" className="text-sm text-campfire underline">
+              <Link href={local.activityUrl} target="_blank" className="text-sm text-ink underline">
                 {new URL(local.activityUrl).hostname} ↗
               </Link>
             )}
           </section>
 
-          <section className="pt-2 border-t border-driftwood/30">
+          <section className="pt-2 border-t border-ink-3">
             <button
               onClick={handleRemove}
               disabled={isPending}
-              className="text-xs text-red-600 hover:text-red-800"
+              className="text-xs text-[#ef8c8f] hover:text-[#ef8c8f]/80"
             >
               Remove this camp from {kidName}&apos;s week
             </button>
