@@ -319,7 +319,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
                   />
                   <button
                     onClick={() => setEntryModal({ childId: null, weekStart: null, tab: "camp" })}
-                    className="font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-[#333] border border-ink shadow-[3px_3px_0_0_rgba(0,0,0,0.15)]"
+                    className="font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-[#333] border border-ink"
                   >
                     + Add
                   </button>

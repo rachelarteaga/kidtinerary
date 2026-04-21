@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { KidAvatar } from "./kid-avatar";
+import { BlockIcon } from "./block-icon";
 import { updateBlockDetails, removePlannerBlock } from "@/lib/actions";
 import type { PlannerBlockType } from "@/lib/supabase/types";
 
@@ -30,11 +31,11 @@ interface Props {
   onChanged: () => void;
 }
 
-const TYPES: { id: PlannerBlockType; label: string; emoji: string }[] = [
-  { id: "school", label: "School", emoji: "🏫" },
-  { id: "travel", label: "Travel", emoji: "✈" },
-  { id: "at_home", label: "At home", emoji: "🏡" },
-  { id: "other", label: "Other", emoji: "⭐" },
+const TYPES: { id: PlannerBlockType; label: string }[] = [
+  { id: "school", label: "School" },
+  { id: "travel", label: "Travel" },
+  { id: "at_home", label: "At home" },
+  { id: "other", label: "Other" },
 ];
 
 export function BlockDetailDrawer({ open, onClose, block, kids, onChanged }: Props) {
@@ -88,8 +89,6 @@ export function BlockDetailDrawer({ open, onClose, block, kids, onChanged }: Pro
     save({ childIds: next });
   }
 
-  const currentType = TYPES.find((t) => t.id === local.type) ?? TYPES[0];
-
   return (
     <>
       <div className="fixed inset-0 bg-ink/25 z-40" onClick={onClose} />
@@ -97,8 +96,9 @@ export function BlockDetailDrawer({ open, onClose, block, kids, onChanged }: Pro
         <header className="bg-surface px-5 py-4 border-b border-ink-3 flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="font-sans text-[10px] uppercase tracking-widest text-ink-2">Block</div>
-            <h2 className="font-display font-extrabold text-2xl text-ink leading-tight">
-              {(local.type === "other" ? local.emoji : currentType.emoji) ?? "⭐"} {local.title || "Untitled"}
+            <h2 className="font-display font-extrabold text-2xl text-ink leading-tight flex items-center gap-2">
+              <BlockIcon type={local.type} size={22} />
+              <span className="truncate">{local.title || "Untitled"}</span>
             </h2>
           </div>
           <button onClick={onClose} aria-label="Close" className="text-ink-2 hover:text-ink text-lg">✕</button>
@@ -111,14 +111,14 @@ export function BlockDetailDrawer({ open, onClose, block, kids, onChanged }: Pro
               {TYPES.map((t) => (
                 <button
                   key={t.id}
-                  onClick={() => save({ type: t.id, emoji: t.id === "other" ? (local!.emoji ?? "⭐") : null })}
+                  onClick={() => save({ type: t.id, emoji: null })}
                   className={`rounded-lg border px-2 py-2 text-xs ${
                     local.type === t.id
                       ? "border-ink bg-ink/10 text-ink font-medium"
                       : "border-ink-3 bg-surface text-ink-2 hover:text-ink"
                   }`}
                 >
-                  <div className="text-lg">{t.emoji}</div>
+                  <div className="mb-0.5 flex justify-center"><BlockIcon type={t.id} size={18} /></div>
                   {t.label}
                 </button>
               ))}
@@ -132,15 +132,6 @@ export function BlockDetailDrawer({ open, onClose, block, kids, onChanged }: Pro
               onChange={(e) => save({ title: e.target.value })}
               className="w-full rounded-md border border-ink-3 bg-surface px-3 py-2 text-sm"
             />
-            {local.type === "other" && (
-              <input
-                value={local.emoji ?? ""}
-                onChange={(e) => save({ emoji: e.target.value })}
-                className="mt-2 w-20 rounded-md border border-ink-3 bg-surface px-3 py-2 text-sm text-center"
-                placeholder="⭐"
-                maxLength={4}
-              />
-            )}
           </section>
 
           <section>

@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { addPlannerBlock } from "@/lib/actions";
 import { KidAvatar } from "./kid-avatar";
+import { BlockIcon } from "./block-icon";
 import type { PlannerBlockType } from "@/lib/supabase/types";
 
 interface ChildLite {
@@ -22,11 +23,11 @@ interface Props {
   embedded?: boolean;
 }
 
-const TYPES: { id: PlannerBlockType; label: string; sub: string; emoji: string }[] = [
-  { id: "school",  label: "School",   sub: "Year-round",      emoji: "🏫" },
-  { id: "travel",  label: "Travel",   sub: "Trip, visit",     emoji: "✈" },
-  { id: "at_home", label: "At home",  sub: "Parent time, off", emoji: "🏡" },
-  { id: "other",   label: "Other",    sub: "Custom",          emoji: "⭐" },
+const TYPES: { id: PlannerBlockType; label: string; sub: string }[] = [
+  { id: "school",  label: "School",   sub: "Year-round" },
+  { id: "travel",  label: "Travel",   sub: "Trip, visit" },
+  { id: "at_home", label: "At home",  sub: "Parent time, off" },
+  { id: "other",   label: "Other",    sub: "Custom" },
 ];
 
 function addDays(ymd: string, days: number): string {
@@ -39,7 +40,6 @@ export function AddBlockModal({ open, onClose, children, scope, onSubmitted, emb
   const [step, setStep] = useState<1 | 2>(1);
   const [type, setType] = useState<PlannerBlockType>("travel");
   const [title, setTitle] = useState("");
-  const [emoji, setEmoji] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedKids, setSelectedKids] = useState<string[]>([]);
@@ -50,7 +50,6 @@ export function AddBlockModal({ open, onClose, children, scope, onSubmitted, emb
       setStep(1);
       setType("travel");
       setTitle("");
-      setEmoji("");
       const ws = scope.weekStart ?? new Date().toISOString().split("T")[0];
       setStartDate(ws);
       setEndDate(addDays(ws, 4));
@@ -69,7 +68,7 @@ export function AddBlockModal({ open, onClose, children, scope, onSubmitted, emb
       const result = await addPlannerBlock({
         type,
         title,
-        emoji: type === "other" ? emoji || null : null,
+        emoji: null,
         startDate,
         endDate,
         childIds: selectedKids,
@@ -95,7 +94,7 @@ export function AddBlockModal({ open, onClose, children, scope, onSubmitted, emb
                 onClick={() => { setType(t.id); setStep(2); }}
                 className="border border-ink-3 rounded-xl p-3 bg-surface text-left hover:bg-ink-3/5 transition-colors"
               >
-                <div className="text-2xl mb-1">{t.emoji}</div>
+                <div className="mb-1"><BlockIcon type={t.id} size={24} /></div>
                 <div className="font-medium text-sm text-ink">{t.label}</div>
                 <div className="font-sans text-[10px] uppercase tracking-wide text-ink-2 mt-0.5">{t.sub}</div>
               </button>
@@ -106,7 +105,7 @@ export function AddBlockModal({ open, onClose, children, scope, onSubmitted, emb
         {step === 2 && (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <span className="text-xl">{type === "other" ? (emoji || "⭐") : TYPES.find((t) => t.id === type)?.emoji}</span>
+              <BlockIcon type={type} size={20} />
               <button
                 onClick={() => setStep(1)}
                 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 hover:text-ink"
@@ -124,19 +123,6 @@ export function AddBlockModal({ open, onClose, children, scope, onSubmitted, emb
                 placeholder={type === "school" ? "School (year-round)" : "Outer Banks trip"}
               />
             </div>
-
-            {type === "other" && (
-              <div>
-                <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2">Emoji (optional)</label>
-                <input
-                  value={emoji}
-                  onChange={(e) => setEmoji(e.target.value)}
-                  className="w-full bg-surface border border-ink rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-ink mt-1"
-                  maxLength={4}
-                  placeholder="⭐"
-                />
-              </div>
-            )}
 
             <div>
               <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2">Dates</label>
