@@ -27,16 +27,16 @@ export function DetailHero({ activity }: DetailHeroProps) {
   };
 
   const gradient = primaryCategory
-    ? gradients[primaryCategory] ?? "from-driftwood/20 to-driftwood/5"
-    : "from-driftwood/20 to-driftwood/5";
+    ? gradients[primaryCategory] ?? "from-ink-3/20 to-ink-3/5"
+    : "from-ink-3/20 to-ink-3/5";
 
   return (
     <div className={`bg-gradient-to-b ${gradient} rounded-2xl p-6 sm:p-10 mb-8`}>
       {/* Breadcrumb */}
-      <p className="font-mono text-[10px] uppercase tracking-wide text-stone mb-4">
-        <a href="/explore" className="hover:text-bark">Explore</a>
+      <p className="font-sans text-[10px] uppercase tracking-wide text-ink-2 mb-4">
+        <a href="/explore" className="hover:text-ink">Explore</a>
         <span className="mx-2">/</span>
-        <span className="text-bark">{activity.name}</span>
+        <span className="text-ink">{activity.name}</span>
       </p>
 
       {/* Category icon */}
@@ -49,19 +49,19 @@ export function DetailHero({ activity }: DetailHeroProps) {
         </div>
       )}
 
-      <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl mb-2">
+      <h1 className="font-display font-extrabold text-3xl sm:text-4xl lg:text-5xl mb-2">
         {activity.name}
       </h1>
 
       {activity.organization && (
-        <p className="text-stone text-lg mb-4">
+        <p className="text-ink-2 text-lg mb-4">
           by{" "}
           {(activity.organization as any).website ? (
             <a
               href={(activity.organization as any).website}
               target="_blank"
               rel="noopener noreferrer"
-              className="underline underline-offset-2 hover:text-bark"
+              className="underline underline-offset-2 hover:text-ink"
             >
               {(activity.organization as any).name}
             </a>
