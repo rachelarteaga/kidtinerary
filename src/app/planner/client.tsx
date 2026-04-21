@@ -269,27 +269,27 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
       onDragEnd={handleDragEnd}
     >
       <main className="md:h-[calc(100vh-64px)] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:overflow-hidden">
-        <header className="bg-cream flex items-start justify-between flex-wrap gap-3 py-4 flex-shrink-0">
+        <header className="bg-surface flex items-start justify-between flex-wrap gap-3 py-4 flex-shrink-0">
           <div>
             <div className="mb-1">
               <PlannerTitle plannerId={planner.id} name={planner.name} />
             </div>
-            <p className="text-stone">{kids.length} kid{kids.length === 1 ? "" : "s"} · {weekStarts.length} weeks</p>
+            <p className="text-ink-2">{kids.length} kid{kids.length === 1 ? "" : "s"} · {weekStarts.length} weeks</p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <div className="inline-flex rounded-full border border-driftwood/40 bg-white overflow-hidden">
+            <div className="inline-flex rounded-full border border-ink bg-surface overflow-hidden">
               <button
                 onClick={() => setViewMode("detail")}
-                className={`font-mono text-[11px] uppercase tracking-widest px-3 py-2 transition-colors ${
-                  viewMode === "detail" ? "bg-bark text-cream" : "text-stone hover:text-bark"
+                className={`font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 transition-colors ${
+                  viewMode === "detail" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
                 }`}
               >
                 Detail
               </button>
               <button
                 onClick={() => setViewMode("simple")}
-                className={`font-mono text-[11px] uppercase tracking-widest px-3 py-2 transition-colors ${
-                  viewMode === "simple" ? "bg-bark text-cream" : "text-stone hover:text-bark"
+                className={`font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 transition-colors ${
+                  viewMode === "simple" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
                 }`}
               >
                 Simple
@@ -305,7 +305,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
             />
             <button
               onClick={() => setEntryModal({ childId: null, weekStart: null, tab: "camp" })}
-              className="font-mono text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-bark text-cream hover:bg-bark/90"
+              className="font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-[#333] border border-ink shadow-[3px_3px_0_0_rgba(0,0,0,0.15)]"
             >
               + Add
             </button>
@@ -321,22 +321,24 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           />
 
           <div className="w-full md:flex-1 min-w-0 flex flex-col md:h-full">
-            <PlannerMatrix
-              children={kids}
-              allUserKids={allUserKids}
-              plannerId={planner.id}
-              weeks={weeks}
-              orderedIds={orderedIds}
-              plannerStart={plannerStart}
-              plannerEnd={plannerEnd}
-              viewMode={viewMode}
-              isDraggingCamp={isDraggingCamp}
-              onAddCampClick={(childId, weekStart) => setEntryModal({ childId, weekStart, tab: "camp" })}
-              onAddBlockClick={(childId, weekStart) => setEntryModal({ childId, weekStart, tab: "block" })}
-              onEntryClick={(entryId) => setDrawerEntryId(entryId)}
-              onBlockClick={(blockId) => setDrawerBlockId(blockId)}
-              onRemoveKid={handleRemoveKid}
-            />
+            <div className="bg-base border border-ink rounded-2xl p-4 flex-1 min-h-0 flex flex-col">
+              <PlannerMatrix
+                children={kids}
+                allUserKids={allUserKids}
+                plannerId={planner.id}
+                weeks={weeks}
+                orderedIds={orderedIds}
+                plannerStart={plannerStart}
+                plannerEnd={plannerEnd}
+                viewMode={viewMode}
+                isDraggingCamp={isDraggingCamp}
+                onAddCampClick={(childId, weekStart) => setEntryModal({ childId, weekStart, tab: "camp" })}
+                onAddBlockClick={(childId, weekStart) => setEntryModal({ childId, weekStart, tab: "block" })}
+                onEntryClick={(entryId) => setDrawerEntryId(entryId)}
+                onBlockClick={(blockId) => setDrawerBlockId(blockId)}
+                onRemoveKid={handleRemoveKid}
+              />
+            </div>
           </div>
         </div>
 
@@ -376,12 +378,12 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
 
       <DragOverlay dropAnimation={null}>
         {draggingCamp ? (
-          <div className="rounded-lg border-2 bg-white shadow-2xl p-2.5 w-56 rotate-2 pointer-events-none" style={{ borderColor: draggingCamp.color }}>
+          <div className="rounded-lg border border-ink bg-surface shadow-[3px_3px_0_0_rgba(0,0,0,0.15)] p-2.5 w-56 rotate-2 pointer-events-none" style={{ borderColor: draggingCamp.color }}>
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full" style={{ background: draggingCamp.color }} />
-              <div className="font-medium text-sm text-bark truncate">{draggingCamp.name}</div>
+              <div className="font-medium text-sm text-ink truncate">{draggingCamp.name}</div>
             </div>
-            <div className="mt-1 font-mono text-[9px] uppercase tracking-widest text-stone">
+            <div className="mt-1 font-sans font-bold text-[9px] uppercase tracking-widest text-ink-2">
               Drop on a week ↓
             </div>
           </div>
