@@ -39,7 +39,7 @@ export function BlockCard({ blockId, type, title, subtitle, compact = false, onC
     return (
       <div
         onClick={onClick}
-        className={`rounded-lg border border-ink px-2 py-1.5 flex items-center gap-2 cursor-pointer ${isPending ? "opacity-60" : ""}`}
+        className={`rounded-lg border border-ink-3 px-2 py-1.5 flex items-center gap-2 cursor-pointer ${isPending ? "opacity-60" : ""}`}
         style={BLOCK_FILL_STYLE}
       >
         <span className="shrink-0 leading-none"><BlockIcon type={type} size={14} /></span>
@@ -58,7 +58,7 @@ export function BlockCard({ blockId, type, title, subtitle, compact = false, onC
   return (
     <div
       onClick={onClick}
-      className={`rounded-xl border border-ink p-3 flex items-start gap-3 cursor-pointer ${isPending ? "opacity-60" : ""}`}
+      className={`rounded-lg border border-ink-3 p-3 flex items-start gap-3 cursor-pointer ${isPending ? "opacity-60" : ""}`}
       style={BLOCK_FILL_STYLE}
     >
       <span className="shrink-0 leading-none"><BlockIcon type={type} /></span>

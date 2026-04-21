@@ -78,7 +78,7 @@ export function KidColumnHeader({ child, index, ageYears, onRemove }: Props) {
       <div
         ref={setNodeRef}
         style={style}
-        className="bg-surface border border-ink rounded-xl px-2.5 py-2 flex items-center gap-2 relative"
+        className="bg-surface border border-ink rounded-lg px-2.5 py-2 flex items-center gap-2 relative"
       >
         <button
           {...attributes}
@@ -125,7 +125,7 @@ export function KidColumnHeader({ child, index, ageYears, onRemove }: Props) {
               ⋯
             </button>
             {menuOpen && (
-              <div className="absolute right-0 top-full mt-1 bg-white border border-ink rounded-xl shadow-[3px_3px_0_0_rgba(0,0,0,0.15)] p-1 min-w-[180px] z-20">
+              <div className="absolute right-0 top-full mt-1 bg-white border border-ink rounded-lg shadow-[3px_3px_0_0_rgba(0,0,0,0.15)] p-1 min-w-[180px] z-20">
                 <button
                   type="button"
                   onClick={() => {

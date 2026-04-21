@@ -85,7 +85,7 @@ export function PlannerCell({
       content = (
         <button
           onClick={() => onEntryClick(first.entryId)}
-          className="w-full h-full rounded-lg border border-ink bg-surface px-2 py-1.5 flex items-center gap-1.5 text-xs text-ink hover:underline text-left"
+          className="w-full h-full rounded-lg border border-ink-3 bg-surface px-2 py-1.5 flex items-center gap-1.5 text-xs text-ink hover:underline text-left"
         >
           <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: first.color }} />
           <span className="truncate flex-1 inline-flex items-center gap-1">
@@ -114,7 +114,7 @@ export function PlannerCell({
     );
   } else {
     content = (
-      <div className="rounded-lg border border-ink bg-surface p-2 h-full">
+      <div className="rounded-lg border border-ink-3 bg-surface p-2 h-full">
         <CellTimelineGrid
           entries={timelineEntries}
           weekStart={weekStartDate}

@@ -57,7 +57,7 @@ export function CampCard({
   }
 
   return (
-    <div className={`rounded-xl border border-ink p-3 bg-surface transition-opacity ${isPending ? "opacity-60 pointer-events-none" : ""}`}>
+    <div className={`rounded-lg border border-ink-3 p-3 bg-surface transition-opacity ${isPending ? "opacity-60 pointer-events-none" : ""}`}>
       <div className="flex items-start justify-between gap-2">
         <Link
           href={`/activity/${activitySlug}`}
