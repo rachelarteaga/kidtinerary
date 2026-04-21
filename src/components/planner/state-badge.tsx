@@ -14,13 +14,13 @@ const LABELS: Record<PlannerEntryStatus, string> = {
 };
 
 const STYLES: Record<PlannerEntryStatus, string> = {
-  considering: "bg-campfire/15 text-campfire hover:bg-campfire/25",
-  waitlisted: "bg-amber-100 text-amber-800 hover:bg-amber-200",
-  registered: "bg-meadow/20 text-meadow hover:bg-meadow/30",
+  considering: "bg-status-considering text-ink hover:brightness-95",
+  waitlisted: "bg-status-waitlisted text-ink hover:brightness-95",
+  registered: "bg-status-registered text-ink hover:brightness-95",
 };
 
 export function StateBadge({ status, onClick }: Props) {
-  const base = "font-mono text-[10px] uppercase tracking-wide px-2.5 py-1 rounded-full transition-colors";
+  const base = "font-sans text-[10px] uppercase tracking-wide px-2.5 py-1 rounded-full border border-ink font-semibold transition-colors";
   const cls = `${base} ${STYLES[status]} ${onClick ? "cursor-pointer" : ""}`;
   if (onClick) return <button onClick={onClick} className={cls}>{LABELS[status]}</button>;
   return <span className={cls}>{LABELS[status]}</span>;
