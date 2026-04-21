@@ -94,7 +94,7 @@ export function PlannerMatrix({
   }, [orderedIds, focusedKidId]);
 
   const cols = orderedChildren.length;
-  const gridTemplate = `100px ${"1fr ".repeat(cols).trim()}`;
+  const gridTemplate = `100px ${"1fr ".repeat(cols).trim()} 48px`;
 
   // Empty-planner state: no kids assigned yet. Show only the header row with Add Kid.
   if (orderedChildren.length === 0) {
@@ -193,21 +193,19 @@ export function PlannerMatrix({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-stretch gap-2">
-        <div className="flex-1 grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
-          <div />
-          <SortableContext items={orderedIds} strategy={horizontalListSortingStrategy}>
-            {orderedChildren.map((c) => (
-              <KidColumnHeader
-                key={c.id}
-                child={c}
-                ageYears={ageYears(c.birth_date)}
-                onRemove={allowRemove ? () => onRemoveKid(c.id) : undefined}
-              />
-            ))}
-          </SortableContext>
-        </div>
-        <div className="flex items-center pl-1">
+      <div className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
+        <div />
+        <SortableContext items={orderedIds} strategy={horizontalListSortingStrategy}>
+          {orderedChildren.map((c) => (
+            <KidColumnHeader
+              key={c.id}
+              child={c}
+              ageYears={ageYears(c.birth_date)}
+              onRemove={allowRemove ? () => onRemoveKid(c.id) : undefined}
+            />
+          ))}
+        </SortableContext>
+        <div className="flex items-center justify-center">
           <AddKidMenu plannerId={plannerId} availableKids={availableKids} />
         </div>
       </div>
@@ -218,19 +216,22 @@ export function PlannerMatrix({
 
         if (w.fullRowBlock) {
           return (
-            <div key={weekKey} className="grid gap-2" style={{ gridTemplateColumns: "100px 1fr" }}>
+            <div key={weekKey} className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
               <div className="font-mono text-[10px] uppercase tracking-widest text-stone self-center px-1.5">
                 {formatWeekRange(w.weekStart)}
               </div>
-              <BlockCard
-                blockId={w.fullRowBlock.blockId}
-                type={w.fullRowBlock.type}
-                title={w.fullRowBlock.title}
-                emoji={w.fullRowBlock.emoji}
-                subtitle={w.fullRowBlock.subtitle}
-                onClick={() => onBlockClick(w.fullRowBlock!.blockId)}
-                onChanged={() => { /* parent refreshes on its own */ }}
-              />
+              <div style={{ gridColumn: `2 / span ${cols}` }}>
+                <BlockCard
+                  blockId={w.fullRowBlock.blockId}
+                  type={w.fullRowBlock.type}
+                  title={w.fullRowBlock.title}
+                  emoji={w.fullRowBlock.emoji}
+                  subtitle={w.fullRowBlock.subtitle}
+                  onClick={() => onBlockClick(w.fullRowBlock!.blockId)}
+                  onChanged={() => { /* parent refreshes on its own */ }}
+                />
+              </div>
+              <div />
             </div>
           );
         }
@@ -274,6 +275,7 @@ export function PlannerMatrix({
                 />
               );
             })}
+            <div />
           </div>
         );
       })}
