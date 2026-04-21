@@ -224,7 +224,7 @@ export function PlannerMatrix({
         if (w.fullRowBlock) {
           return (
             <div key={weekKey} className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
-              <div className="font-mono text-[11px] uppercase tracking-widest text-stone self-stretch pt-2 pl-1.5 pr-3 border-r border-driftwood/30 whitespace-nowrap text-left">
+              <div className="font-mono text-[11px] uppercase tracking-widest text-stone self-stretch flex items-center pl-1.5 pr-3 border-r border-driftwood/30 whitespace-nowrap text-left">
                 {weekLabel}
               </div>
               <div style={{ gridColumn: `2 / span ${cols}` }}>
@@ -245,7 +245,7 @@ export function PlannerMatrix({
 
         return (
           <div key={weekKey} className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
-            <div className="font-mono text-[11px] uppercase tracking-widest text-stone self-stretch pt-2 pl-1.5 pr-3 border-r border-driftwood/30 whitespace-nowrap text-left">
+            <div className="font-mono text-[11px] uppercase tracking-widest text-stone self-stretch flex items-center pl-1.5 pr-3 border-r border-driftwood/30 whitespace-nowrap text-left">
               {weekLabel}
             </div>
             {orderedChildren.map((child) => {
