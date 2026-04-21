@@ -201,10 +201,11 @@ export function PlannerMatrix({
       <div className="grid gap-2 mb-3 flex-shrink-0" style={{ gridTemplateColumns: gridTemplate }}>
         <div />
         <SortableContext items={orderedIds} strategy={horizontalListSortingStrategy}>
-          {orderedChildren.map((c) => (
+          {orderedChildren.map((c, i) => (
             <KidColumnHeader
               key={c.id}
               child={c}
+              index={i}
               ageYears={ageYears(c.birth_date)}
               onRemove={allowRemove ? () => onRemoveKid(c.id) : undefined}
             />

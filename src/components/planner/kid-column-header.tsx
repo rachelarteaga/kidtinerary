@@ -16,11 +16,12 @@ interface Child {
 
 interface Props {
   child: Child;
+  index: number;
   ageYears: number;
   onRemove?: () => void;
 }
 
-export function KidColumnHeader({ child, ageYears, onRemove }: Props) {
+export function KidColumnHeader({ child, index, ageYears, onRemove }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: child.id,
     data: { type: "kid-column" },
@@ -30,7 +31,6 @@ export function KidColumnHeader({ child, ageYears, onRemove }: Props) {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.4 : 1,
-    borderLeftColor: child.color,
   };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -78,13 +78,13 @@ export function KidColumnHeader({ child, ageYears, onRemove }: Props) {
       <div
         ref={setNodeRef}
         style={style}
-        className="bg-white border border-driftwood/30 border-l-4 rounded-lg px-2.5 py-2 flex items-center gap-2 relative"
+        className="bg-surface border border-ink rounded-xl px-2.5 py-2 flex items-center gap-2 relative"
       >
         <button
           {...attributes}
           {...listeners}
           aria-label="Drag to reorder"
-          className="text-stone/60 hover:text-stone cursor-grab active:cursor-grabbing flex-shrink-0 px-1"
+          className="text-ink-3 hover:text-ink cursor-grab active:cursor-grabbing flex-shrink-0 px-1"
         >
           ⋮⋮
         </button>
@@ -95,8 +95,8 @@ export function KidColumnHeader({ child, ageYears, onRemove }: Props) {
           className="relative group flex-shrink-0"
           aria-label={`Change avatar for ${child.name}`}
         >
-          <KidAvatar name={child.name} color={child.color} index={0} avatarUrl={child.avatar_url} size={32} />{/* TODO: wire real index */}
-          <span className="absolute inset-0 rounded-full bg-bark/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[9px] uppercase tracking-wide transition-opacity">
+          <KidAvatar name={child.name} index={index} avatarUrl={child.avatar_url} size={32} />
+          <span className="absolute inset-0 rounded-full bg-ink/55 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[9px] uppercase tracking-wide font-sans transition-opacity">
             Edit
           </span>
         </button>
@@ -110,8 +110,8 @@ export function KidColumnHeader({ child, ageYears, onRemove }: Props) {
         />
 
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-base text-bark truncate leading-tight">{child.name}</div>
-          <div className="font-mono text-[10px] uppercase tracking-wide text-stone">{ageYears} yrs</div>
+          <div className="font-display font-extrabold text-base text-ink truncate leading-tight">{child.name}</div>
+          <div className="text-[11px] font-medium text-ink-2">{ageYears} yrs</div>
         </div>
 
         {onRemove && (
@@ -120,12 +120,12 @@ export function KidColumnHeader({ child, ageYears, onRemove }: Props) {
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
               aria-label="More options"
-              className="text-stone/60 hover:text-stone px-1 leading-none"
+              className="text-ink-3 hover:text-ink px-1 leading-none"
             >
               ⋯
             </button>
             {menuOpen && (
-              <div className="absolute right-0 top-full mt-1 bg-white border border-driftwood/30 rounded-lg shadow-lg p-1 min-w-[180px] z-20">
+              <div className="absolute right-0 top-full mt-1 bg-white border border-ink rounded-xl shadow-[3px_3px_0_0_rgba(0,0,0,0.15)] p-1 min-w-[180px] z-20">
                 <button
                   type="button"
                   onClick={() => {
@@ -138,7 +138,7 @@ export function KidColumnHeader({ child, ageYears, onRemove }: Props) {
                       onRemove();
                     }
                   }}
-                  className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-red-50 text-sm text-red-600"
+                  className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-[#fdebec] text-sm text-[#ef8c8f]"
                 >
                   Remove from planner
                 </button>
