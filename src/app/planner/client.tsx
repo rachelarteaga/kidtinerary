@@ -20,6 +20,7 @@ import { CampDetailDrawer } from "@/components/planner/camp-detail-drawer";
 import { BlockDetailDrawer } from "@/components/planner/block-detail-drawer";
 import { PlannerRangePicker } from "@/components/planner/planner-range-picker";
 import { PlannerTitle } from "@/components/planner/planner-title";
+import { CampQuickViewModal } from "@/components/planner/camp-quick-view-modal";
 import { useScrapeJob } from "@/lib/use-scrape-job";
 import { reorderKidColumns, assignCampToWeek, removeKidFromPlanner } from "@/lib/actions";
 import { generateWeeks, getWeekKey } from "@/lib/format";
@@ -57,6 +58,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
   const [entryModal, setEntryModal] = useState<{ childId: string | null; weekStart: string | null; tab: "camp" | "block" } | null>(null);
   const [drawerEntryId, setDrawerEntryId] = useState<string | null>(null);
   const [drawerBlockId, setDrawerBlockId] = useState<string | null>(null);
+  const [quickViewCampId, setQuickViewCampId] = useState<string | null>(null);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [draggingCamp, setDraggingCamp] = useState<{ name: string; color: string } | null>(null);
   const isDraggingCamp = draggingCamp !== null;
@@ -274,7 +276,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
         <div className="flex flex-col md:flex-row flex-1 min-h-0">
           <MyCampsRail
             camps={userCamps}
-            onChipClick={(c) => router.push(`/activity/${c.activity.slug}`)}
+            onChipClick={(c) => setQuickViewCampId(c.id)}
             onAddClick={() => setEntryModal({ childId: null, weekStart: null, tab: "camp" })}
             onChanged={() => router.refresh()}
           />
@@ -377,6 +379,10 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           block={drawerBlock}
           kids={kids}
           onChanged={() => router.refresh()}
+        />
+        <CampQuickViewModal
+          camp={userCamps.find((c) => c.id === quickViewCampId) ?? null}
+          onClose={() => setQuickViewCampId(null)}
         />
       </main>
 
