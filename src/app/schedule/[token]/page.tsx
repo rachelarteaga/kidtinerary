@@ -34,11 +34,11 @@ export default async function SharedSchedulePage({ params }: SharedSchedulePageP
     <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <p className="font-mono text-xs uppercase tracking-widest text-stone mb-2">
+        <p className="font-sans text-xs uppercase tracking-widest text-ink-2 mb-2">
           Shared Schedule
         </p>
-        <h1 className="font-serif text-4xl mb-2">{schedule.child_name}&apos;s Plan</h1>
-        <p className="text-stone">
+        <h1 className="font-display font-extrabold text-4xl mb-2">{schedule.child_name}&apos;s Plan</h1>
+        <p className="text-ink-2">
           {formatDateRange(schedule.date_from, schedule.date_to)}
         </p>
       </div>
@@ -53,23 +53,23 @@ export default async function SharedSchedulePage({ params }: SharedSchedulePageP
           return (
             <div
               key={key}
-              className={`rounded-xl border p-4 bg-white ${
-                hasRegistered ? "border-meadow/40" : "border-driftwood/30"
+              className={`rounded-xl border p-4 bg-surface ${
+                hasRegistered ? "border-[#5fc39c]/40" : "border-ink-3"
               }`}
             >
               <div className="flex items-center justify-between mb-3">
-                <span className="font-mono text-xs uppercase tracking-widest text-stone">
+                <span className="font-sans text-xs uppercase tracking-widest text-ink-2">
                   {formatWeekRange(weekStart)}
                 </span>
                 {hasRegistered && (
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-meadow bg-meadow/10 rounded-full px-2 py-0.5">
+                  <span className="font-sans text-[10px] uppercase tracking-widest text-[#5fc39c] bg-[#5fc39c]/10 rounded-full px-2 py-0.5">
                     Registered
                   </span>
                 )}
               </div>
 
               {weekEntries.length === 0 ? (
-                <p className="text-sm text-stone/60 italic">Nothing planned this week</p>
+                <p className="text-sm text-ink-2/60 italic">Nothing planned this week</p>
               ) : (
                 <ul className="space-y-2">
                   {weekEntries.map((entry) => (
@@ -81,17 +81,17 @@ export default async function SharedSchedulePage({ params }: SharedSchedulePageP
                         <span
                           className={`shrink-0 w-2 h-2 rounded-full mt-1.5 ${
                             entry.status === "registered"
-                              ? "bg-meadow"
+                              ? "bg-[#8ec4ad]"
                               : entry.status === "waitlisted"
-                                ? "bg-sunset"
-                                : "bg-driftwood/50"
+                                ? "bg-hero-light"
+                                : "bg-ink-3/50"
                           }`}
                         />
                         <div className="min-w-0">
                           <p className="font-medium text-sm truncate">
                             {entry.session.activity.name}
                           </p>
-                          <p className="text-xs text-stone">
+                          <p className="text-xs text-ink-2">
                             {formatDateRange(
                               entry.session.starts_at,
                               entry.session.ends_at
@@ -100,12 +100,12 @@ export default async function SharedSchedulePage({ params }: SharedSchedulePageP
                         </div>
                       </div>
                       <span
-                        className={`shrink-0 font-mono text-[10px] uppercase tracking-widest rounded-full px-2 py-0.5 ${
+                        className={`shrink-0 font-sans text-[10px] uppercase tracking-widest rounded-full px-2 py-0.5 ${
                           entry.status === "registered"
-                            ? "text-meadow bg-meadow/10"
+                            ? "text-[#5fc39c] bg-[#5fc39c]/10"
                             : entry.status === "waitlisted"
-                              ? "text-sunset bg-sunset/10"
-                              : "text-stone bg-bark/5"
+                              ? "text-ink bg-hero-light/10"
+                              : "text-ink-2 bg-ink/5"
                         }`}
                       >
                         {entry.status === "registered"
@@ -124,15 +124,15 @@ export default async function SharedSchedulePage({ params }: SharedSchedulePageP
       </div>
 
       {/* CTA */}
-      <div className="rounded-2xl bg-cream border border-driftwood/30 p-8 text-center">
-        <h2 className="font-serif text-2xl mb-2">Plan your own summer</h2>
-        <p className="text-stone mb-6">
+      <div className="rounded-2xl bg-surface border border-ink-3 p-8 text-center">
+        <h2 className="font-display font-extrabold text-2xl mb-2">Plan your own summer</h2>
+        <p className="text-ink-2 mb-6">
           Kidtinerary helps you discover camps, build a schedule, and stay organized —
           all in one place.
         </p>
         <Link
           href="/"
-          className="inline-block rounded-full font-mono text-xs uppercase tracking-widest px-6 py-2.5 bg-sunset text-white hover:bg-sunset/90 transition-colors"
+          className="inline-block rounded-full font-sans text-xs uppercase tracking-widest px-6 py-2.5 bg-ink text-ink-inverse hover:bg-[#333] transition-colors"
         >
           Start Planning Free
         </Link>
