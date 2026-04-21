@@ -74,7 +74,7 @@ export function AddKidMenu({ plannerId, availableKids }: Props) {
                 disabled={isPending}
                 className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-driftwood/10 disabled:opacity-50 text-left"
               >
-                <KidAvatar name={k.name} color={k.color} avatarUrl={k.avatar_url} size={20} />
+                <KidAvatar name={k.name} color={k.color} index={0} avatarUrl={k.avatar_url} size={20} />{/* TODO: wire real index */}
                 <span className="text-sm text-bark">{k.name}</span>
               </button>
             ))}

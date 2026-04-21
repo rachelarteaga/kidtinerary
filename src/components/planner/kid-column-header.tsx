@@ -95,7 +95,7 @@ export function KidColumnHeader({ child, ageYears, onRemove }: Props) {
           className="relative group flex-shrink-0"
           aria-label={`Change avatar for ${child.name}`}
         >
-          <KidAvatar name={child.name} color={child.color} avatarUrl={child.avatar_url} size={32} />
+          <KidAvatar name={child.name} color={child.color} index={0} avatarUrl={child.avatar_url} size={32} />{/* TODO: wire real index */}
           <span className="absolute inset-0 rounded-full bg-bark/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[9px] uppercase tracking-wide transition-opacity">
             Edit
           </span>

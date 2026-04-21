@@ -174,7 +174,7 @@ export function BlockDetailDrawer({ open, onClose, block, kids, onChanged }: Pro
                       on ? "border-campfire bg-campfire/10" : "border-driftwood/40 bg-white opacity-60"
                     }`}
                   >
-                    <KidAvatar name={k.name} color={k.color} avatarUrl={k.avatar_url} size={18} />
+                    <KidAvatar name={k.name} color={k.color} index={0} avatarUrl={k.avatar_url} size={18} />{/* TODO: wire real index */}
                     {k.name} {on && <span className="text-meadow">✓</span>}
                   </button>
                 );

@@ -247,7 +247,7 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
                     onClick={() => addForKid(k.id)}
                     className="flex items-center gap-1.5 rounded-full border border-driftwood/40 bg-white px-3 py-1 text-xs hover:border-bark"
                   >
-                    <KidAvatar name={k.name} color={k.color} avatarUrl={k.avatar_url} size={18} />
+                    <KidAvatar name={k.name} color={k.color} index={0} avatarUrl={k.avatar_url} size={18} />{/* TODO: wire real index */}
                     {k.name} <span className="text-stone">+</span>
                   </button>
                 ))}

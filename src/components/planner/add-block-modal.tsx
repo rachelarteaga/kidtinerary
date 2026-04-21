@@ -149,7 +149,7 @@ export function AddBlockModal({ open, onClose, children, scope, onSubmitted, emb
             <div>
               <label className="font-mono text-[10px] uppercase tracking-widest text-stone">Who it applies to</label>
               <div className="flex gap-2 mt-2 flex-wrap">
-                {children.map((c) => {
+                {children.map((c, i) => {
                   const selected = selectedKids.includes(c.id);
                   return (
                     <button
@@ -158,7 +158,7 @@ export function AddBlockModal({ open, onClose, children, scope, onSubmitted, emb
                       className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm border transition-colors ${selected ? "bg-white" : "bg-white opacity-50"}`}
                       style={selected ? { borderColor: c.color } : { borderColor: "#d9c9b0" }}
                     >
-                      <KidAvatar name={c.name} color={c.color} avatarUrl={c.avatar_url} size={20} />
+                      <KidAvatar name={c.name} color={c.color} index={i} avatarUrl={c.avatar_url} size={20} />{/* TODO: wire real index */}
                       {c.name} {selected && "✓"}
                     </button>
                   );

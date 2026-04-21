@@ -118,14 +118,14 @@ export function PlannerMatrix({
     return (
       <div className="flex flex-col md:h-full min-h-0 w-full">
         <div className="flex gap-2 overflow-x-auto pb-1 items-stretch flex-shrink-0 mb-3">
-          {orderedChildren.map((c) => (
+          {orderedChildren.map((c, i) => (
             <button
               key={c.id}
               onClick={() => setFocusedKidId(c.id)}
               className={`shrink-0 rounded-full border px-3 py-1.5 text-sm flex items-center gap-2 ${c.id === focusedKidId ? "bg-white" : "bg-white opacity-60"}`}
               style={{ borderColor: c.id === focusedKidId ? c.color : "#d9c9b0" }}
             >
-              <KidAvatar name={c.name} color={c.color} avatarUrl={c.avatar_url} size={22} />
+              <KidAvatar name={c.name} color={c.color} index={i} avatarUrl={c.avatar_url} size={22} />
               {c.name}
             </button>
           ))}

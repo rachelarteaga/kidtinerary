@@ -1,31 +1,28 @@
 import { initialFor } from "@/lib/kid-palette";
+import { KidShape } from "@/components/ui/kid-shape";
 
 interface KidAvatarProps {
   name: string;
-  color: string;
+  /** Sort-order index within the planner (0-based). Drives shape assignment. */
+  index: number;
+  /** @deprecated Kept for backwards compat; ignored under the new shape-based identity. */
+  color?: string;
   avatarUrl?: string | null;
   size?: number;
 }
 
-export function KidAvatar({ name, color, avatarUrl, size = 48 }: KidAvatarProps) {
-  const style = { width: size, height: size, fontSize: Math.round(size * 0.42) };
+export function KidAvatar({ name, index, avatarUrl, size = 48 }: KidAvatarProps) {
   if (avatarUrl) {
+    // Photo avatars render as circle for now; a future pass can crop to assigned shape.
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={avatarUrl}
         alt={name}
-        style={style}
-        className="rounded-full object-cover"
+        style={{ width: size, height: size }}
+        className="rounded-full object-cover border border-ink"
       />
     );
   }
-  return (
-    <div
-      style={{ ...style, background: color }}
-      className="rounded-full flex items-center justify-center text-white font-bold select-none"
-    >
-      {initialFor(name)}
-    </div>
-  );
+  return <KidShape index={index} size={size} initial={initialFor(name)} />;
 }
