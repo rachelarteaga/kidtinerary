@@ -92,21 +92,21 @@ export function BlockDetailDrawer({ open, onClose, block, kids, onChanged }: Pro
 
   return (
     <>
-      <div className="fixed inset-0 bg-bark/25 z-40" onClick={onClose} />
-      <aside className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-cream shadow-2xl z-50 overflow-y-auto">
-        <header className="bg-white px-5 py-4 border-b border-driftwood/30 flex items-start justify-between gap-3">
+      <div className="fixed inset-0 bg-ink/25 z-40" onClick={onClose} />
+      <aside className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-base shadow-2xl z-50 overflow-y-auto">
+        <header className="bg-surface px-5 py-4 border-b border-ink-3 flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-stone">Block</div>
-            <h2 className="font-serif text-2xl text-bark leading-tight">
+            <div className="font-sans text-[10px] uppercase tracking-widest text-ink-2">Block</div>
+            <h2 className="font-display font-extrabold text-2xl text-ink leading-tight">
               {(local.type === "other" ? local.emoji : currentType.emoji) ?? "⭐"} {local.title || "Untitled"}
             </h2>
           </div>
-          <button onClick={onClose} aria-label="Close" className="text-stone hover:text-bark text-lg">✕</button>
+          <button onClick={onClose} aria-label="Close" className="text-ink-2 hover:text-ink text-lg">✕</button>
         </header>
 
         <div className="p-5 space-y-5">
           <section>
-            <h3 className="font-mono text-[10px] uppercase tracking-widest text-stone mb-2">Type</h3>
+            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Type</h3>
             <div className="grid grid-cols-4 gap-1.5">
               {TYPES.map((t) => (
                 <button
@@ -114,8 +114,8 @@ export function BlockDetailDrawer({ open, onClose, block, kids, onChanged }: Pro
                   onClick={() => save({ type: t.id, emoji: t.id === "other" ? (local!.emoji ?? "⭐") : null })}
                   className={`rounded-lg border px-2 py-2 text-xs ${
                     local.type === t.id
-                      ? "border-campfire bg-campfire/10 text-bark font-medium"
-                      : "border-driftwood/40 bg-white text-stone hover:text-bark"
+                      ? "border-ink bg-ink/10 text-ink font-medium"
+                      : "border-ink-3 bg-surface text-ink-2 hover:text-ink"
                   }`}
                 >
                   <div className="text-lg">{t.emoji}</div>
@@ -126,17 +126,17 @@ export function BlockDetailDrawer({ open, onClose, block, kids, onChanged }: Pro
           </section>
 
           <section>
-            <h3 className="font-mono text-[10px] uppercase tracking-widest text-stone mb-2">Title</h3>
+            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Title</h3>
             <input
               value={local.title}
               onChange={(e) => save({ title: e.target.value })}
-              className="w-full rounded-md border border-driftwood/40 bg-white px-3 py-2 text-sm"
+              className="w-full rounded-md border border-ink-3 bg-surface px-3 py-2 text-sm"
             />
             {local.type === "other" && (
               <input
                 value={local.emoji ?? ""}
                 onChange={(e) => save({ emoji: e.target.value })}
-                className="mt-2 w-20 rounded-md border border-driftwood/40 bg-white px-3 py-2 text-sm text-center"
+                className="mt-2 w-20 rounded-md border border-ink-3 bg-surface px-3 py-2 text-sm text-center"
                 placeholder="⭐"
                 maxLength={4}
               />
@@ -144,25 +144,25 @@ export function BlockDetailDrawer({ open, onClose, block, kids, onChanged }: Pro
           </section>
 
           <section>
-            <h3 className="font-mono text-[10px] uppercase tracking-widest text-stone mb-2">Dates</h3>
+            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Dates</h3>
             <div className="flex gap-2">
               <input
                 type="date"
                 value={local.startDate}
                 onChange={(e) => save({ startDate: e.target.value })}
-                className="flex-1 rounded-md border border-driftwood/40 bg-white px-2 py-1.5 text-sm"
+                className="flex-1 rounded-md border border-ink-3 bg-surface px-2 py-1.5 text-sm"
               />
               <input
                 type="date"
                 value={local.endDate}
                 onChange={(e) => save({ endDate: e.target.value })}
-                className="flex-1 rounded-md border border-driftwood/40 bg-white px-2 py-1.5 text-sm"
+                className="flex-1 rounded-md border border-ink-3 bg-surface px-2 py-1.5 text-sm"
               />
             </div>
           </section>
 
           <section>
-            <h3 className="font-mono text-[10px] uppercase tracking-widest text-stone mb-2">Who</h3>
+            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Who</h3>
             <div className="flex gap-1.5 flex-wrap">
               {kids.map((k) => {
                 const on = local.childIds.includes(k.id);
@@ -171,22 +171,22 @@ export function BlockDetailDrawer({ open, onClose, block, kids, onChanged }: Pro
                     key={k.id}
                     onClick={() => toggleKid(k.id)}
                     className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs ${
-                      on ? "border-campfire bg-campfire/10" : "border-driftwood/40 bg-white opacity-60"
+                      on ? "border-ink bg-ink/10" : "border-ink-3 bg-surface opacity-60"
                     }`}
                   >
-                    <KidAvatar name={k.name} color={k.color} index={0} avatarUrl={k.avatar_url} size={18} />{/* TODO: wire real index */}
-                    {k.name} {on && <span className="text-meadow">✓</span>}
+                    <KidAvatar name={k.name} color={k.color} index={0} avatarUrl={k.avatar_url} size={18} />
+                    {k.name} {on && <span className="text-[#5fc39c]">✓</span>}
                   </button>
                 );
               })}
             </div>
           </section>
 
-          <section className="pt-2 border-t border-driftwood/30">
+          <section className="pt-2 border-t border-ink-3">
             <button
               onClick={handleRemove}
               disabled={isPending}
-              className="text-xs text-red-600 hover:text-red-800"
+              className="text-xs text-[#ef8c8f] hover:text-[#ef8c8f]/80"
             >
               Remove this block
             </button>
