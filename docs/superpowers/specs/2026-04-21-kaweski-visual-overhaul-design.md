@@ -36,8 +36,8 @@ Old tokens (`cream`, `bark`, `sunset`, `campfire`, `meadow`, `lake`, `driftwood`
 
 | Token | Hex | Role |
 |---|---|---|
-| `base` | `#f7f8fa` | Page body background (solid, no gradient) |
-| `surface` | `#ffffff` | Cards, sections, drawers, modals |
+| `base` | `#f7f8fa` | Schedule-region container on /planner · focused input fills · not the body bg |
+| `surface` | `#ffffff` | Body background (all pages) · cards, sections, drawers, modals |
 | `ink` | `#151515` | Primary text, icons, borders |
 | `ink-2` | `#666666` | Secondary text, helper copy |
 | `ink-3` | `#c0c0c0` | Tertiary text, disabled text, dashed borders |
@@ -70,8 +70,8 @@ They never appear on buttons, backgrounds, or decorative elements.
 
 | Old Tailwind class | New class |
 |---|---|
-| `bg-cream`, body bg | `bg-base` |
-| `bg-cream` used as card surface | `bg-surface` (per-file review — cream doubled as both) |
+| `bg-cream`, body bg | `bg-surface` (body is now white, not base) |
+| `bg-cream` used as card surface | `bg-surface` (body + card both use white now) |
 | `bg-bark`, `text-bark` | `bg-ink`, `text-ink` |
 | `bg-sunset` (primary CTA orange) | `bg-ink` (primary button turns ink; sunset retires) |
 | `bg-meadow` | context-dependent — often replaces with camp-mint or status-registered |
@@ -283,9 +283,62 @@ Text line under the state pill on cards. Outfit 11/600 `#151515` sentence case, 
 
 Border `1px #c0c0c0` rest → `1px #151515` hover/focus. Radius 8px. White background default; `#f7f8fa` (base) when focused. No inset shadow. Focus ring: 2px solid `#151515`, `outline-offset: 2px`.
 
-### Nav (`src/components/layout/nav.tsx`)
+### Nav — full-bleed header (`src/components/layout/nav.tsx`)
 
-Background: `#fbbf0e` (hero yellow). Border: 1px solid `#151515`. Radius: 12px where container-y; full-bleed sticky bar otherwise with a bottom `1px solid #151515` border. Shadow: `--shadow-soft` below. Brand/link text: Figtree 800 or Outfit 600, `#151515`.
+**Structural change:** nav becomes an edge-to-edge hero bar, not a contained card. No border-radius, no side margins — stretches full viewport width. This is a deliberate departure from planner card language so the header reads as app chrome.
+
+- Background: `#fbbf0e` (hero yellow), full-bleed.
+- Bottom border: `1px solid #151515`.
+- Shadow: `0 3px 0 0 rgba(0, 0, 0, 0.15)` below (horizontal variant of `--shadow-soft`).
+- Inner container: `max-w-7xl mx-auto`, padding `py-[18px] px-6`.
+- Brand: Figtree 24/800, `#151515`, letter-spacing `-0.02em`. Size bumps from current 18px.
+- Keep the existing auth/onboarding hide behavior.
+
+**Nav item structure (LABEL CHANGES — explicitly sanctioned):**
+
+Old `NAV_LINKS` (Planner · Explore · My Kids) becomes:
+
+```
+Explore (with "Coming soon!" stamp) · Planner · [auth cluster]
+```
+
+"My Kids" nav link **retires**. Its destination becomes a menu item inside the logged-in account dropdown instead.
+
+**Nav link styling:**
+- Font: Outfit 11/uppercase/0.15em tracking. No pill background, no hover fill.
+- Inactive: weight 600, opacity 0.55.
+- Active: weight 800, opacity 1.0. No underline, no dot, no bar — the weight+opacity shift is the entire highlight treatment.
+
+**"Coming soon!" stamp on Explore:**
+- Horizontal (no rotation), absolutely positioned below the Explore label so it doesn't push the link out of the nav row.
+- Outfit 8/800 uppercase, `letter-spacing: 0.1em`.
+- `color: rgba(21,21,21,0.55)`, `border: 1px solid rgba(21,21,21,0.35)`, `background: rgba(255,255,255,0.25)`, radius 3px, padding `2px 6px`.
+
+### Auth cluster (inside Nav)
+
+The right-side auth area has two states:
+
+**State 1 — Unauthenticated (anonymous or signed-out):** split pill.
+- Single pill-shaped container with 1px ink border, pill radius, `overflow: hidden`.
+- Two halves separated by the border sharing between the two anchor children.
+- Left half: "Sign In" — white fill, ink text, Outfit 11/700 uppercase 0.15em tracking, padding `8px 16px`. Hover: fill → `#f7f8fa`.
+- Right half: "Sign up" — ink fill `#151515`, **white text `#ffffff`**, same typography and padding. Hover: fill → `#333`.
+
+**State 2 — Authenticated (session):** "Account" dropdown trigger.
+- White pill: `background: #ffffff`, `border: 1px solid #151515`, radius 999px, padding `8px 14px`.
+- Label: "Account" (static — do NOT personalize with the user's first name), Outfit 11/700 uppercase 0.15em tracking, `#151515`.
+- Chevron ▾ right of the label, font-size 10px.
+- On click, opens a dropdown menu (below).
+
+**Account dropdown menu (authenticated only):**
+- Container: `1px solid #151515`, `border-radius: 12px`, `background: #ffffff`, `padding: 4px`, min-width 240px, `--shadow-soft`.
+- Position: absolute, anchored to the Account pill, 8px top offset, 24px right offset.
+- User identity row at top: full name (Figtree 14/800, ink) + email (Outfit 11/500, `#666`), padded `10px 12px 8px`, bottom border `1px dashed #c0c0c0`.
+- Menu items: Outfit 13/500, ink, padding `9px 12px`, radius 6px. Hover bg `#f7f8fa`.
+- Items (in order): **My kids** · **Account settings** · **Share preferences** · — · **Log out** (text color `#ef8c8f`, hover bg `#fdebec`).
+- Divider between content items and Log out: `1px solid #e8e8e8`, 4px side margin.
+
+**Implementation note on auth state detection:** the Nav component (or a wrapping session provider) needs to read the current auth state to pick between the split pill and the Account pill. If that signal isn't already wired, the implementation plan should include adding it.
 
 ### Toasts (`src/components/ui/toast.tsx`)
 
@@ -297,6 +350,19 @@ Background: `#fbbf0e` (hero yellow). Border: 1px solid `#151515`. Radius: 12px w
 ### Planner page shell (`src/app/planner/client.tsx` + `matrix.tsx`)
 
 Preserved exactly as coded: `140px | repeat(N, 1fr) | 48px` grid, `gap-2` between week rows, week label in left column with right border divider, AddKidMenu in the 48px column of the header row, full-row blocks span `gridColumn: 2 / span cols`. Only fonts/colors/borders swap.
+
+**New: schedule container wrap.** The matrix gets wrapped in a dedicated container div so the schedule region has a visible "canvas" distinct from the white page body:
+
+```css
+.schedule-region {
+  background: #f7f8fa;   /* base token */
+  border: 1px solid #151515;
+  border-radius: 16px;
+  padding: 16px;
+}
+```
+
+The container sits inside the existing flex layout on `/planner` (between the page header and the drag overlay zone). Empty dashed `+ Add` cells inside the matrix use `background: #ffffff` explicitly so they read as empty cards on the grey canvas (rather than blending into it).
 
 **Header row** (lines 272–313 of `client.tsx`): `PlannerTitle` (Figtree 36/800), subtitle `{N} kid(s) · {M} weeks` (Outfit 14/500 `#666`), view-mode toggle (Detail/Simple caps + tracking preserved), `PlannerRangePicker` (token swap), `+ Add` button (caps + tracking preserved, ink primary).
 
@@ -313,7 +379,7 @@ Two rules were saved to long-term memory during the brainstorm and apply to this
 ## Implementation Outline
 
 1. **Tokens in `src/app/globals.css`.** Replace `@theme` with the new token set above. Load Figtree + Outfit via `next/font/google` in `src/app/layout.tsx`; drop DM Serif, Inter, JetBrains Mono from the imports.
-2. **Body styles.** `body { background: #f7f8fa; color: #151515; font-family: Outfit; }`.
+2. **Body styles.** `body { background: #ffffff; color: #151515; font-family: Outfit; }`. Body is white; the grey base (`#f7f8fa`) only appears inside the `.schedule-region` container on `/planner`.
 3. **Kid identity rewrite.** Replace `src/lib/kid-palette.ts` with shape-based identity. Build a small `KidShape` component (SVG) that takes shape + fill (ink or photo) + size + optional initial. Update `kid-avatar.tsx` to render shape instead of colored circle. Update camp-card / legend-row / considering-chip markers to render the 10px solid shape instead of the colored dot.
 4. **Button component rewrite.** `src/components/ui/button.tsx` — swap font to Outfit, keep `uppercase tracking-widest` on existing variants, adopt new fill/text per the variant table. Add `--shadow-soft` by default + the active-state offset.
 5. **Tag component rewrite.** `src/components/ui/tag.tsx` — 1px ink border, pill, Outfit 14/500 or 14/700 per usage.
@@ -321,10 +387,12 @@ Two rules were saved to long-term memory during the brainstorm and apply to this
 7. **Kid column header rewrite.** Remove the 4px colored `border-l-4` treatment entirely. Keep the rest.
 8. **Timeline grid + legend + considering chips.** Swap fills from kid colors to the new `camp-*` palette, swap fonts/borders.
 9. **State badge + shared badge.** Update fonts/colors to the tables above; preserve caps+tracking on state badge label.
-10. **Nav, toasts, inputs, drawers, modals.** Token/font swap per component sections.
-11. **Global Tailwind-class codemod.** ~460 usages across 54 files. Walk the Semantic Remapping table per file. Per-file review where the old token's role is ambiguous (notably `border-driftwood`, `bg-cream`, `bg-campfire`, `bg-sand`).
-12. **Retire `font-serif`, `font-mono`.** Per-usage remove. `uppercase`, `tracking-widest` STAY where present.
-13. **Visual QA pass.** Walk every route (landing, /explore, /activity/[slug], /kids, /planner, /onboarding, /auth/*, /submit, /schedule/[token]) and confirm nothing shifts positionally.
+10. **Nav rewrite (`src/components/layout/nav.tsx`).** Full-bleed hero header, new `NAV_LINKS` array (Explore + Planner only — drop "My Kids"), "Coming soon!" stamp on Explore, auth cluster component with split-pill (unauth) / Account-pill + dropdown (auth) states. Requires reading session state — add a client-side session hook if not already present. Account dropdown menu items route to the existing `/kids` page for "My kids", and new/existing routes for Account settings + Share preferences + Log out.
+11. **Schedule region wrap.** In `src/app/planner/client.tsx`, add a container around the `PlannerMatrix` with `bg-base`, 1px ink border, 16px radius, 16px padding. Ensure empty `+ Add` cells in `planner-cell.tsx` explicitly set a white background.
+12. **Toasts, inputs, drawers, modals.** Token/font swap per component sections.
+13. **Global Tailwind-class codemod.** ~460 usages across 54 files. Walk the Semantic Remapping table per file. Per-file review where the old token's role is ambiguous (notably `border-driftwood`, `bg-cream`, `bg-campfire`, `bg-sand`).
+14. **Retire `font-serif`, `font-mono`.** Per-usage remove. `uppercase`, `tracking-widest` STAY where present.
+15. **Visual QA pass.** Walk every route (landing, /explore, /activity/[slug], /kids, /planner, /onboarding, /auth/*, /submit, /schedule/[token]) and confirm nothing shifts positionally.
 
 ## Risks
 
