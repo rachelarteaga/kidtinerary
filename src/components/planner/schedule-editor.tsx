@@ -38,7 +38,7 @@ export function ScheduleEditor({
   return (
     <div className="space-y-3">
       <div className="flex gap-1.5">
-        {(["full", "am", "pm"] as SessionPart[]).map((p) => (
+        {(["full", "am", "pm", "overnight"] as SessionPart[]).map((p) => (
           <button
             key={p}
             onClick={() => togglePart(p)}
@@ -48,7 +48,7 @@ export function ScheduleEditor({
                 : "border-ink-3 bg-surface text-ink-2 hover:text-ink hover:border-ink"
             }`}
           >
-            {p === "full" ? "Full day" : p === "am" ? "AM only" : "PM only"}
+            {p === "full" ? "Full day" : p === "am" ? "AM only" : p === "pm" ? "PM only" : "Overnight"}
           </button>
         ))}
       </div>
