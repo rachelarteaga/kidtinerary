@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { geocodeAddress } from "@/lib/geocode";
 import { AddressStep } from "@/components/onboarding/address-step";
-import { ChildStep } from "@/components/onboarding/child-step";
+import { ChildStep, type KidDraft } from "@/components/onboarding/child-step";
 import { InterestsStep } from "@/components/onboarding/interests-step";
 import type { Category } from "@/lib/constants";
 
@@ -16,21 +16,34 @@ export const dynamic = "force-dynamic";
 export default function OnboardingPage() {
   const [step, setStep] = useState<Step>("address");
   const [address, setAddress] = useState("");
-  const [child, setChild] = useState({ name: "", birthDate: "" });
+  const [kids, setKids] = useState<KidDraft[]>([]);
+  const [interestsByKid, setInterestsByKid] = useState<Category[][]>([]);
+  const [interestsIndex, setInterestsIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  async function handleAddressComplete(addr: string) {
+  function handleAddressComplete(addr: string) {
     setAddress(addr);
     setStep("child");
   }
 
-  async function handleChildComplete(c: { name: string; birthDate: string }) {
-    setChild(c);
+  function handleChildComplete(addedKids: KidDraft[]) {
+    setKids(addedKids);
+    setInterestsByKid([]);
+    setInterestsIndex(0);
     setStep("interests");
   }
 
   async function handleInterestsComplete(interests: Category[]) {
+    const updatedInterests = [...interestsByKid, interests];
+    const nextIndex = interestsIndex + 1;
+
+    if (nextIndex < kids.length) {
+      setInterestsByKid(updatedInterests);
+      setInterestsIndex(nextIndex);
+      return;
+    }
+
     setError(null);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -44,18 +57,14 @@ export default function OnboardingPage() {
       return;
     }
 
-    // Geocode address
     const geo = await geocodeAddress(address);
-
-    // Update profile with address and location
-    const profileUpdate = {
-      address: geo ? geo.formatted_address : address,
-      onboarding_completed: true,
-    };
 
     const { error: profileError } = await supabase
       .from("profiles")
-      .update(profileUpdate)
+      .update({
+        address: geo ? geo.formatted_address : address,
+        onboarding_completed: true,
+      })
       .eq("id", user.id);
 
     if (profileError) {
@@ -63,28 +72,29 @@ export default function OnboardingPage() {
       return;
     }
 
-    // Create child
-    const { error: childError } = await supabase.from("children").insert({
+    const childRows = kids.map((kid, i) => ({
       user_id: user.id,
-      name: child.name,
-      birth_date: child.birthDate,
-      interests,
-    });
+      name: kid.name,
+      birth_date: kid.birthDate,
+      interests: updatedInterests[i],
+    }));
+
+    const { error: childError } = await supabase.from("children").insert(childRows);
 
     if (childError) {
-      setError("Failed to save kid profile. Please try again.");
+      setError("Failed to save kid profiles. Please try again.");
       return;
     }
 
-    router.push("/");
+    router.push("/planner");
   }
 
   const stepNumber = step === "address" ? 1 : step === "child" ? 2 : 3;
+  const currentKid = step === "interests" ? kids[interestsIndex] : null;
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        {/* Progress indicator */}
         <div className="flex gap-2 mb-8">
           {[1, 2, 3].map((n) => (
             <div
@@ -100,9 +110,10 @@ export default function OnboardingPage() {
           <AddressStep onComplete={handleAddressComplete} />
         )}
         {step === "child" && <ChildStep onComplete={handleChildComplete} />}
-        {step === "interests" && (
+        {step === "interests" && currentKid && (
           <InterestsStep
-            childName={child.name}
+            key={interestsIndex}
+            childName={currentKid.name}
             onComplete={handleInterestsComplete}
           />
         )}
