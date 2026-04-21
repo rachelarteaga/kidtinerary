@@ -1120,7 +1120,10 @@ export async function updateChildAvatar(
     .from("avatars")
     .upload(path, file, { upsert: true, contentType: file.type });
 
-  if (uploadErr) return { error: "Upload failed" };
+  if (uploadErr) {
+    console.error("updateChildAvatar storage error:", uploadErr);
+    return { error: `Upload failed: ${uploadErr.message ?? "unknown"}` };
+  }
 
   const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
 
@@ -1130,7 +1133,10 @@ export async function updateChildAvatar(
     .eq("id", childId)
     .eq("user_id", user.id);
 
-  if (dbErr) return { error: "Failed to save avatar URL" };
+  if (dbErr) {
+    console.error("updateChildAvatar db error:", dbErr);
+    return { error: "Saved upload but failed to update profile" };
+  }
 
   revalidatePath("/planner");
   revalidatePath("/kids");
