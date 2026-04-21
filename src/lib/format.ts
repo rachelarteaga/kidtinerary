@@ -125,3 +125,27 @@ export function formatWeekRange(weekStart: Date): string {
   }
   return `${sMonth} ${sDay} – ${eMonth} ${eDay}`;
 }
+
+/**
+ * Returns parts of a week label suited for 2-line rendering.
+ * - month: "JUN" (start month, uppercased 3-letter)
+ * - days: "15–19" for single-month weeks, "29–JUL 3" for cross-month
+ */
+export function formatWeekLabelParts(weekStart: Date): { month: string; days: string } {
+  const end = new Date(weekStart);
+  end.setDate(end.getDate() + 4); // Friday
+  const sMonth = weekStart.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
+  const eMonth = end.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
+  const sDay = weekStart.getDate();
+  const eDay = end.getDate();
+  if (sMonth === eMonth) {
+    return { month: sMonth, days: `${sDay}–${eDay}` };
+  }
+  return { month: sMonth, days: `${sDay}–${eMonth} ${eDay}` };
+}
+
+/** Compact single-line form like "JUN 15–19" or "JUN 29–JUL 3". */
+export function formatWeekLabelCompact(weekStart: Date): string {
+  const { month, days } = formatWeekLabelParts(weekStart);
+  return `${month} ${days}`;
+}
