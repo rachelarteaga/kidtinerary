@@ -84,14 +84,14 @@ export function AvatarEditorModal({ open, onClose, childId, childName, imageUrl 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-bark/40" onClick={onClose} />
-      <div className="relative bg-cream rounded-2xl shadow-xl w-full max-w-md p-5">
-        <h2 className="font-serif text-xl text-bark mb-1">{childName}&apos;s photo</h2>
-        <p className="font-mono text-[10px] uppercase tracking-widest text-stone mb-3">
+      <div className="absolute inset-0 bg-ink/40" onClick={onClose} />
+      <div className="relative bg-base rounded-2xl shadow-xl w-full max-w-md p-5">
+        <h2 className="font-display font-extrabold text-xl text-ink mb-1">{childName}&apos;s photo</h2>
+        <p className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-3">
           Drag to reposition · Pinch or use slider to zoom
         </p>
 
-        <div className="relative w-full h-64 bg-bark/10 rounded-lg overflow-hidden">
+        <div className="relative w-full h-64 bg-ink/10 rounded-lg overflow-hidden">
           <Cropper
             image={imageUrl}
             crop={crop}
@@ -106,7 +106,7 @@ export function AvatarEditorModal({ open, onClose, childId, childName, imageUrl 
         </div>
 
         <div className="mt-3 flex items-center gap-3">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-stone">Zoom</span>
+          <span className="font-sans text-[10px] uppercase tracking-widest text-ink-2">Zoom</span>
           <input
             type="range"
             value={zoom}
@@ -118,16 +118,16 @@ export function AvatarEditorModal({ open, onClose, childId, childName, imageUrl 
           />
         </div>
 
-        {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
+        {error && <p className="text-sm text-[#ef8c8f] mt-3">{error}</p>}
 
         <div className="flex gap-2 justify-end mt-4">
-          <button onClick={onClose} className="font-mono text-[11px] uppercase tracking-widest px-4 py-2 text-stone hover:text-bark">
+          <button onClick={onClose} className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 text-ink-2 hover:text-ink">
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={isPending || !croppedArea}
-            className="font-mono text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-bark text-cream hover:bg-bark/90 disabled:opacity-50"
+            className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-ink/90 disabled:opacity-50"
           >
             {isPending ? "Saving…" : "Save"}
           </button>
