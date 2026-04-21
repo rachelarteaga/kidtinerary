@@ -10,9 +10,9 @@ interface Props {
 }
 
 const ZONES: { status: PlannerEntryStatus; label: string; border: string; bg: string; text: string }[] = [
-  { status: "registered", label: "Register", border: "border-meadow", bg: "bg-meadow/15", text: "text-meadow" },
-  { status: "waitlisted", label: "Waitlist", border: "border-campfire", bg: "bg-campfire/15", text: "text-campfire" },
-  { status: "considering", label: "Consider", border: "border-driftwood", bg: "bg-driftwood/15", text: "text-stone" },
+  { status: "registered", label: "Register", border: "border-[#5fc39c]", bg: "bg-[#d8f0e6]", text: "text-[#5fc39c]" },
+  { status: "waitlisted", label: "Waitlist", border: "border-ink", bg: "bg-hero-light/40", text: "text-ink" },
+  { status: "considering", label: "Consider", border: "border-ink-3", bg: "bg-hero-light/40", text: "text-ink-2" },
 ];
 
 function Zone({
