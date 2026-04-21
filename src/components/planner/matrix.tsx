@@ -140,7 +140,7 @@ export function PlannerMatrix({
             if (w.fullRowBlock) {
               return (
                 <div key={weekKey}>
-                  <div className="font-sans text-[11px] font-semibold uppercase tracking-widest text-ink-2 mb-1 whitespace-nowrap">
+                  <div className="font-sans text-[11px] font-bold uppercase tracking-widest text-ink-2 mb-1 whitespace-nowrap">
                     {weekLabel}
                   </div>
                   <BlockCard
@@ -149,6 +149,7 @@ export function PlannerMatrix({
                     title={w.fullRowBlock.title}
                     emoji={w.fullRowBlock.emoji}
                     subtitle={w.fullRowBlock.subtitle}
+                    compact={viewMode === "simple"}
                     onClick={() => onBlockClick(w.fullRowBlock!.blockId)}
                     onChanged={() => { /* parent refreshes on its own */ }}
                   />
@@ -159,7 +160,7 @@ export function PlannerMatrix({
             const focusedCell = w.cells.find((c) => c.childId === focused.id);
             return (
               <div key={weekKey}>
-                <div className="font-sans text-[11px] uppercase tracking-widest text-ink-2 mb-1 whitespace-nowrap">
+                <div className="font-sans text-[11px] font-bold uppercase tracking-widest text-ink-2 mb-1 whitespace-nowrap">
                   {weekLabel}
                 </div>
                 {partial ? (
@@ -168,6 +169,7 @@ export function PlannerMatrix({
                     type={partial.type}
                     title={partial.title}
                     emoji={partial.emoji}
+                    compact={viewMode === "simple"}
                     onClick={() => onBlockClick(partial.blockId)}
                     onChanged={() => { /* parent refreshes on its own */ }}
                   />
@@ -224,7 +226,7 @@ export function PlannerMatrix({
         if (w.fullRowBlock) {
           return (
             <div key={weekKey} className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
-              <div className="font-sans text-[11px] font-semibold uppercase tracking-widest text-ink-2 self-stretch flex items-center pl-1.5 pr-3 border-r border-ink-3 whitespace-nowrap text-left">
+              <div className="font-sans text-[11px] font-bold uppercase tracking-widest text-ink-2 self-stretch flex items-center pl-1.5 pr-3 border-r border-ink-3 whitespace-nowrap text-left">
                 {weekLabel}
               </div>
               <div style={{ gridColumn: `2 / span ${cols}` }}>
@@ -234,6 +236,7 @@ export function PlannerMatrix({
                   title={w.fullRowBlock.title}
                   emoji={w.fullRowBlock.emoji}
                   subtitle={w.fullRowBlock.subtitle}
+                  compact={viewMode === "simple"}
                   onClick={() => onBlockClick(w.fullRowBlock!.blockId)}
                   onChanged={() => { /* parent refreshes on its own */ }}
                 />
@@ -245,7 +248,7 @@ export function PlannerMatrix({
 
         return (
           <div key={weekKey} className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
-            <div className="font-sans text-[11px] uppercase tracking-widest text-ink-2 self-stretch flex items-center pl-1.5 pr-3 border-r border-ink-3/30 whitespace-nowrap text-left">
+            <div className="font-sans text-[11px] font-bold uppercase tracking-widest text-ink-2 self-stretch flex items-center pl-1.5 pr-3 border-r border-ink-3 whitespace-nowrap text-left">
               {weekLabel}
             </div>
             {orderedChildren.map((child) => {
@@ -258,6 +261,7 @@ export function PlannerMatrix({
                     type={partial.type}
                     title={partial.title}
                     emoji={partial.emoji}
+                    compact={viewMode === "simple"}
                     onClick={() => onBlockClick(partial.blockId)}
                     onChanged={() => { /* parent refreshes on its own */ }}
                   />

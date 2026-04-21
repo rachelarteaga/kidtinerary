@@ -10,8 +10,8 @@ const BLOCK_FILL_STYLE: React.CSSProperties = {
   backgroundColor: "rgba(21,21,21,0.04)",
 };
 
-function BlockIcon({ type }: { type: PlannerBlockType }) {
-  const common = { width: 20, height: 20, viewBox: "0 0 24 24", fill: "#151515" };
+function BlockIcon({ type, size = 20 }: { type: PlannerBlockType; size?: number }) {
+  const common = { width: size, height: size, viewBox: "0 0 24 24", fill: "#151515" };
   switch (type) {
     case "school":
       return (
@@ -49,11 +49,13 @@ interface Props {
   title: string;
   emoji?: string | null; // deprecated — ignored
   subtitle?: string;
+  /** When true, renders a single-line layout suited for the simple planner view. */
+  compact?: boolean;
   onClick?: () => void;
   onChanged: () => void;
 }
 
-export function BlockCard({ blockId, type, title, subtitle, onClick, onChanged }: Props) {
+export function BlockCard({ blockId, type, title, subtitle, compact = false, onClick, onChanged }: Props) {
   const [isPending, startTransition] = useTransition();
 
   function handleRemove(e: React.MouseEvent) {
@@ -63,6 +65,26 @@ export function BlockCard({ blockId, type, title, subtitle, onClick, onChanged }
       await removePlannerBlock(blockId);
       onChanged();
     });
+  }
+
+  if (compact) {
+    return (
+      <div
+        onClick={onClick}
+        className={`rounded-lg border border-ink px-2 py-1.5 flex items-center gap-2 cursor-pointer ${isPending ? "opacity-60" : ""}`}
+        style={BLOCK_FILL_STYLE}
+      >
+        <span className="shrink-0 leading-none"><BlockIcon type={type} size={14} /></span>
+        <div className="font-sans font-bold text-xs text-ink truncate flex-1 min-w-0">{title}</div>
+        <button
+          onClick={handleRemove}
+          aria-label="Remove block"
+          className="text-ink-3 hover:text-[#ef8c8f] text-xs"
+        >
+          ✕
+        </button>
+      </div>
+    );
   }
 
   return (

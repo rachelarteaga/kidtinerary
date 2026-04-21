@@ -35,7 +35,7 @@ export function MyCampsRail({ camps, onChipClick, onAddClick, onChanged }: Props
 
   return (
     <aside className="w-full md:w-60 shrink-0 md:h-full md:overflow-y-auto md:flex md:flex-col">
-      <h2 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-3 flex-shrink-0">My camps</h2>
+      <h2 className="font-display font-extrabold text-lg text-ink tracking-tight mb-3 flex-shrink-0">My camps</h2>
 
       <button
         onClick={onAddClick}
