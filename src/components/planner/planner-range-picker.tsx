@@ -97,40 +97,40 @@ export function PlannerRangePicker({
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="font-mono text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-white border border-driftwood/40 text-bark hover:border-bark"
+        className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-white border border-ink-3 text-ink hover:border-ink"
       >
         📅 {formatRange(startDate, endDate)} ▾
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-2 bg-white border border-driftwood/30 rounded-lg shadow-lg p-4 z-20 min-w-[280px]">
+        <div className="absolute right-0 top-full mt-2 bg-white border border-ink-3 rounded-lg shadow-lg p-4 z-20 min-w-[280px]">
           {!confirming ? (
             <>
               <div className="space-y-2 mb-3">
                 <div>
-                  <label className="font-mono text-[10px] uppercase tracking-widest text-stone">Start</label>
+                  <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2">Start</label>
                   <input
                     type="date"
                     value={localStart}
                     onChange={(e) => setLocalStart(e.target.value)}
-                    className="w-full mt-1 rounded-md border border-driftwood/40 px-2 py-1.5 text-sm"
+                    className="w-full mt-1 rounded-md border border-ink-3 px-2 py-1.5 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="font-mono text-[10px] uppercase tracking-widest text-stone">End</label>
+                  <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2">End</label>
                   <input
                     type="date"
                     value={localEnd}
                     onChange={(e) => setLocalEnd(e.target.value)}
-                    className="w-full mt-1 rounded-md border border-driftwood/40 px-2 py-1.5 text-sm"
+                    className="w-full mt-1 rounded-md border border-ink-3 px-2 py-1.5 text-sm"
                   />
                 </div>
               </div>
               <div className="flex gap-2 justify-end">
-                <button onClick={() => setOpen(false)} className="font-mono text-[11px] uppercase tracking-widest px-3 py-1.5 text-stone">Cancel</button>
+                <button onClick={() => setOpen(false)} className="font-sans text-[11px] uppercase tracking-widest px-3 py-1.5 text-ink-2">Cancel</button>
                 <button
                   onClick={handleSaveClick}
                   disabled={isPending}
-                  className="font-mono text-[11px] uppercase tracking-widest px-3 py-1.5 rounded-full bg-bark text-cream disabled:opacity-50"
+                  className="font-sans text-[11px] uppercase tracking-widest px-3 py-1.5 rounded-full bg-ink text-white disabled:opacity-50"
                 >
                   {isPending ? "Saving…" : "Save"}
                 </button>
@@ -138,19 +138,19 @@ export function PlannerRangePicker({
             </>
           ) : (
             <>
-              <div className="font-medium text-sm text-bark mb-2">Remove items outside the new range?</div>
-              <p className="text-xs text-stone mb-3 leading-relaxed">
+              <div className="font-medium text-sm text-ink mb-2">Remove items outside the new range?</div>
+              <p className="text-xs text-ink-2 mb-3 leading-relaxed">
                 {removedEntries > 0 && <span>{removedEntries} camp entr{removedEntries === 1 ? "y" : "ies"}</span>}
                 {removedEntries > 0 && removedBlocks > 0 && <span> and </span>}
                 {removedBlocks > 0 && <span>{removedBlocks} block{removedBlocks === 1 ? "" : "s"}</span>}
                 {" "}fall outside the new range and will be deleted. This cannot be undone.
               </p>
               <div className="flex gap-2 justify-end">
-                <button onClick={() => setConfirming(false)} className="font-mono text-[11px] uppercase tracking-widest px-3 py-1.5 text-stone">Back</button>
+                <button onClick={() => setConfirming(false)} className="font-sans text-[11px] uppercase tracking-widest px-3 py-1.5 text-ink-2">Back</button>
                 <button
                   onClick={commitSave}
                   disabled={isPending}
-                  className="font-mono text-[11px] uppercase tracking-widest px-3 py-1.5 rounded-full bg-red-600 text-white disabled:opacity-50"
+                  className="font-sans text-[11px] uppercase tracking-widest px-3 py-1.5 rounded-full bg-[#ef8c8f] text-white disabled:opacity-50"
                 >
                   {isPending ? "Saving…" : "Remove & save"}
                 </button>
