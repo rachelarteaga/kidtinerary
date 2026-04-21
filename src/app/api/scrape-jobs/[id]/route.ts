@@ -19,7 +19,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const { data: activityRow } = await supabase
       .from("activities")
       .select(
-        "id, name, description, registration_url, source_url, age_min, age_max, indoor_outdoor, categories, data_confidence, verified"
+        "id, name, description, registration_url, source_url, age_min, age_max, indoor_outdoor, categories, data_confidence, verified, organization:organizations(id, name, website)"
       )
       .eq("id", job.activity_id)
       .maybeSingle();

@@ -40,6 +40,7 @@ interface ScrapedActivity {
   categories: string[];
   data_confidence: string;
   verified: boolean;
+  organization: { id: string; name: string; website: string | null } | null;
   sessions: ScrapedSession[];
   prices: ScrapedPrice[];
   locations: ScrapedLocation[];
@@ -248,9 +249,27 @@ export function ScrapeConfirmDrawer({ open, jobId, inputUrl, scopeLabel, onClose
 
           {!isResolving && !hasFailed && activity && (
             <>
-              <Field label="Name" confidence="scraped">
+              <Field label="Camp name" confidence="scraped">
                 <span className="text-sm text-ink">{activity.name}</span>
               </Field>
+
+              {activity.organization?.name &&
+                activity.organization.name !== activity.name &&
+                activity.organization.name !== "User-submitted" && (
+                  <Field label="Hosted by" confidence="scraped">
+                    <span className="text-sm text-ink">{activity.organization.name}</span>
+                    {activity.organization.website && (
+                      <a
+                        href={activity.organization.website}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block text-[11px] text-ink-2 underline mt-0.5 truncate"
+                      >
+                        {activity.organization.website}
+                      </a>
+                    )}
+                  </Field>
+                )}
 
               {activity.description && (
                 <Field label="About" confidence={activity.data_confidence}>
