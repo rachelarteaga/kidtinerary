@@ -60,8 +60,8 @@ export function CellTimelineGrid({ entries, weekStart, plannerStart, plannerEnd,
           return (
             <div
               key={d.value}
-              className={`text-[9px] text-center font-mono uppercase tracking-wide ${
-                oor ? "text-driftwood line-through" : d.isWeekend ? "text-driftwood" : "text-stone"
+              className={`text-[9px] text-center font-sans font-bold uppercase tracking-wide ${
+                oor ? "text-ink-3 line-through" : d.isWeekend ? "text-ink-3" : "text-ink-2"
               }`}
             >
               {d.label}
@@ -71,7 +71,7 @@ export function CellTimelineGrid({ entries, weekStart, plannerStart, plannerEnd,
       </div>
       {SLOTS.map((slot) => (
         <div key={slot} className="grid" style={{ gridTemplateColumns: "22px repeat(7, 1fr)", gap: "3px" }}>
-          <div className="text-[8px] text-driftwood uppercase tracking-wide self-center text-right pr-0.5">
+          <div className="text-[8px] font-sans font-bold text-ink-3 uppercase tracking-wide self-center text-right pr-0.5">
             {slot.toUpperCase()}
           </div>
           {DAYS.map((d) => {
@@ -85,21 +85,21 @@ export function CellTimelineGrid({ entries, weekStart, plannerStart, plannerEnd,
             if (oor) {
               return (
                 <div key={d.value} className="h-3.5 rounded opacity-40" style={{
-                  backgroundImage: "repeating-linear-gradient(45deg, #e8ddc7 0, #e8ddc7 2px, transparent 2px, transparent 5px)",
-                  border: "1px dashed #c8a76a",
+                  backgroundImage: "repeating-linear-gradient(45deg, #e8e8ea 0, #e8e8ea 2px, transparent 2px, transparent 5px)",
+                  border: "1px dashed #c0c0c0",
                 }} />
               );
             }
 
             if (filling.length === 0) {
               if (isWeekendEmpty) {
-                return <div key={d.value} className="h-3.5 rounded bg-[#f3ede1] opacity-55 border border-dashed border-driftwood/30" />;
+                return <div key={d.value} className="h-3.5 rounded bg-disabled opacity-55 border border-dashed border-[#e0e0e0]" />;
               }
               return (
                 <button
                   key={d.value}
                   onClick={() => onSquareClick?.(d.value, slot)}
-                  className="h-3.5 rounded border border-dashed border-campfire/50 hover:border-campfire hover:bg-campfire/10 transition-colors"
+                  className="h-3.5 rounded border border-dashed border-ink-3 hover:border-ink hover:bg-surface transition-colors"
                   aria-label={`Add for ${d.label} ${slot}`}
                 />
               );
@@ -113,7 +113,7 @@ export function CellTimelineGrid({ entries, weekStart, plannerStart, plannerEnd,
               <button
                 key={d.value}
                 onClick={() => onSquareClick?.(d.value, slot)}
-                className={`h-3.5 rounded ${conflict ? "ring-1 ring-red-500" : ""}`}
+                className={`h-3.5 rounded ${conflict ? "outline outline-2 outline-[#ef8c8f] outline-offset-[-1px]" : ""}`}
                 style={
                   isWaitlisted
                     ? {
