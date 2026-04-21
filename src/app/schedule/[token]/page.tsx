@@ -58,7 +58,7 @@ export default async function SharedSchedulePage({ params }: SharedSchedulePageP
               }`}
             >
               <div className="flex items-center justify-between mb-3">
-                <span className="font-sans text-xs uppercase tracking-widest text-ink-2">
+                <span className="font-sans text-[11px] font-bold uppercase tracking-widest text-ink-2">
                   {formatWeekRange(weekStart)}
                 </span>
                 {hasRegistered && (

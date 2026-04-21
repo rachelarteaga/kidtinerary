@@ -169,7 +169,7 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
         <header className="bg-surface px-5 py-4 border-b border-ink-3">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <div className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-0.5">
+              <div className="font-sans text-[11px] font-bold uppercase tracking-widest text-ink-2 mb-0.5">
                 {kidName} · {formatWeekRange(local.weekStart)}
               </div>
               <h2 className="font-display font-extrabold text-2xl text-ink leading-tight">{local.activityName}</h2>
