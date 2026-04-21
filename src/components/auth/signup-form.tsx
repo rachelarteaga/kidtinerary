@@ -46,9 +46,9 @@ export function SignupForm() {
   if (sent) {
     return (
       <div className="w-full max-w-sm text-center">
-        <h1 className="font-serif text-3xl mb-2">Check your email</h1>
-        <p className="text-stone mb-6">
-          We sent a sign-in link to <span className="text-bark font-medium">{email}</span>.
+        <h1 className="font-display font-extrabold text-3xl mb-2">Check your email</h1>
+        <p className="text-ink-2 mb-6">
+          We sent a sign-in link to <span className="text-ink font-medium">{email}</span>.
           Click it to finish creating your account.
         </p>
         <button
@@ -56,7 +56,7 @@ export function SignupForm() {
             setSent(false);
             setEmail("");
           }}
-          className="font-mono text-[10px] uppercase tracking-widest text-sunset hover:underline"
+          className="font-sans text-[10px] uppercase tracking-widest text-ink hover:underline"
         >
           Use a different email
         </button>
@@ -66,29 +66,29 @@ export function SignupForm() {
 
   return (
     <div className="w-full max-w-sm">
-      <h1 className="font-serif text-3xl mb-2">Plan your kid&apos;s next adventure</h1>
-      <p className="text-stone mb-8">Create your Kidtinerary account</p>
+      <h1 className="font-display font-extrabold text-3xl mb-2">Plan your kid&apos;s next adventure</h1>
+      <p className="text-ink-2 mb-8">Create your Kidtinerary account</p>
 
       <button
         onClick={handleGoogleLogin}
-        className="w-full border border-driftwood rounded-full py-2.5 px-4 font-mono text-xs uppercase tracking-widest hover:border-bark transition-colors mb-6"
+        className="w-full border border-ink rounded-full py-2.5 px-4 font-sans text-xs uppercase tracking-widest hover:border-ink transition-colors mb-6"
       >
         Continue with Google
       </button>
 
       <div className="flex items-center gap-4 mb-6">
-        <div className="flex-1 h-px bg-driftwood" />
-        <span className="font-mono text-[10px] uppercase tracking-widest text-stone">
+        <div className="flex-1 h-px bg-ink" />
+        <span className="font-sans text-[10px] uppercase tracking-widest text-ink-2">
           or
         </span>
-        <div className="flex-1 h-px bg-driftwood" />
+        <div className="flex-1 h-px bg-ink" />
       </div>
 
       <form onSubmit={handleSignup} className="space-y-4">
         <div>
           <label
             htmlFor="signup-email"
-            className="block font-mono text-[10px] uppercase tracking-widest text-stone mb-1"
+            className="block font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-1"
           >
             Email
           </label>
@@ -98,12 +98,12 @@ export function SignupForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full bg-white border border-driftwood rounded-lg px-4 py-2.5 text-bark focus:outline-none focus:border-sunset transition-colors"
+            className="w-full bg-surface border border-ink rounded-lg px-4 py-2.5 text-ink focus:outline-none focus:border-ink transition-colors"
           />
         </div>
 
         {error && (
-          <p className="text-sm text-red-600">{error}</p>
+          <p className="text-sm text-[#ef8c8f]">{error}</p>
         )}
 
         <Button type="submit" disabled={loading} className="w-full">
@@ -111,9 +111,9 @@ export function SignupForm() {
         </Button>
       </form>
 
-      <p className="text-center text-stone text-sm mt-6">
+      <p className="text-center text-ink-2 text-sm mt-6">
         Already have an account?{" "}
-        <a href="/auth/login" className="text-sunset hover:underline">
+        <a href="/auth/login" className="text-ink hover:underline">
           Sign in
         </a>
       </p>
