@@ -12,14 +12,14 @@ export function AddressStep({ onComplete }: AddressStepProps) {
 
   return (
     <div>
-      <h2 className="font-serif text-2xl mb-2">Where do you live?</h2>
-      <p className="text-stone mb-6">
+      <h2 className="font-display font-extrabold text-2xl mb-2">Where do you live?</h2>
+      <p className="text-ink-2 mb-6">
         We&apos;ll use this to find activities near you.
       </p>
       <div className="mb-4">
         <label
           htmlFor="address"
-          className="block font-mono text-[10px] uppercase tracking-widest text-stone mb-1"
+          className="block font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-1"
         >
           Home Address or Zip Code
         </label>
@@ -29,7 +29,7 @@ export function AddressStep({ onComplete }: AddressStepProps) {
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           placeholder="123 Main St, Raleigh, NC"
-          className="w-full bg-white border border-driftwood rounded-lg px-4 py-2.5 text-bark focus:outline-none focus:border-sunset transition-colors"
+          className="w-full bg-surface border border-ink rounded-lg px-4 py-2.5 text-ink focus:outline-none focus:border-ink transition-colors"
         />
       </div>
       <Button
