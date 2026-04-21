@@ -334,28 +334,20 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
                             ${Math.round(committedCents / 100).toLocaleString()} spent
                           </span>
                           <span
-                            className="pointer-events-none absolute left-0 top-full mt-1.5 z-40 hidden group-hover:block"
+                            className="pointer-events-none absolute left-full top-0 ml-2 whitespace-nowrap text-ink-2 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200"
+                            aria-hidden
                           >
-                            <span
-                              className="block rounded-md px-3 py-2 min-w-[180px] font-sans text-[11px] text-white shadow-md whitespace-nowrap"
-                              style={{
-                                background: "rgba(21, 21, 21, 0.88)",
-                                backdropFilter: "blur(4px)",
-                                WebkitBackdropFilter: "blur(4px)",
-                              }}
-                            >
-                              {kids.map((kid) => {
-                                const cents = spentByKid.get(kid.id) ?? 0;
-                                return (
-                                  <span key={kid.id} className="flex justify-between gap-6 py-0.5">
-                                    <span className="opacity-75">{kid.name}</span>
-                                    <span className="font-semibold">
-                                      ${Math.round(cents / 100).toLocaleString()}
-                                    </span>
-                                  </span>
-                                );
-                              })}
-                            </span>
+                            —{" "}
+                            {kids.map((kid, i) => {
+                              const cents = spentByKid.get(kid.id) ?? 0;
+                              return (
+                                <span key={kid.id}>
+                                  {i > 0 ? " · " : ""}
+                                  <span className="text-ink font-semibold">{kid.name}</span>{" "}
+                                  ${Math.round(cents / 100).toLocaleString()}
+                                </span>
+                              );
+                            })}
                           </span>
                         </span>
                       </>
