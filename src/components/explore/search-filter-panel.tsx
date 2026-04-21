@@ -132,7 +132,7 @@ export function SearchFilterPanel() {
     <aside className="space-y-5">
       {/* Keyword search */}
       <div>
-        <label className="block font-mono text-[10px] uppercase tracking-widest text-stone mb-1.5">
+        <label className="block font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-1.5">
           Search
         </label>
         <input
@@ -141,13 +141,13 @@ export function SearchFilterPanel() {
           onChange={(e) => setKeyword(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           placeholder="Soccer, art, STEM..."
-          className="w-full px-3 py-2 rounded-lg border border-driftwood/50 bg-white text-bark placeholder:text-driftwood text-sm focus:outline-none focus:border-sunset focus:ring-1 focus:ring-sunset/30"
+          className="w-full px-3 py-2 rounded-lg border border-ink-3 bg-surface text-ink placeholder:text-ink-3 text-sm focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink/30"
         />
       </div>
 
       {/* Location */}
       <div>
-        <label className="block font-mono text-[10px] uppercase tracking-widest text-stone mb-1.5">
+        <label className="block font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-1.5">
           Near Address
         </label>
         <AddressInput
@@ -167,14 +167,14 @@ export function SearchFilterPanel() {
           onError={setGeocodeError}
         />
         {geocodeError && (
-          <p className="mt-1 font-mono text-[10px] text-sunset">{geocodeError}</p>
+          <p className="mt-1 font-sans text-[10px] text-ink">{geocodeError}</p>
         )}
       </div>
 
       {/* Radius (only when location is set) */}
       {(hasLocation || selectedLat != null) && (
         <div>
-          <label className="block font-mono text-[10px] uppercase tracking-widest text-stone mb-1.5">
+          <label className="block font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-1.5">
             Radius
           </label>
           <div className="flex flex-wrap gap-1.5">
@@ -183,10 +183,10 @@ export function SearchFilterPanel() {
                 key={mi}
                 type="button"
                 onClick={() => setRadius(mi)}
-                className={`px-2.5 py-1 rounded-full font-mono text-[11px] transition-colors ${
+                className={`px-2.5 py-1 rounded-full font-sans text-[11px] transition-colors ${
                   radius === mi
-                    ? "bg-sunset text-white"
-                    : "bg-white border border-driftwood/50 text-bark hover:border-sunset/50"
+                    ? "bg-ink text-ink-inverse"
+                    : "bg-surface border border-ink-3 text-ink hover:border-ink/50"
                 }`}
               >
                 {mi} mi
@@ -198,7 +198,7 @@ export function SearchFilterPanel() {
 
       {/* Child's age */}
       <div>
-        <label className="block font-mono text-[10px] uppercase tracking-widest text-stone mb-1.5">
+        <label className="block font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-1.5">
           Child&apos;s Age
         </label>
         <input
@@ -208,7 +208,7 @@ export function SearchFilterPanel() {
           value={childAge}
           onChange={(e) => setChildAge(e.target.value)}
           placeholder="e.g. 7"
-          className="w-full px-3 py-2 rounded-lg border border-driftwood/50 bg-white text-bark text-sm focus:outline-none focus:border-sunset focus:ring-1 focus:ring-sunset/30"
+          className="w-full px-3 py-2 rounded-lg border border-ink-3 bg-surface text-ink text-sm focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink/30"
         />
       </div>
 
@@ -218,17 +218,17 @@ export function SearchFilterPanel() {
       </Button>
 
       {/* Divider */}
-      <div className="border-t border-driftwood/30" />
+      <div className="border-t border-ink-3" />
 
       {/* Sort */}
       <div>
-        <label className="block font-mono text-[10px] uppercase tracking-widest text-stone mb-1.5">
+        <label className="block font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-1.5">
           Sort By
         </label>
         <select
           value={currentSort}
           onChange={(e) => updateParam("sort", e.target.value)}
-          className="w-full px-3 py-2 rounded-lg border border-driftwood/50 bg-white text-bark text-sm focus:outline-none focus:border-sunset"
+          className="w-full px-3 py-2 rounded-lg border border-ink-3 bg-surface text-ink text-sm focus:outline-none focus:border-ink"
         >
           <option value="name">Name</option>
           <option value="price_low">Price: Low to High</option>
@@ -240,13 +240,13 @@ export function SearchFilterPanel() {
       {/* Categories */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h4 className="font-mono text-[10px] uppercase tracking-widest text-stone">
+          <h4 className="font-sans text-[10px] uppercase tracking-widest text-ink-2">
             Category
           </h4>
           {hasFilters && (
             <button
               onClick={clearAll}
-              className="font-mono text-[10px] uppercase tracking-wide text-sunset hover:underline"
+              className="font-sans text-[10px] uppercase tracking-wide text-ink hover:underline"
             >
               Clear
             </button>
@@ -261,8 +261,8 @@ export function SearchFilterPanel() {
                 onClick={() => toggleCategory(cat)}
                 className={`block w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors ${
                   isActive
-                    ? "bg-sunset/10 text-sunset font-medium"
-                    : "text-bark hover:bg-bark/5"
+                    ? "bg-ink/10 text-ink font-medium"
+                    : "text-ink hover:bg-ink/5"
                 }`}
               >
                 {categoryLabel(cat)}
@@ -274,14 +274,14 @@ export function SearchFilterPanel() {
 
       {/* Setting */}
       <div>
-        <h4 className="font-mono text-[10px] uppercase tracking-widest text-stone mb-2">
+        <h4 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">
           Setting
         </h4>
         <div className="space-y-0.5">
           <button
             onClick={() => updateParam("indoor_outdoor", "")}
             className={`block w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              !activeIndoorOutdoor ? "bg-bark/8 text-bark font-medium" : "text-bark hover:bg-bark/5"
+              !activeIndoorOutdoor ? "bg-ink/8 text-ink font-medium" : "text-ink hover:bg-ink/5"
             }`}
           >
             All
@@ -292,8 +292,8 @@ export function SearchFilterPanel() {
               onClick={() => updateParam("indoor_outdoor", io)}
               className={`block w-full text-left px-3 py-1.5 rounded-lg text-sm capitalize transition-colors ${
                 activeIndoorOutdoor === io
-                  ? "bg-sunset/10 text-sunset font-medium"
-                  : "text-bark hover:bg-bark/5"
+                  ? "bg-ink/10 text-ink font-medium"
+                  : "text-ink hover:bg-ink/5"
               }`}
             >
               {io}
@@ -304,14 +304,14 @@ export function SearchFilterPanel() {
 
       {/* Schedule */}
       <div>
-        <h4 className="font-mono text-[10px] uppercase tracking-widest text-stone mb-2">
+        <h4 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">
           Schedule
         </h4>
         <div className="space-y-0.5">
           <button
             onClick={() => updateParam("time_slot", "")}
             className={`block w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              !activeTimeSlot ? "bg-bark/8 text-bark font-medium" : "text-bark hover:bg-bark/5"
+              !activeTimeSlot ? "bg-ink/8 text-ink font-medium" : "text-ink hover:bg-ink/5"
             }`}
           >
             Any
@@ -322,8 +322,8 @@ export function SearchFilterPanel() {
               onClick={() => updateParam("time_slot", slot)}
               className={`block w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors ${
                 activeTimeSlot === slot
-                  ? "bg-sunset/10 text-sunset font-medium"
-                  : "text-bark hover:bg-bark/5"
+                  ? "bg-ink/10 text-ink font-medium"
+                  : "text-ink hover:bg-ink/5"
               }`}
             >
               {formatTimeSlot(slot)}
