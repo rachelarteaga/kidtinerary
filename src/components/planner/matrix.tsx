@@ -160,7 +160,7 @@ export function PlannerMatrix({
             const focusedCell = w.cells.find((c) => c.childId === focused.id);
             return (
               <div key={weekKey}>
-                <div className="font-mono text-[10px] uppercase tracking-widest text-stone mb-1 whitespace-nowrap">
+                <div className="font-mono text-[11px] uppercase tracking-widest text-stone mb-1 whitespace-nowrap">
                   {weekLabel}
                 </div>
                 {partial ? (
@@ -245,7 +245,7 @@ export function PlannerMatrix({
 
         return (
           <div key={weekKey} className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
-            <div className="font-mono text-[10px] uppercase tracking-widest text-stone self-center px-1.5 whitespace-nowrap">
+            <div className="font-mono text-[11px] uppercase tracking-widest text-stone self-start pt-2 pl-1.5 pr-3 border-r border-driftwood/30 whitespace-nowrap text-left">
               {weekLabel}
             </div>
             {orderedChildren.map((child) => {
