@@ -58,7 +58,7 @@ export function ShareScheduleButton({
       <button
         onClick={handleShare}
         disabled={loading}
-        className="shrink-0 flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-sunset hover:text-sunset/80 border border-sunset/40 hover:border-sunset/70 rounded-full px-4 py-2 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        className="shrink-0 flex items-center gap-1.5 font-sans text-[11px] uppercase tracking-widest text-ink hover:text-ink/80 border border-ink/40 hover:border-ink/70 rounded-full px-4 py-2 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -80,7 +80,7 @@ export function ShareScheduleButton({
         {loading ? "Generating..." : copied ? "Copied!" : "Share Schedule"}
       </button>
       {error && (
-        <span className="font-mono text-[10px] text-campfire">{error}</span>
+        <span className="font-sans text-[10px] text-ink">{error}</span>
       )}
     </div>
   );
