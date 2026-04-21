@@ -31,7 +31,7 @@ export function entryFillsSquare(
   slot: ScheduleSlot
 ): boolean {
   if (!entry.days_of_week.includes(day)) return false;
-  if (entry.session_part === "full") return true;
+  if (entry.session_part === "full" || entry.session_part === "overnight") return true;
   return entry.session_part === slot;
 }
 

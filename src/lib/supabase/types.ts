@@ -54,7 +54,7 @@ export interface ScrapeJobRow {
 }
 
 // Planner v2 additions
-export type SessionPart = "full" | "am" | "pm";
+export type SessionPart = "full" | "am" | "pm" | "overnight";
 export type PriceUnit = "per_week" | "per_day";
 export type DayOfWeek = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 
