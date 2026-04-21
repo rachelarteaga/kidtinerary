@@ -40,18 +40,18 @@ export function ChildCard({ child, onEdit }: ChildCardProps) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-driftwood/30 p-5">
+    <div className="bg-surface rounded-2xl border border-ink-3 p-5">
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h3 className="font-serif text-xl">{child.name}</h3>
-          <p className="font-mono text-[10px] uppercase tracking-wide text-stone">
+          <h3 className="font-display font-extrabold text-xl">{child.name}</h3>
+          <p className="font-sans text-[10px] uppercase tracking-wide text-ink-2">
             Age {age}
           </p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => onEdit(child)}
-            className="font-mono text-[10px] uppercase tracking-wide text-stone hover:text-bark underline underline-offset-2"
+            className="font-sans text-[10px] uppercase tracking-wide text-ink-2 hover:text-ink underline underline-offset-2"
           >
             Edit
           </button>
@@ -68,23 +68,23 @@ export function ChildCard({ child, onEdit }: ChildCardProps) {
       )}
 
       {/* Planner summary stub */}
-      <div className="bg-cream/50 rounded-lg p-3">
-        <p className="font-mono text-[10px] uppercase tracking-wide text-stone">
+      <div className="bg-surface/50 rounded-lg p-3">
+        <p className="font-sans text-[10px] uppercase tracking-wide text-ink-2">
           Planner coming soon
         </p>
       </div>
 
       {/* Delete */}
       {showConfirm ? (
-        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-driftwood/20">
-          <p className="text-sm text-stone flex-1">Remove {child.name}&apos;s profile?</p>
+        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-ink-3">
+          <p className="text-sm text-ink-2 flex-1">Remove {child.name}&apos;s profile?</p>
           <Button variant="ghost" onClick={() => setShowConfirm(false)} disabled={isPending}>
             Cancel
           </Button>
           <button
             onClick={handleDelete}
             disabled={isPending}
-            className="rounded-full font-mono text-xs uppercase tracking-widest px-4 py-2 bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+            className="rounded-full font-sans text-xs uppercase tracking-widest px-4 py-2 bg-[#ef8c8f] text-white hover:bg-[#e87073] transition-colors disabled:opacity-50"
           >
             {isPending ? "Removing..." : "Remove"}
           </button>
@@ -92,7 +92,7 @@ export function ChildCard({ child, onEdit }: ChildCardProps) {
       ) : (
         <button
           onClick={() => setShowConfirm(true)}
-          className="mt-4 font-mono text-[10px] uppercase tracking-wide text-driftwood hover:text-red-600"
+          className="mt-4 font-sans text-[10px] uppercase tracking-wide text-ink-3 hover:text-[#ef8c8f]"
         >
           Remove profile
         </button>
