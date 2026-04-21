@@ -27,6 +27,16 @@ function isAdultOnly(name: string): boolean {
   return ADULT_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
+export interface UpsertOptions {
+  /**
+   * When set, enrich this existing activity row in place instead of creating a
+   * new canonical one. Used by the on-demand scraper so user_camps rows pointing
+   * at the submitCamp stub stay linked after enrichment — without this, the
+   * slug-based upsert creates a parallel canonical row and the stub is orphaned.
+   */
+  existingActivityId?: string;
+}
+
 /**
  * Upserts a single scraped activity (plus its org, locations, sessions, prices)
  * into Supabase. Returns the activity UUID.
@@ -34,7 +44,8 @@ function isAdultOnly(name: string): boolean {
  */
 export async function upsertActivity(
   scraped: ScrapedActivity,
-  confidence: "high" | "medium" | "low" = "medium"
+  confidence: "high" | "medium" | "low" = "medium",
+  options: UpsertOptions = {}
 ): Promise<UpsertResult> {
   // Skip adult-only activities
   if (isAdultOnly(scraped.name)) {
@@ -92,18 +103,38 @@ export async function upsertActivity(
     is_active: true,
   };
 
-  // --- 3. Upsert Activity ---
-  const { data: activity, error: actError } = await supabase
-    .from("activities")
-    .upsert(activityPayload, { onConflict: "slug" })
-    .select("id")
-    .single();
+  // --- 3. Upsert / update Activity ---
+  // In stub mode we preserve the existing slug (it's a URL-based placeholder
+  // that's guaranteed unique; changing it to toSlug(name) risks a collision
+  // with a canonical activity that already has that slug).
+  let activityId: string;
+  if (options.existingActivityId) {
+    const { slug: _slug, ...stubUpdatePayload } = activityPayload;
+    void _slug;
+    const { data: updated, error: updateError } = await supabase
+      .from("activities")
+      .update(stubUpdatePayload)
+      .eq("id", options.existingActivityId)
+      .select("id")
+      .single();
+    if (updateError || !updated) {
+      errors.push(`Activity update failed: ${updateError?.message}`);
+      return { activityId: null, created: false, errors };
+    }
+    activityId = updated.id;
+  } else {
+    const { data: activity, error: actError } = await supabase
+      .from("activities")
+      .upsert(activityPayload, { onConflict: "slug" })
+      .select("id")
+      .single();
 
-  if (actError || !activity) {
-    errors.push(`Activity upsert failed: ${actError?.message}`);
-    return { activityId: null, created: false, errors };
+    if (actError || !activity) {
+      errors.push(`Activity upsert failed: ${actError?.message}`);
+      return { activityId: null, created: false, errors };
+    }
+    activityId = activity.id;
   }
-  const activityId: string = activity.id;
 
   // --- 4. Geocode & upsert primary location ---
   const geoResult = await geocodeWithCache(scraped.address);
