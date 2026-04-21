@@ -90,7 +90,7 @@ export default function OnboardingPage() {
             <div
               key={n}
               className={`h-1 flex-1 rounded-full transition-colors ${
-                n <= stepNumber ? "bg-sunset" : "bg-driftwood"
+                n <= stepNumber ? "bg-ink" : "bg-ink-3"
               }`}
             />
           ))}
@@ -108,7 +108,7 @@ export default function OnboardingPage() {
         )}
 
         {error && (
-          <p className="text-sm text-red-600 mt-4">{error}</p>
+          <p className="text-sm text-[#ef8c8f] mt-4">{error}</p>
         )}
       </div>
     </main>
