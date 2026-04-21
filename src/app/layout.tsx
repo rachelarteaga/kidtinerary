@@ -1,25 +1,20 @@
 import type { Metadata } from "next";
-import { DM_Serif_Display, Inter, JetBrains_Mono } from "next/font/google";
+import { Figtree, Outfit } from "next/font/google";
 import { Nav } from "@/components/layout/nav";
 import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
 
-const dmSerif = DM_Serif_Display({
-  weight: "400",
+const figtree = Figtree({
   subsets: ["latin"],
-  variable: "--font-dm-serif",
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-figtree",
   display: "swap",
 });
 
-const inter = Inter({
+const outfit = Outfit({
   subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-jetbrains",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-outfit",
   display: "swap",
 });
 
@@ -37,9 +32,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${dmSerif.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${figtree.variable} ${outfit.variable}`}
     >
-      <body className="bg-cream text-bark font-sans antialiased">
+      <body className="bg-surface text-ink font-sans antialiased">
         <ToastProvider>
           <Nav />
           <div className="pb-16 sm:pb-0">{children}</div>
