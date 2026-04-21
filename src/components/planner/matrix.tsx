@@ -95,24 +95,18 @@ export function PlannerMatrix({
 
   const cols = orderedChildren.length;
   const gridTemplate = `100px ${"1fr ".repeat(cols).trim()}`;
-  const headerGridTemplate = cols > 0
-    ? `100px ${"1fr ".repeat(cols)}auto`
-    : `100px auto`;
 
   // Empty-planner state: no kids assigned yet. Show only the header row with Add Kid.
   if (orderedChildren.length === 0) {
     return (
       <div className="space-y-3">
-        <div className="grid gap-2" style={{ gridTemplateColumns: headerGridTemplate }}>
-          <div />
-          <div className="min-w-[160px]">
-            <AddKidMenu plannerId={plannerId} availableKids={availableKids} />
-          </div>
+        <div className="flex items-center justify-end">
+          <AddKidMenu plannerId={plannerId} availableKids={availableKids} />
         </div>
         <div className="rounded-lg border border-dashed border-driftwood/50 bg-white/30 p-8 text-center">
           <p className="font-serif text-xl text-bark mb-1">No kids on this planner yet</p>
           <p className="text-stone text-sm">
-            Use <span className="font-mono">+ Add kid</span> above to pick someone from your profile.
+            Use the <span className="font-mono">+</span> button above to pick someone from your profile.
           </p>
         </div>
       </div>
@@ -135,7 +129,7 @@ export function PlannerMatrix({
               {c.name}
             </button>
           ))}
-          <div className="shrink-0 w-[140px]">
+          <div className="shrink-0 flex items-center pl-1">
             <AddKidMenu plannerId={plannerId} availableKids={availableKids} />
           </div>
         </div>
@@ -199,19 +193,21 @@ export function PlannerMatrix({
 
   return (
     <div className="space-y-3">
-      <div className="grid gap-2" style={{ gridTemplateColumns: headerGridTemplate }}>
-        <div />
-        <SortableContext items={orderedIds} strategy={horizontalListSortingStrategy}>
-          {orderedChildren.map((c) => (
-            <KidColumnHeader
-              key={c.id}
-              child={c}
-              ageYears={ageYears(c.birth_date)}
-              onRemove={allowRemove ? () => onRemoveKid(c.id) : undefined}
-            />
-          ))}
-        </SortableContext>
-        <div className="min-w-[160px]">
+      <div className="flex items-stretch gap-2">
+        <div className="flex-1 grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
+          <div />
+          <SortableContext items={orderedIds} strategy={horizontalListSortingStrategy}>
+            {orderedChildren.map((c) => (
+              <KidColumnHeader
+                key={c.id}
+                child={c}
+                ageYears={ageYears(c.birth_date)}
+                onRemove={allowRemove ? () => onRemoveKid(c.id) : undefined}
+              />
+            ))}
+          </SortableContext>
+        </div>
+        <div className="flex items-center pl-1">
           <AddKidMenu plannerId={plannerId} availableKids={availableKids} />
         </div>
       </div>

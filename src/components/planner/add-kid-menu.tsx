@@ -48,13 +48,15 @@ export function AddKidMenu({ plannerId, availableKids }: Props) {
 
   return (
     <>
-      <div className="relative h-full" ref={ref}>
+      <div className="relative" ref={ref}>
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="w-full h-full min-h-[60px] rounded-lg border-2 border-dashed border-driftwood/60 bg-white/30 text-stone hover:border-bark hover:text-bark font-mono text-xs uppercase tracking-widest flex items-center justify-center"
+          title="Add kid"
+          aria-label="Add kid"
+          className="w-8 h-8 rounded-full border border-dashed border-driftwood/60 bg-white text-stone hover:border-bark hover:text-bark hover:bg-bark/5 flex items-center justify-center text-base leading-none transition-colors"
         >
-          + Add kid
+          +
         </button>
 
         {open && (
