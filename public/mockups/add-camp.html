@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Add Camp — mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          base: "#f7f8fa",
+          surface: "#ffffff",
+          ink: "#151515",
+          "ink-2": "#666666",
+          "ink-3": "#c0c0c0",
+          "ink-inverse": "#ffffff",
+          hero: "#fbbf0e",
+          "hero-light": "#ffe082",
+          "camp-periwinkle": "#8fa8d4",
+          "camp-mint": "#8ec4ad",
+          "camp-lilac": "#b095d4",
+          "camp-rose": "#d49bbe",
+          conflict: "#ef8c8f",
+          verified: "#5fc39c",
+        },
+        fontFamily: {
+          display: ["Figtree", "sans-serif"],
+          sans: ["Outfit", "sans-serif"],
+        },
+      },
+    },
+  };
+</script>
+<style>
+  body { font-family: "Outfit", sans-serif; background: #f7f8fa; color: #151515; }
+  .label { font-family: "Outfit", sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #666; }
+  .heading { font-family: "Figtree", sans-serif; font-weight: 800; }
+  .skeleton { background: linear-gradient(90deg, #eceef1 25%, #f5f6f8 37%, #eceef1 63%); background-size: 400% 100%; animation: shimmer 1.4s infinite; border-radius: 4px; }
+  @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+  .badge { font-family: "Outfit", sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; }
+  .badge-scraped { background: #eef1f4; color: #666; }
+  .badge-verified { background: rgba(95, 195, 156, 0.15); color: #2f8f6b; }
+  .badge-extracted { background: rgba(251, 191, 14, 0.18); color: #8a6b00; }
+  .badge-empty { background: #f4f4f4; color: #a3a3a3; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px; border-radius: 999px; background: #fff;
+    border: 1px solid #e4e6ea; font-size: 12px; color: #151515;
+  }
+  .stage {
+    position: relative; background: #f7f8fa; border: 1px dashed #d4d6da;
+    border-radius: 18px; overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.02);
+  }
+  .stage-shell { height: 560px; }
+  .planner-bg {
+    position: absolute; inset: 0; padding: 20px;
+    background: #f7f8fa;
+  }
+  .planner-col {
+    flex: 1; min-width: 0;
+    background: #fff; border-radius: 10px; border: 1px solid #ececec;
+    padding: 10px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .planner-cell {
+    height: 56px; border-radius: 8px; background: #fafbfc; border: 1px dashed #e4e6ea;
+  }
+  .planner-cell.filled-periwinkle { background: #8fa8d4; border: none; }
+  .planner-cell.filled-mint { background: #8ec4ad; border: none; }
+  .planner-cell.filled-lilac { background: #b095d4; border: none; }
+  .dim { filter: saturate(0.6); opacity: 0.55; }
+  .field-input { width: 100%; padding: 10px 12px; border: 1px solid #151515; border-radius: 8px; background: #fff; font-size: 14px; }
+  .field-input[readonly] { cursor: default; }
+  .pill-btn {
+    font-family: "Outfit", sans-serif; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase; padding: 10px 18px;
+    border-radius: 999px;
+  }
+  .pill-primary { background: #151515; color: #fff; }
+  .pill-primary:hover { opacity: 0.9; }
+  .pill-ghost { color: #666; }
+  .pill-ghost:hover { color: #151515; }
+  .pill-outline { border: 1px solid #151515; color: #151515; background: #fff; }
+  .routing-node {
+    border: 1px solid #151515; border-radius: 14px; padding: 12px 16px;
+    background: #fff; text-align: center; min-width: 160px;
+  }
+  .routing-arrow {
+    color: #666; font-size: 22px; line-height: 1;
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- Page header -->
+<header class="max-w-6xl mx-auto px-6 pt-10 pb-6">
+  <p class="label">Mockups · proposal</p>
+  <h1 class="heading text-4xl mt-1">Add Camp flow</h1>
+  <p class="text-ink-2 mt-2 text-sm max-w-2xl">
+    Two paths branch off one input. URL-looking text opens a right-side drawer that
+    scrapes, previews, and saves. Free text opens a name form that nudges for a link.
+  </p>
+</header>
+
+<!-- Section nav -->
+<nav class="max-w-6xl mx-auto px-6 pb-8 flex flex-wrap gap-2 text-[11px] uppercase tracking-widest font-semibold">
+  <a href="#routing" class="px-3 py-1.5 rounded-full border border-ink-3 hover:bg-ink hover:text-white">Routing</a>
+  <a href="#name" class="px-3 py-1.5 rounded-full border border-ink-3 hover:bg-ink hover:text-white">Name flow</a>
+  <a href="#url-scraping" class="px-3 py-1.5 rounded-full border border-ink-3 hover:bg-ink hover:text-white">URL · scraping</a>
+  <a href="#url-confirm" class="px-3 py-1.5 rounded-full border border-ink-3 hover:bg-ink hover:text-white">URL · confirm</a>
+  <a href="#url-partial" class="px-3 py-1.5 rounded-full border border-ink-3 hover:bg-ink hover:text-white">URL · partial</a>
+  <a href="#url-error" class="px-3 py-1.5 rounded-full border border-ink-3 hover:bg-ink hover:text-white">URL · error</a>
+  <a href="#url-bg" class="px-3 py-1.5 rounded-full border border-ink-3 hover:bg-ink hover:text-white">Background toast</a>
+</nav>
+
+<main class="max-w-6xl mx-auto px-6 pb-24 space-y-16">
+
+  <!-- ROUTING -->
+  <section id="routing">
+    <p class="label">01 · Routing</p>
+    <h2 class="heading text-2xl mt-1 mb-6">One input, three branches</h2>
+    <div class="stage p-10">
+      <div class="flex flex-col items-center gap-6">
+        <div class="routing-node">
+          <div class="label mb-1">Modal input</div>
+          <div class="text-sm">User types or pastes</div>
+        </div>
+        <div class="routing-arrow">↓</div>
+        <div class="grid grid-cols-3 gap-8 w-full max-w-3xl">
+          <div class="flex flex-col items-center gap-3">
+            <div class="text-xs text-ink-2 text-center">matches <code class="font-mono">^https?://</code><br>or <em>foo.com/…</em></div>
+            <div class="routing-arrow">↓</div>
+            <div class="routing-node" style="background:#fff7dc; border-color:#fbbf0e;">
+              <div class="label mb-1" style="color:#8a6b00;">URL flow</div>
+              <div class="text-sm">Right drawer · scrape</div>
+            </div>
+          </div>
+          <div class="flex flex-col items-center gap-3">
+            <div class="text-xs text-ink-2 text-center">matches an<br>autocomplete hit</div>
+            <div class="routing-arrow">↓</div>
+            <div class="routing-node" style="background:#e8f6ef; border-color:#5fc39c;">
+              <div class="label mb-1" style="color:#2f8f6b;">Attach directly</div>
+              <div class="text-sm">No scrape · close</div>
+            </div>
+          </div>
+          <div class="flex flex-col items-center gap-3">
+            <div class="text-xs text-ink-2 text-center">free text,<br>no match</div>
+            <div class="routing-arrow">↓</div>
+            <div class="routing-node">
+              <div class="label mb-1">Name flow</div>
+              <div class="text-sm">Modal · URL nudge</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NAME FLOW -->
+  <section id="name">
+    <p class="label">02 · Name flow</p>
+    <h2 class="heading text-2xl mt-1 mb-6">Modal — name, then optional URL nudge</h2>
+    <div class="grid md:grid-cols-2 gap-6">
+
+      <!-- State A: empty -->
+      <div>
+        <p class="label mb-2">State A · empty</p>
+        <div class="stage stage-shell flex items-center justify-center">
+          <!-- dimmed planner bg -->
+          <div class="planner-bg dim flex gap-3">
+            <div class="planner-col">
+              <div class="label">Week of Jun 8</div>
+              <div class="planner-cell"></div>
+              <div class="planner-cell"></div>
+              <div class="planner-cell"></div>
+            </div>
+            <div class="planner-col">
+              <div class="label">Week of Jun 15</div>
+              <div class="planner-cell filled-periwinkle"></div>
+              <div class="planner-cell"></div>
+              <div class="planner-cell"></div>
+            </div>
+          </div>
+          <!-- backdrop -->
+          <div class="absolute inset-0 bg-ink/40"></div>
+          <!-- modal -->
+          <div class="relative bg-surface rounded-2xl shadow-xl w-[92%] max-w-md p-6 z-10">
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <h3 class="heading text-2xl leading-tight">Add a camp</h3>
+                <p class="label mt-1">Tell us the camp name</p>
+              </div>
+              <button class="text-ink-2 hover:text-ink text-lg">✕</button>
+            </div>
+            <label class="label block mb-1.5">Camp name</label>
+            <input class="field-input" placeholder="e.g. YMCA Camp Kanata" style="border-color:#c0c0c0;" />
+            <div class="flex gap-2 justify-end mt-5">
+              <button class="pill-btn pill-ghost">Cancel</button>
+              <button class="pill-btn pill-primary opacity-50">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- State B: name typed, URL nudge -->
+      <div>
+        <p class="label mb-2">State B · name typed → URL nudge reveals</p>
+        <div class="stage stage-shell flex items-center justify-center">
+          <div class="planner-bg dim flex gap-3">
+            <div class="planner-col">
+              <div class="label">Week of Jun 8</div>
+              <div class="planner-cell"></div>
+              <div class="planner-cell"></div>
+              <div class="planner-cell"></div>
+            </div>
+            <div class="planner-col">
+              <div class="label">Week of Jun 15</div>
+              <div class="planner-cell filled-periwinkle"></div>
+              <div class="planner-cell"></div>
+              <div class="planner-cell"></div>
+            </div>
+          </div>
+          <div class="absolute inset-0 bg-ink/40"></div>
+          <div class="relative bg-surface rounded-2xl shadow-xl w-[92%] max-w-md p-6 z-10">
+            <div class="flex items-start justify-between mb-4">
+              <div>
+                <h3 class="heading text-2xl leading-tight">Add a camp</h3>
+                <p class="label mt-1">Tell us the camp name</p>
+              </div>
+              <button class="text-ink-2 hover:text-ink text-lg">✕</button>
+            </div>
+
+            <label class="label block mb-1.5">Camp name</label>
+            <input class="field-input" value="YMCA Camp Kanata" />
+
+            <!-- nudge -->
+            <div class="mt-4 rounded-xl p-3.5" style="background: #fff7dc; border: 1px solid #fbbf0e;">
+              <div class="flex gap-2 items-start">
+                <span class="text-base leading-none mt-0.5">✨</span>
+                <div class="flex-1">
+                  <div class="text-sm font-semibold text-ink leading-snug">Got a link? We can pull in dates, price, and location automatically.</div>
+                  <input class="field-input mt-2" placeholder="https://…    (optional)" style="border-color:#fbbf0e;" />
+                </div>
+              </div>
+            </div>
+
+            <div class="flex gap-2 justify-end mt-5">
+              <button class="pill-btn pill-ghost">Cancel</button>
+              <button class="pill-btn pill-primary">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <p class="text-xs text-ink-2 mt-3 max-w-3xl">
+      If URL is filled on Save, the modal hands off to the URL drawer (Scraping state). If URL is empty, we save a stub to the shortlist and close — no scrape job enqueued.
+    </p>
+  </section>
+
+  <!-- URL · SCRAPING -->
+  <section id="url-scraping">
+    <p class="label">03 · URL flow · Scraping</p>
+    <h2 class="heading text-2xl mt-1 mb-6">Right-side drawer polls the scrape job</h2>
+    <div class="stage stage-shell flex">
+      <!-- Planner bg (dimmed) -->
+      <div class="planner-bg dim flex gap-3 pr-[420px]">
+        <div class="planner-col">
+          <div class="label">Ava · Week of Jun 8</div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell filled-periwinkle"></div>
+          <div class="planner-cell"></div>
+        </div>
+        <div class="planner-col">
+          <div class="label">Theo · Week of Jun 8</div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell filled-mint"></div>
+        </div>
+        <div class="planner-col">
+          <div class="label">Max · Week of Jun 8</div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell"></div>
+        </div>
+      </div>
+
+      <!-- Drawer -->
+      <aside class="absolute top-0 right-0 bottom-0 w-[400px] bg-base shadow-2xl border-l border-ink-3 flex flex-col">
+        <header class="bg-surface px-5 py-4 border-b border-ink-3">
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="label">Fetching details…</p>
+              <div class="mt-1 flex items-center gap-2">
+                <span class="inline-block w-4 h-4 rounded bg-ink-3"></span>
+                <span class="text-sm font-mono text-ink">ymcatriangle.org</span>
+              </div>
+            </div>
+            <button class="text-ink-2 hover:text-ink text-lg">✕</button>
+          </div>
+        </header>
+        <div class="flex-1 overflow-y-auto p-5 space-y-4">
+          <div class="flex items-center gap-2 text-ink-2 text-sm">
+            <svg class="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M22 12a10 10 0 0 1-10 10"/></svg>
+            Reading page…
+          </div>
+          <div>
+            <p class="label mb-1.5">Name</p>
+            <div class="skeleton h-9"></div>
+          </div>
+          <div>
+            <p class="label mb-1.5">Dates</p>
+            <div class="skeleton h-9 w-2/3"></div>
+          </div>
+          <div>
+            <p class="label mb-1.5">Price</p>
+            <div class="skeleton h-9 w-1/2"></div>
+          </div>
+          <div>
+            <p class="label mb-1.5">Location</p>
+            <div class="skeleton h-9 w-3/4"></div>
+          </div>
+        </div>
+        <footer class="p-5 border-t border-ink-3 bg-surface flex justify-end">
+          <button class="pill-btn pill-ghost">Cancel</button>
+        </footer>
+      </aside>
+    </div>
+  </section>
+
+  <!-- URL · CONFIRM -->
+  <section id="url-confirm">
+    <p class="label">04 · URL flow · Confirm (scoped)</p>
+    <h2 class="heading text-2xl mt-1 mb-6">Scraped fields, editable, save places on scoped week</h2>
+    <div class="stage stage-shell flex">
+      <div class="planner-bg dim flex gap-3 pr-[420px]">
+        <div class="planner-col">
+          <div class="label">Ava · Week of Jun 8</div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell filled-periwinkle"></div>
+          <div class="planner-cell"></div>
+        </div>
+        <div class="planner-col">
+          <div class="label">Theo · Week of Jun 8</div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell filled-mint"></div>
+        </div>
+        <div class="planner-col">
+          <div class="label">Max · Week of Jun 8</div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell"></div>
+        </div>
+      </div>
+
+      <aside class="absolute top-0 right-0 bottom-0 w-[400px] bg-base shadow-2xl border-l border-ink-3 flex flex-col">
+        <header class="bg-surface px-5 py-4 border-b border-ink-3">
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="label">Review & save</p>
+              <h3 class="heading text-lg mt-1">ymcatriangle.org</h3>
+            </div>
+            <button class="text-ink-2 hover:text-ink text-lg">✕</button>
+          </div>
+        </header>
+        <div class="flex-1 overflow-y-auto p-5 space-y-5">
+          <div>
+            <p class="label mb-1.5">Placing on</p>
+            <div class="chip">
+              <span class="w-2.5 h-2.5 rounded-full inline-block" style="background:#8fa8d4;"></span>
+              Ava · Week of Jun 8
+              <span class="text-ink-2 ml-0.5 text-[11px]">change ✎</span>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <p class="label">Name</p>
+              <span class="badge badge-scraped">Scraped</span>
+            </div>
+            <input class="field-input" value="YMCA Camp Kanata" />
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <p class="label">Dates</p>
+              <span class="badge badge-scraped">Scraped</span>
+            </div>
+            <input class="field-input" value="Jun 8 – Jun 12" />
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <p class="label">Price</p>
+              <span class="badge badge-extracted">AI-extracted</span>
+            </div>
+            <input class="field-input" value="$425 / week" />
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <p class="label">Location</p>
+              <span class="badge badge-scraped">Scraped</span>
+            </div>
+            <input class="field-input" value="Wake Forest, NC" />
+          </div>
+        </div>
+        <footer class="p-5 border-t border-ink-3 bg-surface flex justify-end gap-2">
+          <button class="pill-btn pill-ghost">Cancel</button>
+          <button class="pill-btn pill-primary">Save</button>
+        </footer>
+      </aside>
+    </div>
+    <p class="text-xs text-ink-2 mt-3 max-w-3xl">
+      Badges: <span class="badge badge-verified">Verified</span> (human-checked) ·
+      <span class="badge badge-scraped">Scraped</span> (high-confidence HTML) ·
+      <span class="badge badge-extracted">AI-extracted</span> (LLM, lower confidence) ·
+      <span class="badge badge-empty">Empty</span>.
+    </p>
+  </section>
+
+  <!-- URL · PARTIAL -->
+  <section id="url-partial">
+    <p class="label">05 · URL flow · Partial</p>
+    <h2 class="heading text-2xl mt-1 mb-6">Missing fields flagged, user can fill them</h2>
+    <div class="stage stage-shell flex">
+      <div class="planner-bg dim flex gap-3 pr-[420px]">
+        <div class="planner-col">
+          <div class="label">Ava · Week of Jun 8</div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell filled-periwinkle"></div>
+          <div class="planner-cell"></div>
+        </div>
+        <div class="planner-col">
+          <div class="label">Theo · Week of Jun 8</div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell filled-mint"></div>
+        </div>
+        <div class="planner-col">
+          <div class="label">Max · Week of Jun 8</div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell"></div>
+        </div>
+      </div>
+
+      <aside class="absolute top-0 right-0 bottom-0 w-[400px] bg-base shadow-2xl border-l border-ink-3 flex flex-col">
+        <header class="bg-surface px-5 py-4 border-b border-ink-3">
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="label">Review & save</p>
+              <h3 class="heading text-lg mt-1">smalllocalcamp.com</h3>
+            </div>
+            <button class="text-ink-2 hover:text-ink text-lg">✕</button>
+          </div>
+        </header>
+        <div class="flex-1 overflow-y-auto p-5 space-y-5">
+          <div>
+            <p class="label mb-1.5">Placing on</p>
+            <div class="chip">
+              <span class="w-2.5 h-2.5 rounded-full inline-block" style="background:#8ec4ad;"></span>
+              Theo · Week of Jun 8
+              <span class="text-ink-2 ml-0.5 text-[11px]">change ✎</span>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <p class="label">Name</p>
+              <span class="badge badge-scraped">Scraped</span>
+            </div>
+            <input class="field-input" value="Wildflower Art Studio" />
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <p class="label">Dates</p>
+              <span class="badge badge-extracted">AI-extracted</span>
+            </div>
+            <input class="field-input" value="Jun 8 – Jun 12" />
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <p class="label">Price</p>
+              <span class="badge badge-empty">Empty</span>
+            </div>
+            <input class="field-input text-ink-2 italic" placeholder="we couldn't find this — add it?" />
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <p class="label">Location</p>
+              <span class="badge badge-empty">Empty</span>
+            </div>
+            <input class="field-input text-ink-2 italic" placeholder="we couldn't find this — add it?" />
+          </div>
+        </div>
+        <footer class="p-5 border-t border-ink-3 bg-surface flex justify-end gap-2">
+          <button class="pill-btn pill-ghost">Cancel</button>
+          <button class="pill-btn pill-primary">Save</button>
+        </footer>
+      </aside>
+    </div>
+  </section>
+
+  <!-- URL · ERROR -->
+  <section id="url-error">
+    <p class="label">06 · URL flow · Error</p>
+    <h2 class="heading text-2xl mt-1 mb-6">Scrape failed — offer retry or save-stub</h2>
+    <div class="stage stage-shell flex">
+      <div class="planner-bg dim flex gap-3 pr-[420px]">
+        <div class="planner-col">
+          <div class="label">Ava · Week of Jun 8</div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell filled-periwinkle"></div>
+          <div class="planner-cell"></div>
+        </div>
+        <div class="planner-col">
+          <div class="label">Theo · Week of Jun 8</div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell filled-mint"></div>
+        </div>
+        <div class="planner-col">
+          <div class="label">Max · Week of Jun 8</div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell"></div>
+        </div>
+      </div>
+
+      <aside class="absolute top-0 right-0 bottom-0 w-[400px] bg-base shadow-2xl border-l border-ink-3 flex flex-col">
+        <header class="bg-surface px-5 py-4 border-b border-ink-3">
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="label" style="color:#c1474a;">Couldn't reach that page</p>
+              <h3 class="heading text-lg mt-1">ymcatriangle.org</h3>
+            </div>
+            <button class="text-ink-2 hover:text-ink text-lg">✕</button>
+          </div>
+        </header>
+        <div class="flex-1 overflow-y-auto p-5 space-y-5">
+          <div class="rounded-xl p-4" style="background: rgba(239, 140, 143, 0.12); border: 1px solid #ef8c8f;">
+            <div class="flex items-start gap-2">
+              <span class="text-base">⚠</span>
+              <div class="text-sm">
+                <div class="font-semibold text-ink">We got a 403 from their server.</div>
+                <div class="text-ink-2 mt-1">Some sites block scrapers. You can still save the camp with just the name and URL — we'll retry later.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2 pt-2">
+            <button class="pill-btn pill-outline w-full">Try again</button>
+            <button class="pill-btn pill-primary w-full">Save with just name + URL</button>
+            <button class="pill-btn pill-ghost w-full">Cancel</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- URL · BACKGROUND TOAST -->
+  <section id="url-bg">
+    <p class="label">07 · URL flow · Background completed</p>
+    <h2 class="heading text-2xl mt-1 mb-6">User closed drawer early — we surface when ready</h2>
+    <div class="stage stage-shell">
+      <div class="planner-bg flex gap-3">
+        <div class="planner-col">
+          <div class="label">Ava · Week of Jun 8</div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell filled-periwinkle"></div>
+          <div class="planner-cell"></div>
+        </div>
+        <div class="planner-col">
+          <div class="label">Theo · Week of Jun 8</div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell filled-lilac"></div>
+          <div class="planner-cell filled-mint"></div>
+        </div>
+        <div class="planner-col">
+          <div class="label">Max · Week of Jun 8</div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell"></div>
+          <div class="planner-cell"></div>
+        </div>
+      </div>
+      <!-- toast -->
+      <div class="absolute bottom-6 right-6 bg-surface rounded-xl shadow-2xl border border-ink-3 p-4 w-[340px]">
+        <div class="flex items-start gap-3">
+          <span class="text-xl leading-none">✨</span>
+          <div class="flex-1">
+            <div class="font-semibold text-ink text-sm leading-snug">Details loaded for YMCA Camp Kanata</div>
+            <p class="text-ink-2 text-xs mt-1">Dates, price, and location are ready to review.</p>
+            <div class="flex gap-2 mt-3">
+              <button class="pill-btn pill-primary" style="padding:6px 14px; font-size:10px;">Review</button>
+              <button class="pill-btn pill-ghost" style="padding:6px 14px; font-size:10px;">Dismiss</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="max-w-6xl mx-auto px-6 pb-16 text-center">
+  <p class="label">end of mockups</p>
+  <p class="text-xs text-ink-2 mt-2">Static HTML · open in any browser · not wired to real data</p>
+</footer>
+
+</body>
+</html>
