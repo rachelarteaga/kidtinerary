@@ -147,7 +147,7 @@ function DraggableCampItem({
         <div className="flex-1 min-w-0 pr-5">
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: camp.color }} />
-            <div className="font-medium text-sm text-ink truncate">{camp.activity.name}</div>
+            <div className="font-medium text-sm text-ink break-words">{camp.activity.name}</div>
           </div>
           {camp.activity.organization?.name && (
             <div className="mt-0.5 pl-3.5 text-[11px] text-ink-2 truncate">
