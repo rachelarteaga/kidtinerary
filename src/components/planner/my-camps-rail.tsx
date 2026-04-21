@@ -130,18 +130,30 @@ function DraggableCampItem({
   return (
     <div
       ref={setNodeRef}
-      {...listeners}
-      {...attributes}
       onClick={onClick}
-      className={`group relative rounded-lg border bg-white p-2.5 cursor-grab active:cursor-grabbing select-none transition-all border-ink-3 ${isDragging ? "opacity-60 ring-2 ring-hero-light/40" : "hover:border-ink"}`}
+      className={`group relative rounded-lg border bg-white p-2.5 cursor-pointer select-none transition-all border-ink-3 ${isDragging ? "opacity-60 ring-2 ring-hero-light/40" : "hover:border-ink"}`}
     >
-      <div className="flex items-center gap-1.5 pr-5">
-        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: camp.color }} />
-        <div className="font-medium text-sm text-ink truncate">{camp.activity.name}</div>
-      </div>
-      <div className="mt-1 flex items-center gap-2 font-sans text-[10px] uppercase tracking-wide text-ink-2">
-        {camp.plannerEntryCount > 0 && <span>{camp.plannerEntryCount}x</span>}
-        {camp.activity.verified && <span className="text-[#5fc39c]">verified</span>}
+      <div className="flex items-start gap-1 pr-5">
+        <button
+          {...listeners}
+          {...attributes}
+          type="button"
+          aria-label={`Drag ${camp.activity.name}`}
+          onClick={(e) => e.stopPropagation()}
+          className="text-ink-3 hover:text-ink cursor-grab active:cursor-grabbing flex-shrink-0 px-1 leading-none self-center"
+        >
+          ⋮⋮
+        </button>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: camp.color }} />
+            <div className="font-medium text-sm text-ink truncate">{camp.activity.name}</div>
+          </div>
+          <div className="mt-1 pl-3.5 flex items-center gap-2 font-sans text-[10px] uppercase tracking-wide text-ink-2">
+            {camp.plannerEntryCount > 0 && <span>{camp.plannerEntryCount}x</span>}
+            {camp.activity.verified && <span className="text-[#5fc39c]">verified</span>}
+          </div>
+        </div>
       </div>
       <button
         type="button"

@@ -21,12 +21,13 @@ import { BlockDetailDrawer } from "@/components/planner/block-detail-drawer";
 import { PlannerRangePicker } from "@/components/planner/planner-range-picker";
 import { PlannerTitle } from "@/components/planner/planner-title";
 import { CampQuickViewModal } from "@/components/planner/camp-quick-view-modal";
+import { StatusPickerPopover, type StatusPickerAnchor } from "@/components/planner/status-picker-popover";
 import { useScrapeJob } from "@/lib/use-scrape-job";
 import { reorderKidColumns, assignCampToWeek, removeKidFromPlanner } from "@/lib/actions";
 import { generateWeeks, getWeekKey } from "@/lib/format";
 import { extrasTotalCents } from "@/lib/extras-calc";
 import type { PlannerEntryRow, UserCampWithActivity, PlannerBlockWithKids } from "@/lib/queries";
-import type { PlannerRow } from "@/lib/supabase/types";
+import type { PlannerEntryStatus, PlannerRow } from "@/lib/supabase/types";
 
 // Module-level constants so the references stay stable across renders.
 // dnd-kit's useSensor memoizes on these, so a fresh object each render causes
@@ -63,6 +64,14 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [draggingCamp, setDraggingCamp] = useState<{ name: string; color: string } | null>(null);
   const isDraggingCamp = draggingCamp !== null;
+  const [pendingAssignment, setPendingAssignment] = useState<{
+    userCampId: string;
+    name: string;
+    color: string;
+    childId: string;
+    weekStart: string;
+    anchor: StatusPickerAnchor;
+  } | null>(null);
   const [viewMode, setViewMode] = useState<"detail" | "simple">("detail");
 
   // Load from localStorage on mount
@@ -102,21 +111,24 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
 
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
+      const dragged = draggingCamp;
       setDraggingCamp(null);
       const { active, over } = event;
       if (!over) return;
 
-      const activeData = active.data.current as { type?: string; userCampId?: string } | undefined;
-      const overData = over.data.current as { type?: string; childId?: string; weekStart?: string; status?: "considering" | "waitlisted" | "registered" } | undefined;
+      const activeData = active.data.current as { type?: string; userCampId?: string; name?: string; color?: string } | undefined;
+      const overData = over.data.current as { type?: string; childId?: string; weekStart?: string } | undefined;
 
       if (activeData?.type === "camp" && overData?.type === "cell-drop" && overData.childId && overData.weekStart) {
-        const status = overData.status ?? "considering";
-        const result = await assignCampToWeek(activeData.userCampId!, overData.childId, overData.weekStart, status);
-        if (result.error) {
-          alert(result.error);
-          return;
-        }
-        router.refresh();
+        const r = over.rect;
+        setPendingAssignment({
+          userCampId: activeData.userCampId!,
+          name: dragged?.name ?? String(activeData.name ?? ""),
+          color: dragged?.color ?? String(activeData.color ?? "#f4b76f"),
+          childId: overData.childId,
+          weekStart: overData.weekStart,
+          anchor: { top: r.top, left: r.left, width: r.width, height: r.height },
+        });
         return;
       }
 
@@ -130,7 +142,22 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
         await reorderKidColumns(planner.id, next);
       }
     },
-    [orderedIds, router, planner.id]
+    [draggingCamp, orderedIds, planner.id]
+  );
+
+  const handleStatusChoice = useCallback(
+    async (status: PlannerEntryStatus) => {
+      if (!pendingAssignment) return;
+      const { userCampId, childId, weekStart } = pendingAssignment;
+      setPendingAssignment(null);
+      const result = await assignCampToWeek(userCampId, childId, weekStart, status);
+      if (result.error) {
+        alert(result.error);
+        return;
+      }
+      router.refresh();
+    },
+    [pendingAssignment, router]
   );
 
   const handleRemoveKid = useCallback(
@@ -448,6 +475,16 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           camp={userCamps.find((c) => c.id === quickViewCampId) ?? null}
           onClose={() => setQuickViewCampId(null)}
         />
+
+        {pendingAssignment && (
+          <StatusPickerPopover
+            anchor={pendingAssignment.anchor}
+            campName={pendingAssignment.name}
+            campColor={pendingAssignment.color}
+            onChoose={handleStatusChoice}
+            onCancel={() => setPendingAssignment(null)}
+          />
+        )}
       </main>
 
       <DragOverlay dropAnimation={null}>
