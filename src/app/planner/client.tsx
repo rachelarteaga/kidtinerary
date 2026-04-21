@@ -227,6 +227,17 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
     return { weekStart, cells, fullRowBlock, partialBlocksByChild };
   });
 
+  const committedCents = useMemo(() => {
+    return entries
+      .filter((e) => e.status === "registered" && e.price_cents != null)
+      .reduce((sum, e) => {
+        const daysPerWeek = e.days_of_week.length;
+        const basePerWeek =
+          e.price_unit === "per_day" ? e.price_cents! * daysPerWeek : e.price_cents!;
+        return sum + basePerWeek + extrasTotalCents(e.extras, daysPerWeek);
+      }, 0);
+  }, [entries]);
+
   const drawerEntry = useMemo(() => {
     if (!drawerEntryId) return null;
     const e = entries.find((x) => x.id === drawerEntryId);
@@ -300,7 +311,17 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
                   <div className="mb-1">
                     <PlannerTitle plannerId={planner.id} name={planner.name} />
                   </div>
-                  <p className="text-ink-2">{kids.length} kid{kids.length === 1 ? "" : "s"} · {weekStarts.length} weeks</p>
+                  <p className="text-ink-2">
+                    {kids.length} kid{kids.length === 1 ? "" : "s"} · {weekStarts.length} weeks
+                    {committedCents > 0 && (
+                      <>
+                        {" · "}
+                        <span className="text-ink font-semibold">
+                          ${Math.round(committedCents / 100).toLocaleString()} committed
+                        </span>
+                      </>
+                    )}
+                  </p>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   <div className="inline-flex rounded-full border border-ink bg-surface overflow-hidden">
