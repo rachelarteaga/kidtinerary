@@ -21,13 +21,11 @@ export function CellDropZones({ childId, weekStart }: Props) {
   return (
     <div
       ref={setNodeRef}
-      className={`w-full h-full rounded-lg border-2 border-dashed transition-colors flex items-center justify-center font-sans text-[11px] uppercase tracking-widest ${
+      className={`w-full h-full rounded-lg border-2 border-dashed transition-colors ${
         isOver
-          ? "border-ink bg-hero-light/60 text-ink scale-[1.02]"
-          : "border-ink-3 bg-hero-light/20 text-ink-2"
+          ? "border-ink bg-[#dfecf5]/80 scale-[1.02]"
+          : "border-ink-3 bg-[#dfecf5]/30"
       }`}
-    >
-      {isOver ? "Drop to set status" : "Drop here"}
-    </div>
+    />
   );
 }
