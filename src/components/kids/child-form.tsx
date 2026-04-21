@@ -73,9 +73,9 @@ export function ChildForm({ editingChild, onDone, onCreated, hideHeading = false
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-driftwood/30 p-5">
+    <div className="bg-surface rounded-2xl border border-ink-3 p-5">
       {!hideHeading && (
-        <h3 className="font-serif text-xl mb-4">
+        <h3 className="font-display font-extrabold text-xl mb-4">
           {editingChild ? `Edit ${editingChild.name}` : "Add a kid"}
         </h3>
       )}
@@ -83,7 +83,7 @@ export function ChildForm({ editingChild, onDone, onCreated, hideHeading = false
       <div className="space-y-4">
         {/* Name */}
         <div>
-          <label className="block font-mono text-[10px] uppercase tracking-wide text-stone mb-1.5">
+          <label className="block font-sans text-[10px] uppercase tracking-wide text-ink-2 mb-1.5">
             Name
           </label>
           <input
@@ -91,26 +91,26 @@ export function ChildForm({ editingChild, onDone, onCreated, hideHeading = false
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="First name"
-            className="w-full px-3 py-2 rounded-lg border border-driftwood/50 bg-cream/50 text-bark placeholder:text-driftwood text-sm focus:outline-none focus:border-sunset focus:ring-1 focus:ring-sunset/30"
+            className="w-full px-3 py-2 rounded-lg border border-ink-3 bg-surface/50 text-ink placeholder:text-ink-3 text-sm focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink/30"
           />
         </div>
 
         {/* Birth date */}
         <div>
-          <label className="block font-mono text-[10px] uppercase tracking-wide text-stone mb-1.5">
+          <label className="block font-sans text-[10px] uppercase tracking-wide text-ink-2 mb-1.5">
             Birth Date
           </label>
           <input
             type="date"
             value={birthDate}
             onChange={(e) => setBirthDate(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-driftwood/50 bg-cream/50 text-bark text-sm focus:outline-none focus:border-sunset focus:ring-1 focus:ring-sunset/30"
+            className="w-full px-3 py-2 rounded-lg border border-ink-3 bg-surface/50 text-ink text-sm focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink/30"
           />
         </div>
 
         {/* Interests */}
         <div>
-          <label className="block font-mono text-[10px] uppercase tracking-wide text-stone mb-1.5">
+          <label className="block font-sans text-[10px] uppercase tracking-wide text-ink-2 mb-1.5">
             Interests
           </label>
           <div className="flex flex-wrap gap-2">
@@ -123,8 +123,8 @@ export function ChildForm({ editingChild, onDone, onCreated, hideHeading = false
                   onClick={() => toggleInterest(cat)}
                   className={`px-3 py-1.5 rounded-full font-mono text-[10px] uppercase tracking-wide transition-colors ${
                     isSelected
-                      ? "bg-sunset/15 text-sunset border border-sunset/30"
-                      : "bg-bark/5 text-stone border border-transparent hover:border-driftwood"
+                      ? "bg-ink/15 text-ink border border-ink/30"
+                      : "bg-ink/5 text-ink-2 border border-transparent hover:border-ink-3"
                   }`}
                 >
                   {categoryLabel(cat)}
