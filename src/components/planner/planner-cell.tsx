@@ -141,12 +141,12 @@ export function PlannerCell({
                       <path d="M14 2 A 10 10 0 1 0 22 13 A 8 8 0 0 1 14 2 Z" />
                     </svg>
                   ) : null}
-                  {r.status === "registered" && r.priceWeeklyCents != null ? (
+                  {r.priceWeeklyCents != null ? (
                     <span className="ml-auto font-sans text-[10px] font-semibold text-ink-2 flex-shrink-0">
                       ${Math.round(r.priceWeeklyCents / 100)}
                     </span>
                   ) : null}
-                  <span className={`${r.status === "registered" && r.priceWeeklyCents != null ? "" : "ml-auto "}font-sans font-semibold text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full border border-ink ${s.bg} ${s.text}`}>
+                  <span className={`${r.priceWeeklyCents != null ? "" : "ml-auto "}font-sans font-semibold text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full border border-ink ${s.bg} ${s.text}`}>
                     {r.status}
                   </span>
                 </button>
