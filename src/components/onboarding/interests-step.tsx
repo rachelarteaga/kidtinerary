@@ -35,10 +35,10 @@ export function InterestsStep({ childName, onComplete }: InterestsStepProps) {
 
   return (
     <div>
-      <h2 className="font-serif text-2xl mb-2">
+      <h2 className="font-display font-extrabold text-2xl mb-2">
         What does {childName} love?
       </h2>
-      <p className="text-stone mb-6">
+      <p className="text-ink-2 mb-6">
         Pick as many as you&apos;d like. We&apos;ll use these to personalize recommendations.
       </p>
       <div className="grid grid-cols-3 gap-3 mb-6">
@@ -51,8 +51,8 @@ export function InterestsStep({ childName, onComplete }: InterestsStepProps) {
               onClick={() => toggle(cat)}
               className={`flex flex-col items-center gap-1 p-4 rounded-2xl border transition-all ${
                 isSelected
-                  ? "border-sunset bg-sunset/5"
-                  : "border-driftwood bg-white hover:border-stone"
+                  ? "border-ink bg-ink/5"
+                  : "border-ink-3 bg-surface hover:border-ink-2"
               }`}
             >
               <span
@@ -61,7 +61,7 @@ export function InterestsStep({ childName, onComplete }: InterestsStepProps) {
               >
                 {emoji}
               </span>
-              <span className="font-mono text-[10px] uppercase tracking-wide text-stone">
+              <span className="font-sans text-[10px] uppercase tracking-wide text-ink-2">
                 {label}
               </span>
             </button>
