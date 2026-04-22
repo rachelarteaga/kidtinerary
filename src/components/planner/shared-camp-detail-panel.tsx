@@ -55,10 +55,12 @@ export function SharedCampDetailPanel({ open, onClose, camp }: Props) {
             </a>
           </div>
         )}
-        <div className="px-5 py-3 border-t border-ink-3">
-          <p className="font-sans text-[10px] uppercase tracking-wide text-ink-2 font-semibold">About</p>
-          <p className="font-sans text-sm mt-1">{camp.about}</p>
-        </div>
+        {camp.about && camp.about.trim().length > 0 && (
+          <div className="px-5 py-3 border-t border-ink-3">
+            <p className="font-sans text-[10px] uppercase tracking-wide text-ink-2 font-semibold">About</p>
+            <p className="font-sans text-sm mt-1">{camp.about}</p>
+          </div>
+        )}
       </div>
     </div>
   );

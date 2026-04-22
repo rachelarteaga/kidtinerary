@@ -37,4 +37,9 @@ describe("SharedCampDetailPanel", () => {
     rerender(<SharedCampDetailPanel open onClose={() => {}} camp={{ ...camp, weeklyCostCents: 45000 }} />);
     expect(screen.getByText(/\$450 \/ week/)).toBeInTheDocument();
   });
+
+  it("hides the About section when about is empty", () => {
+    render(<SharedCampDetailPanel open onClose={() => {}} camp={{ ...camp, about: "" }} />);
+    expect(screen.queryByText(/^About$/)).toBeNull();
+  });
 });

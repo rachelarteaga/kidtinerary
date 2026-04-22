@@ -27,6 +27,7 @@ export default async function SharedSchedulePage({ params }: PageProps) {
       plannerName={result.plannerName}
       plannerStart={result.plannerStart}
       plannerEnd={result.plannerEnd}
+      ownerDisplayName={result.ownerDisplayName}
       kids={result.kids}
       entries={result.entries}
       blocks={result.blocks}

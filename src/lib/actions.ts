@@ -1620,6 +1620,7 @@ export async function updateProfile(input: {
     .update({
       address: storedAddress,
       phone: input.phone.trim() || null,
+      display_name: input.fullName.trim(),
     })
     .eq("id", user.id);
   if (profErr) return { error: profErr.message };

@@ -41,6 +41,7 @@ interface EntryRow {
       id: string;
       name: string;
       registration_url: string | null;
+      description: string | null;
       organization: { id: string; name: string } | null;
       activity_locations: { id: string; address: string; location_name: string | null }[];
     };
@@ -61,6 +62,7 @@ interface Props {
   plannerName: string;
   plannerStart: string;
   plannerEnd: string;
+  ownerDisplayName: string | null;
   kids: KidRow[];
   entries: EntryRow[];
   blocks: BlockRow[];
@@ -78,6 +80,7 @@ export function SharedPlannerView({
   plannerName,
   plannerStart,
   plannerEnd,
+  ownerDisplayName,
   kids,
   entries,
   blocks,
@@ -137,7 +140,7 @@ export function SharedPlannerView({
       name: e.session.activity.name,
       location: loc ? `${loc.location_name ? loc.location_name + "\n" : ""}${loc.address}` : "",
       url: e.session.activity.registration_url,
-      about: "", // sessions don't currently expose a description — leave blank; deferred
+      about: e.session.activity.description ?? "",
       weeklyCostCents: filters.includeCost ? e.price_cents : null,
     };
   }, [openCampEntryId, visibleEntries, filters.includeCost]);
@@ -203,7 +206,14 @@ export function SharedPlannerView({
       <header className="mb-6 flex items-start justify-between flex-wrap gap-4">
         <div>
           <p className="font-sans text-[10px] uppercase tracking-widest text-ink-2 font-semibold">Shared · view-only</p>
-          <h1 className="font-display font-extrabold text-3xl mt-1">{plannerName}</h1>
+          <h1 className="font-display font-extrabold text-3xl mt-1">
+            {plannerName}
+            {ownerDisplayName && (
+              <span className="font-sans text-ink-2 font-medium ml-2 text-lg">
+                · {ownerDisplayName}&apos;s planner
+              </span>
+            )}
+          </h1>
           <p className="text-ink-2 text-sm mt-1">
             {visibleKids.length} kid{visibleKids.length === 1 ? "" : "s"}
           </p>

@@ -462,6 +462,7 @@ export type SharedByTokenResult =
       plannerName: string;
       plannerStart: string; // YYYY-MM-DD
       plannerEnd: string; // YYYY-MM-DD
+      ownerDisplayName: string | null;
       kidIds: string[];
       includeCost: boolean;
       includePersonalBlockDetails: boolean;
@@ -497,6 +498,7 @@ export type SharedByTokenResult =
             slug: string;
             categories: string[];
             registration_url: string | null;
+            description: string | null;
             organization: { id: string; name: string } | null;
             activity_locations: { id: string; address: string; location_name: string | null }[];
           };
@@ -552,6 +554,16 @@ export async function fetchSharedPlannerByToken(token: string): Promise<SharedBy
     .single();
   if (plannerErr || !planner) return { type: "notfound" };
 
+  // Public resolver for the owner's display name — returns the scalar value
+  // directly in `data`. If the RPC hasn't been applied to the DB yet (or any
+  // other failure), fall through to `null` so the header gracefully omits
+  // "· X's planner".
+  const { data: nameRow } = await supabase.rpc("get_profile_display_name", {
+    target_user_id: share.user_id,
+  });
+  const ownerDisplayName: string | null =
+    typeof nameRow === "string" && nameRow.trim().length > 0 ? nameRow : null;
+
   const kidIds: string[] = Array.isArray(share.kid_ids) ? share.kid_ids : [];
 
   const { data: kids } = await supabase
@@ -568,7 +580,7 @@ export async function fetchSharedPlannerByToken(token: string): Promise<SharedBy
       session:sessions!inner(
         id, starts_at, ends_at, time_slot, hours_start, hours_end, is_sold_out,
         activity:activities!inner(
-          id, name, slug, categories, registration_url,
+          id, name, slug, categories, registration_url, description,
           organization:organizations(id, name),
           activity_locations(id, address, location_name)
         )
@@ -628,6 +640,7 @@ export async function fetchSharedPlannerByToken(token: string): Promise<SharedBy
     plannerName: planner.name,
     plannerStart: planner.start_date,
     plannerEnd: planner.end_date,
+    ownerDisplayName,
     kidIds,
     includeCost: !!share.include_cost,
     includePersonalBlockDetails: !!share.include_personal_block_details,
