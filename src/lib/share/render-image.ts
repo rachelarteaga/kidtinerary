@@ -16,9 +16,16 @@ export async function sharePlannerImage(opts: {
   let blob: Blob | null;
   try {
     // skipFonts avoids the CSSOM cross-origin error that html-to-image
-    // hits when next/font injects Google Fonts stylesheets. The snapshot
-    // falls back to the browser's default system font.
-    blob = await toBlob(opts.element, { cacheBust: true, pixelRatio: 2, skipFonts: true });
+    // hits when next/font injects Google Fonts stylesheets.
+    // backgroundColor gives the snapshot a solid white backdrop; without
+    // it the semi-transparent personal-block fills composite against
+    // whatever the image viewer uses (often dark) and look wrong.
+    blob = await toBlob(opts.element, {
+      cacheBust: true,
+      pixelRatio: 2,
+      skipFonts: true,
+      backgroundColor: "#ffffff",
+    });
   } catch (e: unknown) {
     return { shared: false, error: (e as Error).message };
   }
