@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, useEffect } from "react";
+import { useCallback, useMemo, useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
@@ -23,6 +23,7 @@ import { PlannerTitle } from "@/components/planner/planner-title";
 import { StatusPickerPopover, type StatusPickerAnchor } from "@/components/planner/status-picker-popover";
 import { ScrapeConfirmDrawer } from "@/components/planner/scrape-confirm-drawer";
 import { CampPreviewModal, type PreviewSummary } from "@/components/planner/camp-preview-modal";
+import { SharePlannerModal } from "@/components/planner/share-planner-modal";
 import { useScrapeJob } from "@/lib/use-scrape-job";
 import { reorderKidColumns, assignCampToWeek, removeKidFromPlanner } from "@/lib/actions";
 import { generateWeeks, getWeekKey, formatWeekRange } from "@/lib/format";
@@ -76,6 +77,8 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
     anchor: StatusPickerAnchor;
   } | null>(null);
   const [viewMode, setViewMode] = useState<"detail" | "simple">("detail");
+  const plannerGridRef = useRef<HTMLDivElement>(null);
+  const [shareOpen, setShareOpen] = useState(false);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -493,6 +496,12 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
                     onChanged={() => router.refresh()}
                   />
                   <button
+                    onClick={() => setShareOpen(true)}
+                    className="font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-surface text-ink hover:bg-base border border-ink"
+                  >
+                    Share
+                  </button>
+                  <button
                     onClick={() => setEntryModal({ childId: null, weekStart: null, tab: "camp" })}
                     className="font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-[#333] border border-ink"
                   >
@@ -501,7 +510,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
                 </div>
               </header>
 
-              <div className="border-y-[1.5px] border-ink-3 pt-5 pb-4 flex-1 min-h-0 flex flex-col">
+              <div ref={plannerGridRef} className="border-y-[1.5px] border-ink-3 pt-5 pb-4 flex-1 min-h-0 flex flex-col">
                 <PlannerMatrix
                   children={kids}
                   allUserKids={allUserKids}
@@ -591,6 +600,19 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           inputUrl={scrapeDrawer?.url ?? ""}
           scopeLabel={scrapeDrawer?.scopeLabel ?? null}
           onClose={() => setScrapeDrawer(null)}
+        />
+        <SharePlannerModal
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          plannerId={planner.id}
+          plannerName={planner.name}
+          kids={kids.map((k, i) => ({
+            id: k.id,
+            name: k.name,
+            avatar_url: k.avatar_url,
+            index: i,
+          }))}
+          plannerElementRef={plannerGridRef}
         />
 
         {pendingAssignment && (
