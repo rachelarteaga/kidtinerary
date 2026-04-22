@@ -15,6 +15,7 @@ import {
   removePlannerEntry,
   assignCampToWeek,
   updateActivityFields,
+  removeCampFromShortlist,
 } from "@/lib/actions";
 import { extrasTotalCents } from "@/lib/extras-calc";
 import { formatWeekRange } from "@/lib/format";
@@ -49,10 +50,20 @@ interface Kid {
   avatar_url: string | null;
 }
 
-interface DrawerEntry {
+interface PlacedFields {
   id: string;
   childId: string;
   weekStart: Date;
+  status: PlannerEntryStatus;
+  sessionPart: SessionPart;
+  daysOfWeek: DayOfWeek[];
+  priceCents: number | null;
+  priceUnit: PriceUnit | null;
+  extras: ExtraItem[];
+  notes: string | null;
+}
+
+interface DrawerEntry {
   userCampId: string;
   activityId: string;
   orgId: string | null;
@@ -65,13 +76,8 @@ interface DrawerEntry {
   categories: string[];
   orgName: string | null;
   verified: boolean;
-  status: PlannerEntryStatus;
-  sessionPart: SessionPart;
-  daysOfWeek: DayOfWeek[];
-  priceCents: number | null;
-  priceUnit: PriceUnit | null;
-  extras: ExtraItem[];
-  notes: string | null;
+  /** Null when the camp is in the shortlist but not placed on a week/kid yet. */
+  placed: PlacedFields | null;
 }
 
 interface Props {
@@ -145,61 +151,67 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
 
   if (!open || !local) return null;
 
-  const kidName = kids.find((k) => k.id === local.childId)?.name ?? "";
+  const kidName = local.placed ? kids.find((k) => k.id === local.placed!.childId)?.name ?? "" : "";
 
   function persistSchedule(part: SessionPart, days: DayOfWeek[]) {
-    if (!local) return;
-    setLocal({ ...local, sessionPart: part, daysOfWeek: days });
+    if (!local || !local.placed) return;
+    const placed = local.placed;
+    setLocal({ ...local, placed: { ...placed, sessionPart: part, daysOfWeek: days } });
     startTransition(async () => {
-      await updateEntrySchedule(local.id, part, days);
+      await updateEntrySchedule(placed.id, part, days);
       onChanged();
     });
   }
 
   function persistPrice(cents: number | null, unit: PriceUnit | null) {
-    if (!local) return;
-    setLocal({ ...local, priceCents: cents, priceUnit: unit });
+    if (!local || !local.placed) return;
+    const placed = local.placed;
+    setLocal({ ...local, placed: { ...placed, priceCents: cents, priceUnit: unit } });
     startTransition(async () => {
-      await updateEntryPrice(local.id, cents, unit);
+      await updateEntryPrice(placed.id, cents, unit);
       onChanged();
     });
   }
 
   function persistExtras(extras: ExtraItem[]) {
-    if (!local) return;
-    setLocal({ ...local, extras });
+    if (!local || !local.placed) return;
+    const placed = local.placed;
+    setLocal({ ...local, placed: { ...placed, extras } });
     startTransition(async () => {
-      await updateEntryExtras(local.id, extras);
+      await updateEntryExtras(placed.id, extras);
       onChanged();
     });
   }
 
   function persistNotes(notes: string) {
-    if (!local) return;
-    setLocal({ ...local, notes });
+    if (!local || !local.placed) return;
+    const placed = local.placed;
+    setLocal({ ...local, placed: { ...placed, notes } });
     startTransition(async () => {
-      await updateEntryNotes(local.id, notes);
+      await updateEntryNotes(placed.id, notes);
       onChanged();
     });
   }
 
   function persistStatus(status: PlannerEntryStatus) {
-    if (!local) return;
-    setLocal({ ...local, status });
+    if (!local || !local.placed) return;
+    const placed = local.placed;
+    setLocal({ ...local, placed: { ...placed, status } });
     startTransition(async () => {
-      await updatePlannerEntryStatus(local.id, status);
+      await updatePlannerEntryStatus(placed.id, status);
       onChanged();
     });
   }
 
   function addForKid(otherKidId: string) {
-    if (!local) return;
+    if (!local || !local.placed) return;
+    const placed = local.placed;
     startTransition(async () => {
       await assignCampToWeek(
         local.userCampId,
         otherKidId,
-        local.weekStart.toISOString().split("T")[0],
-        local.status,
+        placed.weekStart.toISOString().split("T")[0],
+        placed.status,
       );
       onChanged();
     });
@@ -207,24 +219,39 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
 
   async function handleRemove() {
     if (!local) return;
-    if (!confirm("Remove this camp from this week?")) return;
-    startTransition(async () => {
-      await removePlannerEntry(local.id);
-      onChanged();
-      onClose();
-    });
+    if (local.placed) {
+      if (!confirm("Remove this camp from this week?")) return;
+      const placed = local.placed;
+      startTransition(async () => {
+        await removePlannerEntry(placed.id);
+        onChanged();
+        onClose();
+      });
+    } else {
+      if (!confirm("Delete this camp from your shortlist? This can't be undone.")) return;
+      const userCampId = local.userCampId;
+      startTransition(async () => {
+        const r = await removeCampFromShortlist(userCampId);
+        if (r.error) {
+          alert(r.error);
+          return;
+        }
+        onChanged();
+        onClose();
+      });
+    }
   }
 
-  const daysPerWeek = local.daysOfWeek.length;
+  const daysPerWeek = local.placed?.daysOfWeek.length ?? 0;
   const basePerWeekCents =
-    local.priceCents == null
+    !local.placed || local.placed.priceCents == null
       ? 0
-      : local.priceUnit === "per_day"
-        ? local.priceCents * daysPerWeek
-        : local.priceCents;
-  const extrasCents = extrasTotalCents(local.extras, daysPerWeek);
+      : local.placed.priceUnit === "per_day"
+        ? local.placed.priceCents * daysPerWeek
+        : local.placed.priceCents;
+  const extrasCents = local.placed ? extrasTotalCents(local.placed.extras, daysPerWeek) : 0;
   const weekTotalDisplay =
-    local.priceCents == null
+    !local.placed || local.placed.priceCents == null
       ? "—"
       : `$${(basePerWeekCents / 100).toFixed(0)}${extrasCents > 0 ? ` + $${(extrasCents / 100).toFixed(0)} extras` : ""}`;
 
@@ -236,7 +263,9 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               <div className="font-sans text-[11px] font-bold uppercase tracking-widest text-ink-2 mb-0.5">
-                {kidName} · {formatWeekRange(local.weekStart)}
+                {local.placed
+                  ? `${kidName} · ${formatWeekRange(local.placed.weekStart)}`
+                  : "In your shortlist"}
               </div>
 
               {editingField === "name" ? (
@@ -334,69 +363,77 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
             </div>
             <button onClick={onClose} aria-label="Close" className="text-ink-2 hover:text-ink text-lg">✕</button>
           </div>
-          <div className="mt-3">
-            <StatusDropdown status={local.status} onChange={persistStatus} />
-          </div>
+          {local.placed && (
+            <div className="mt-3">
+              <StatusDropdown status={local.placed.status} onChange={persistStatus} />
+            </div>
+          )}
         </header>
 
         <div className="p-5 space-y-5 flex-1 overflow-y-auto">
+          {local.placed && (
           <section>
             <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Schedule</h3>
             <ScheduleEditor
-              sessionPart={local.sessionPart}
-              daysOfWeek={local.daysOfWeek}
-              onSessionPartChange={(p) => persistSchedule(p, local.daysOfWeek)}
-              onDaysChange={(d) => persistSchedule(local.sessionPart, d)}
+              sessionPart={local.placed.sessionPart}
+              daysOfWeek={local.placed.daysOfWeek}
+              onSessionPartChange={(p) => persistSchedule(p, local.placed!.daysOfWeek)}
+              onDaysChange={(d) => persistSchedule(local.placed!.sessionPart, d)}
             />
           </section>
+          )}
 
+          {local.placed && (
           <section>
             <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Price</h3>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-ink text-sm">$</span>
               <input
                 type="number"
-                value={local.priceCents == null ? "" : (local.priceCents / 100).toFixed(0)}
+                value={local.placed.priceCents == null ? "" : (local.placed.priceCents / 100).toFixed(0)}
                 onChange={(e) => {
                   const raw = e.target.value;
                   const cents = raw === "" ? null : Math.max(0, Math.round(parseFloat(raw) * 100));
-                  persistPrice(cents, cents == null ? null : local.priceUnit ?? "per_week");
+                  persistPrice(cents, cents == null ? null : local.placed!.priceUnit ?? "per_week");
                 }}
                 className="flex-1 rounded-md border border-ink-3 bg-surface px-2 py-1.5 text-sm"
                 placeholder="0"
                 min="0"
               />
               <select
-                value={local.priceUnit ?? "per_week"}
-                onChange={(e) => persistPrice(local.priceCents, e.target.value as PriceUnit)}
+                value={local.placed.priceUnit ?? "per_week"}
+                onChange={(e) => persistPrice(local.placed!.priceCents, e.target.value as PriceUnit)}
                 className="rounded-md border border-ink-3 bg-surface px-2 py-1.5 text-xs"
               >
                 <option value="per_week">per week</option>
                 <option value="per_day">per day</option>
               </select>
             </div>
-            <ExtrasEditor extras={local.extras} onChange={persistExtras} />
+            <ExtrasEditor extras={local.placed.extras} onChange={persistExtras} />
             <div className="mt-2 flex justify-between items-center px-3 py-2 bg-ink-3/10 rounded-md">
               <span className="font-sans text-[10px] uppercase tracking-widest text-ink-2">This week</span>
               <span className="text-sm text-ink font-medium">{weekTotalDisplay}</span>
             </div>
           </section>
+          )}
 
+          {local.placed && (
           <section>
             <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Notes (optional)</h3>
             <textarea
-              value={local.notes ?? ""}
+              value={local.placed.notes ?? ""}
               onChange={(e) => persistNotes(e.target.value)}
               className="w-full rounded-md border border-ink-3 bg-surface px-3 py-2 text-sm min-h-[64px]"
               placeholder="Pack swimsuit Monday, needs bug spray…"
             />
           </section>
+          )}
 
-          {kids.length > 1 && (
+          {local.placed && kids.length > 1 && (
             <section>
               <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Also add for</h3>
               <div className="flex gap-1.5 flex-wrap">
-                {kids.filter((k) => k.id !== local.childId).map((k) => {
+                {kids.filter((k) => k.id !== local.placed!.childId).map((k) => {
                   const kidIndex = kids.findIndex((kk) => kk.id === k.id);
                   return (
                   <button
@@ -514,7 +551,7 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
             disabled={isPending}
             className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 rounded-full border border-[#ef8c8f] text-[#c1474a] hover:bg-[#ef8c8f]/10 disabled:opacity-50"
           >
-            Delete from week
+            {local.placed ? "Delete from week" : "Delete from shortlist"}
           </button>
           <button
             type="button"
