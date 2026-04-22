@@ -60,6 +60,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
 
   const [entryModal, setEntryModal] = useState<{ childId: string | null; weekStart: string | null; tab: "camp" | "block" } | null>(null);
   const [drawerEntryId, setDrawerEntryId] = useState<string | null>(null);
+  const [shortlistCampId, setShortlistCampId] = useState<string | null>(null);
   const [drawerBlockId, setDrawerBlockId] = useState<string | null>(null);
   const [quickViewCampId, setQuickViewCampId] = useState<string | null>(null);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -313,43 +314,72 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
   }, [previewCamp, entries]);
 
   const drawerEntry = useMemo(() => {
-    if (!drawerEntryId) return null;
-    const e = entries.find((x) => x.id === drawerEntryId);
-    if (!e) return null;
-    const uc = userCamps.find((u) => u.activity.id === e.session.activity.id);
-    const primaryLoc = uc?.activity.activity_locations?.[0] ?? null;
-    return {
-      userCampId: uc?.id ?? "",
-      activityId: e.session.activity.id,
-      activityName: e.session.activity.name,
-      activitySlug: e.session.activity.slug,
-      source: uc?.activity.source ?? "user",
-      orgId: uc?.activity.organization_id ?? null,
-      activityUrl: uc?.activity.registration_url ?? null,
-      activityDescription: uc?.activity.description ?? null,
-      ageMin: uc?.activity.age_min ?? null,
-      ageMax: uc?.activity.age_max ?? null,
-      categories: uc?.activity.categories ?? [],
-      orgName: uc?.activity.organization?.name ?? null,
-      verified: uc?.activity.verified ?? false,
-      locationName: primaryLoc?.location_name ?? null,
-      address: primaryLoc?.address ?? null,
-      scrapedPrices: uc?.activity.price_options ?? [],
-      scrapedSessions: uc?.activity.sessions ?? [],
-      placed: {
-        id: e.id,
-        childId: e.child_id,
-        weekStart: new Date(e.session.starts_at + "T00:00:00"),
-        status: e.status,
-        sessionPart: e.session_part,
-        daysOfWeek: e.days_of_week,
-        priceCents: e.price_cents,
-        priceUnit: e.price_unit,
-        extras: e.extras,
-        notes: e.notes,
-      },
-    };
-  }, [drawerEntryId, entries, userCamps]);
+    // Two entry points: clicked a placed entry in a cell (drawerEntryId),
+    // or clicked "Edit camp details" from the rail preview (shortlistCampId).
+    if (drawerEntryId) {
+      const e = entries.find((x) => x.id === drawerEntryId);
+      if (!e) return null;
+      const uc = userCamps.find((u) => u.activity.id === e.session.activity.id);
+      const primaryLoc = uc?.activity.activity_locations?.[0] ?? null;
+      return {
+        userCampId: uc?.id ?? "",
+        activityId: e.session.activity.id,
+        activityName: e.session.activity.name,
+        activitySlug: e.session.activity.slug,
+        source: uc?.activity.source ?? "user",
+        orgId: uc?.activity.organization_id ?? null,
+        activityUrl: uc?.activity.registration_url ?? null,
+        activityDescription: uc?.activity.description ?? null,
+        ageMin: uc?.activity.age_min ?? null,
+        ageMax: uc?.activity.age_max ?? null,
+        categories: uc?.activity.categories ?? [],
+        orgName: uc?.activity.organization?.name ?? null,
+        verified: uc?.activity.verified ?? false,
+        locationName: primaryLoc?.location_name ?? null,
+        address: primaryLoc?.address ?? null,
+        scrapedPrices: uc?.activity.price_options ?? [],
+        scrapedSessions: uc?.activity.sessions ?? [],
+        placed: {
+          id: e.id,
+          childId: e.child_id,
+          weekStart: new Date(e.session.starts_at + "T00:00:00"),
+          status: e.status,
+          sessionPart: e.session_part,
+          daysOfWeek: e.days_of_week,
+          priceCents: e.price_cents,
+          priceUnit: e.price_unit,
+          extras: e.extras,
+          notes: e.notes,
+        },
+      };
+    }
+    if (shortlistCampId) {
+      const uc = userCamps.find((u) => u.id === shortlistCampId);
+      if (!uc) return null;
+      const primaryLoc = uc.activity.activity_locations?.[0] ?? null;
+      return {
+        userCampId: uc.id,
+        activityId: uc.activity.id,
+        activityName: uc.activity.name,
+        activitySlug: uc.activity.slug,
+        source: uc.activity.source,
+        orgId: uc.activity.organization_id ?? null,
+        activityUrl: uc.activity.registration_url ?? null,
+        activityDescription: uc.activity.description ?? null,
+        ageMin: uc.activity.age_min ?? null,
+        ageMax: uc.activity.age_max ?? null,
+        categories: uc.activity.categories ?? [],
+        orgName: uc.activity.organization?.name ?? null,
+        verified: uc.activity.verified ?? false,
+        locationName: primaryLoc?.location_name ?? null,
+        address: primaryLoc?.address ?? null,
+        scrapedPrices: uc.activity.price_options ?? [],
+        scrapedSessions: uc.activity.sessions ?? [],
+        placed: null,
+      };
+    }
+    return null;
+  }, [drawerEntryId, shortlistCampId, entries, userCamps]);
 
   const drawerBlock = useMemo(() => {
     if (!drawerBlockId) return null;
@@ -522,8 +552,11 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
         />
 
         <CampDetailDrawer
-          open={drawerEntryId !== null}
-          onClose={() => setDrawerEntryId(null)}
+          open={drawerEntryId !== null || shortlistCampId !== null}
+          onClose={() => {
+            setDrawerEntryId(null);
+            setShortlistCampId(null);
+          }}
           entry={drawerEntry}
           kids={kids}
           onChanged={() => router.refresh()}
@@ -533,8 +566,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           summary={previewSummary}
           onClose={() => setQuickViewCampId(null)}
           onEdit={() => {
-            // Phase H: open drawer in shortlist mode. For now, close preview —
-            // camp is still accessible via the planner cell if placed.
+            if (previewCamp) setShortlistCampId(previewCamp.id);
             setQuickViewCampId(null);
           }}
         />
