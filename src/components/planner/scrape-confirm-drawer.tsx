@@ -136,8 +136,6 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
 
   const [draftCategories, setDraftCategories] = useState<string[] | null>(null);
   const [draftDescription, setDraftDescription] = useState<string | null>(null);
-  const [draftAgeMin, setDraftAgeMin] = useState<number | null | undefined>(undefined);
-  const [draftAgeMax, setDraftAgeMax] = useState<number | null | undefined>(undefined);
   const initializedRef = useRef(false);
 
   useEffect(() => {
@@ -157,8 +155,6 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
     setPollError(null);
     setDraftCategories(null);
     setDraftDescription(null);
-    setDraftAgeMin(undefined);
-    setDraftAgeMax(undefined);
     initializedRef.current = false;
     attemptRef.current = 0;
 
@@ -181,8 +177,6 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
           if (!initializedRef.current) {
             setDraftCategories(data.activity.categories ?? []);
             setDraftDescription(data.activity.description ?? null);
-            setDraftAgeMin(data.activity.age_min ?? null);
-            setDraftAgeMax(data.activity.age_max ?? null);
             initializedRef.current = true;
           }
         }
@@ -290,10 +284,12 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
 
           {!isResolving && !hasFailed && activity && (
             <>
+              {/* 1. Camp name */}
               <Field label="Camp name" confidence="scraped">
                 <span className="text-sm text-ink">{activity.name}</span>
               </Field>
 
+              {/* 2. Organization */}
               {activity.organization?.name &&
                 activity.organization.name !== activity.name &&
                 activity.organization.name !== "User-submitted" && (
@@ -312,6 +308,33 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
                   </Field>
                 )}
 
+              {/* 3. URL */}
+              {activity.registration_url && (
+                <Field label="URL">
+                  <a
+                    href={activity.registration_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm text-ink underline break-all"
+                  >
+                    {activity.registration_url}
+                  </a>
+                </Field>
+              )}
+
+              {/* 4. Location */}
+              {activity.locations.length > 0 && (
+                <Field label="Location" confidence={activity.data_confidence}>
+                  <div className="text-sm text-ink">
+                    {activity.locations[0].location_name ?? activity.locations[0].address}
+                  </div>
+                  {activity.locations[0].location_name && (
+                    <div className="text-[11px] text-ink-2 mt-0.5">{activity.locations[0].address}</div>
+                  )}
+                </Field>
+              )}
+
+              {/* 5. Categories — draft */}
               <Field label="Categories" confidence={activity.data_confidence}>
                 <div className="flex flex-wrap gap-1.5">
                   {CATEGORIES.map((cat) => {
@@ -340,6 +363,7 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
                 </div>
               </Field>
 
+              {/* 6. About — draft */}
               <Field label="About" confidence={activity.data_confidence}>
                 <textarea
                   value={draftDescription ?? ""}
@@ -350,8 +374,47 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
                 />
               </Field>
 
+              {/* 7. Ages — read-only, beta */}
+              <div>
+                <div className="flex items-center mb-1">
+                  <label className="font-sans text-[10px] font-bold uppercase tracking-widest text-ink-2">Ages</label>
+                  <span className="ml-1.5 font-sans text-[9px] uppercase tracking-wide text-[#8a6b00] bg-hero/20 px-1.5 py-0.5 rounded">Beta</span>
+                </div>
+                <div className="text-sm text-ink">
+                  {activity.age_min != null || activity.age_max != null
+                    ? `${activity.age_min ?? "?"}–${activity.age_max ?? "?"} years`
+                    : <span className="text-ink-2 italic">No age range detected</span>}
+                </div>
+              </div>
+
+              {/* 8. Scraped price options — beta */}
+              {activity.prices.length > 0 && (
+                <div>
+                  <div className="flex items-center mb-1">
+                    <label className="font-sans text-[10px] font-bold uppercase tracking-widest text-ink-2">Scraped prices</label>
+                    <span className="ml-1.5 font-sans text-[9px] uppercase tracking-wide text-[#8a6b00] bg-hero/20 px-1.5 py-0.5 rounded">Beta</span>
+                  </div>
+                  <ul className="text-sm text-ink space-y-1">
+                    {activity.prices.slice(0, 5).map((p) => (
+                      <li key={p.id} className="flex items-baseline justify-between gap-2">
+                        <span className="text-ink-2">{p.label || "Standard"}</span>
+                        <span>{formatPrice(p.price_cents, p.price_unit)}</span>
+                      </li>
+                    ))}
+                    {activity.prices.length > 5 && (
+                      <li className="text-[11px] text-ink-2">+{activity.prices.length - 5} more</li>
+                    )}
+                  </ul>
+                </div>
+              )}
+
+              {/* 9. Scraped dates/sessions — beta */}
               {activity.sessions.length > 0 && (
-                <Field label="Dates" confidence={activity.data_confidence}>
+                <div>
+                  <div className="flex items-center mb-1">
+                    <label className="font-sans text-[10px] font-bold uppercase tracking-widest text-ink-2">Dates</label>
+                    <span className="ml-1.5 font-sans text-[9px] uppercase tracking-wide text-[#8a6b00] bg-hero/20 px-1.5 py-0.5 rounded">Beta</span>
+                  </div>
                   <ul className="space-y-1">
                     {activity.sessions.slice(0, 4).map((s) => (
                       <li key={s.id} className="text-sm text-ink">
@@ -363,67 +426,7 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
                       <li className="text-[11px] text-ink-2">+{activity.sessions.length - 4} more</li>
                     )}
                   </ul>
-                </Field>
-              )}
-
-              {activity.prices.length > 0 && (
-                <Field label="Price" confidence={activity.prices[0].confidence}>
-                  <div className="text-sm text-ink">
-                    {formatPrice(activity.prices[0].price_cents, activity.prices[0].price_unit)}
-                    {activity.prices[0].label && activity.prices[0].label !== "Standard" && (
-                      <span className="text-ink-2 ml-2 text-[12px]">· {activity.prices[0].label}</span>
-                    )}
-                  </div>
-                </Field>
-              )}
-
-              {activity.locations.length > 0 && (
-                <Field label="Location" confidence={activity.data_confidence}>
-                  <div className="text-sm text-ink">
-                    {activity.locations[0].location_name ?? activity.locations[0].address}
-                  </div>
-                  {activity.locations[0].location_name && (
-                    <div className="text-[11px] text-ink-2 mt-0.5">{activity.locations[0].address}</div>
-                  )}
-                </Field>
-              )}
-
-              <Field label="Ages" confidence={activity.data_confidence}>
-                <div className="flex items-center gap-2 text-sm text-ink">
-                  <input
-                    type="number"
-                    min={0}
-                    max={25}
-                    value={draftAgeMin ?? ""}
-                    onChange={(e) => setDraftAgeMin(e.target.value === "" ? null : Number(e.target.value))}
-                    placeholder="min"
-                    className="w-16 bg-surface border border-ink-3 rounded-md px-2 py-1 text-sm focus:outline-none focus:border-ink"
-                  />
-                  <span className="text-ink-2">to</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={25}
-                    value={draftAgeMax ?? ""}
-                    onChange={(e) => setDraftAgeMax(e.target.value === "" ? null : Number(e.target.value))}
-                    placeholder="max"
-                    className="w-16 bg-surface border border-ink-3 rounded-md px-2 py-1 text-sm focus:outline-none focus:border-ink"
-                  />
-                  <span className="text-ink-2 text-xs">years</span>
                 </div>
-              </Field>
-
-              {activity.registration_url && (
-                <Field label="Registration">
-                  <a
-                    href={activity.registration_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm text-ink underline break-all"
-                  >
-                    {activity.registration_url}
-                  </a>
-                </Field>
               )}
             </>
           )}
@@ -483,8 +486,6 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
                   const patch: Parameters<typeof updateActivityFields>[0] = { activityId: activity.id };
                   if (draftCategories !== null) patch.categories = draftCategories;
                   if (draftDescription !== null || activity.description !== null) patch.description = draftDescription;
-                  if (draftAgeMin !== undefined) patch.ageMin = draftAgeMin;
-                  if (draftAgeMax !== undefined) patch.ageMax = draftAgeMax;
                   const r = await updateActivityFields(patch);
                   setSaving(false);
                   if (r.error) {
