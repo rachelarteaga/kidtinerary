@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useEffect, useState, useTransition } from "react";
+import { KidAvatar } from "@/components/planner/kid-avatar";
+import { AvatarEditorModal } from "@/components/planner/avatar-editor-modal";
 import { Tag } from "@/components/ui/tag";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -19,7 +21,7 @@ interface ChildCardProps {
   onEdit: (child: { id: string; name: string; birth_date: string; interests: string[]; avatar_url: string | null }) => void;
 }
 
-export function ChildCard({ child, onEdit }: ChildCardProps) {
+export function ChildCard({ child, index, onEdit }: ChildCardProps) {
   const [isPending, startTransition] = useTransition();
   const [showConfirm, setShowConfirm] = useState(false);
   const { toast } = useToast();
@@ -28,6 +30,33 @@ export function ChildCard({ child, onEdit }: ChildCardProps) {
     (new Date().getTime() - new Date(child.birth_date + "T00:00:00").getTime()) /
       (365.25 * 24 * 60 * 60 * 1000)
   );
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pickedImageUrl, setPickedImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (pickedImageUrl) URL.revokeObjectURL(pickedImageUrl);
+    };
+  }, [pickedImageUrl]);
+
+  function handleAvatarClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    fileInputRef.current?.click();
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setPickedImageUrl(url);
+    e.target.value = "";
+  }
+
+  function handleCloseEditor() {
+    if (pickedImageUrl) URL.revokeObjectURL(pickedImageUrl);
+    setPickedImageUrl(null);
+  }
 
   function handleDelete() {
     startTransition(async () => {
@@ -42,56 +71,85 @@ export function ChildCard({ child, onEdit }: ChildCardProps) {
   }
 
   return (
-    <div className="bg-surface rounded-2xl border border-ink-3 p-5">
-      <div className="flex items-start justify-between mb-3">
-        <div>
-          <h3 className="font-display font-extrabold text-xl">{child.name}</h3>
-          <p className="font-sans text-[10px] uppercase tracking-wide text-ink-2">
-            Age {age}
-          </p>
-        </div>
-        <div className="flex gap-2">
+    <>
+      <div className="bg-surface rounded-2xl border border-ink-3 p-5">
+        <div className="flex items-start gap-3 mb-3">
           <button
-            onClick={() => onEdit(child)}
-            className="font-sans text-[10px] uppercase tracking-wide text-ink-2 hover:text-ink underline underline-offset-2"
+            type="button"
+            onClick={handleAvatarClick}
+            className="relative group flex-shrink-0"
+            aria-label={`Change avatar for ${child.name}`}
           >
-            Edit
+            <KidAvatar name={child.name} index={index} avatarUrl={child.avatar_url} size={48} />
+            <span className="absolute inset-0 rounded-full bg-ink/55 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[9px] uppercase tracking-wide font-sans transition-opacity">
+              Edit
+            </span>
           </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+          <div className="flex-1 min-w-0">
+            <h3 className="font-display font-extrabold text-xl">{child.name}</h3>
+            <p className="font-sans text-[10px] uppercase tracking-wide text-ink-2">
+              Age {age}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => onEdit(child)}
+              className="font-sans text-[10px] uppercase tracking-wide text-ink-2 hover:text-ink underline underline-offset-2"
+            >
+              Edit
+            </button>
+          </div>
         </div>
+
+        {/* Interests */}
+        {child.interests?.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {child.interests.map((interest) => (
+              <Tag key={interest} type="category" label={categoryLabel(interest)} />
+            ))}
+          </div>
+        )}
+
+        {/* Delete */}
+        {showConfirm ? (
+          <div className="flex items-center gap-3 mt-4 pt-4 border-t border-ink-3">
+            <p className="text-sm text-ink-2 flex-1">Remove {child.name}&apos;s profile?</p>
+            <Button variant="ghost" onClick={() => setShowConfirm(false)} disabled={isPending}>
+              Cancel
+            </Button>
+            <button
+              onClick={handleDelete}
+              disabled={isPending}
+              className="rounded-full font-sans text-xs uppercase tracking-widest px-4 py-2 bg-[#ef8c8f] text-white hover:bg-[#e87073] transition-colors disabled:opacity-50"
+            >
+              {isPending ? "Removing..." : "Remove"}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowConfirm(true)}
+            className="mt-4 font-sans text-[10px] uppercase tracking-wide text-ink-3 hover:text-[#ef8c8f]"
+          >
+            Remove profile
+          </button>
+        )}
       </div>
-
-      {/* Interests */}
-      {child.interests?.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-4">
-          {child.interests.map((interest) => (
-            <Tag key={interest} type="category" label={categoryLabel(interest)} />
-          ))}
-        </div>
+      {pickedImageUrl && (
+        <AvatarEditorModal
+          open={true}
+          onClose={handleCloseEditor}
+          childId={child.id}
+          childName={child.name}
+          imageUrl={pickedImageUrl}
+        />
       )}
-
-      {/* Delete */}
-      {showConfirm ? (
-        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-ink-3">
-          <p className="text-sm text-ink-2 flex-1">Remove {child.name}&apos;s profile?</p>
-          <Button variant="ghost" onClick={() => setShowConfirm(false)} disabled={isPending}>
-            Cancel
-          </Button>
-          <button
-            onClick={handleDelete}
-            disabled={isPending}
-            className="rounded-full font-sans text-xs uppercase tracking-widest px-4 py-2 bg-[#ef8c8f] text-white hover:bg-[#e87073] transition-colors disabled:opacity-50"
-          >
-            {isPending ? "Removing..." : "Remove"}
-          </button>
-        </div>
-      ) : (
-        <button
-          onClick={() => setShowConfirm(true)}
-          className="mt-4 font-sans text-[10px] uppercase tracking-wide text-ink-3 hover:text-[#ef8c8f]"
-        >
-          Remove profile
-        </button>
-      )}
-    </div>
+    </>
   );
 }
