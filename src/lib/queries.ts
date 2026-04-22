@@ -454,6 +454,178 @@ export interface SharedScheduleRow {
   }[];
 }
 
+export type SharedByTokenResult =
+  | {
+      type: "planner";
+      token: string;
+      plannerId: string;
+      plannerName: string;
+      plannerStart: string; // YYYY-MM-DD
+      plannerEnd: string; // YYYY-MM-DD
+      kidIds: string[];
+      includeCost: boolean;
+      includePersonalBlockDetails: boolean;
+      kids: {
+        id: string;
+        name: string;
+        birth_date: string;
+        avatar_url: string | null;
+        color: string;
+      }[];
+      entries: {
+        id: string;
+        child_id: string;
+        status: string;
+        sort_order: number;
+        notes: string | null;
+        price_cents: number | null;
+        price_unit: string | null;
+        session_part: string | null;
+        days_of_week: string[] | null;
+        session: {
+          id: string;
+          starts_at: string;
+          ends_at: string;
+          time_slot: string;
+          hours_start: string | null;
+          hours_end: string | null;
+          is_sold_out: boolean;
+          activity: {
+            id: string;
+            name: string;
+            slug: string;
+            categories: string[];
+            registration_url: string | null;
+            organization: { id: string; name: string } | null;
+            activity_locations: { id: string; address: string; location_name: string | null }[];
+          };
+        };
+      }[];
+      blocks: {
+        id: string;
+        type: string;
+        title: string;
+        start_date: string;
+        end_date: string;
+        kid_ids: string[];
+      }[];
+    }
+  | {
+      type: "camp";
+      token: string;
+      campId: string;
+      recommenderNote: string | null;
+    }
+  | { type: "notfound" };
+
+export async function fetchSharedPlannerByToken(token: string): Promise<SharedByTokenResult> {
+  const supabase = (await createClient()) as any;
+
+  const { data: share, error: shareErr } = await supabase
+    .from("shared_schedules")
+    .select(
+      "token, scope, planner_id, camp_id, kid_ids, include_cost, include_personal_block_details, recommender_note"
+    )
+    .eq("token", token)
+    .single();
+
+  if (shareErr || !share) return { type: "notfound" };
+
+  if (share.scope === "camp") {
+    if (!share.camp_id) return { type: "notfound" };
+    return {
+      type: "camp",
+      token,
+      campId: share.camp_id,
+      recommenderNote: share.recommender_note ?? null,
+    };
+  }
+
+  // Planner scope
+  if (!share.planner_id) return { type: "notfound" };
+
+  const { data: planner, error: plannerErr } = await supabase
+    .from("planners")
+    .select("id, name, start_date, end_date")
+    .eq("id", share.planner_id)
+    .single();
+  if (plannerErr || !planner) return { type: "notfound" };
+
+  const kidIds: string[] = Array.isArray(share.kid_ids) ? share.kid_ids : [];
+
+  const { data: kids } = await supabase
+    .from("children")
+    .select("id, name, birth_date, avatar_url, color, sort_order")
+    .in("id", kidIds.length > 0 ? kidIds : ["00000000-0000-0000-0000-000000000000"]); // empty guard
+
+  const { data: entries } = await supabase
+    .from("planner_entries")
+    .select(
+      `
+      id, child_id, status, sort_order, notes, price_cents, price_unit,
+      session_part, days_of_week,
+      session:sessions!inner(
+        id, starts_at, ends_at, time_slot, hours_start, hours_end, is_sold_out,
+        activity:activities!inner(
+          id, name, slug, categories, registration_url,
+          organization:organizations(id, name),
+          activity_locations(id, address, location_name)
+        )
+      )
+    `
+    )
+    .eq("planner_id", share.planner_id)
+    .in("child_id", kidIds.length > 0 ? kidIds : ["00000000-0000-0000-0000-000000000000"])
+    .order("sort_order", { ascending: true });
+
+  const { data: blockRows } = await supabase
+    .from("planner_blocks")
+    .select(
+      `
+      id, type, title, start_date, end_date,
+      block_kids:planner_block_kids(child_id)
+    `
+    )
+    .eq("planner_id", share.planner_id);
+
+  const blocks = (blockRows ?? [])
+    .map((b: any) => ({
+      id: b.id,
+      type: b.type,
+      title: b.title ?? "",
+      start_date: b.start_date,
+      end_date: b.end_date,
+      kid_ids: (b.block_kids ?? []).map((bk: any) => bk.child_id),
+    }))
+    .filter((b: { kid_ids: string[] }) => b.kid_ids.some((id: string) => kidIds.includes(id)));
+
+  // Sort kids by sort_order (mirrors owner's view)
+  const sortedKids = (kids ?? []).sort(
+    (a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+  );
+
+  return {
+    type: "planner",
+    token,
+    plannerId: planner.id,
+    plannerName: planner.name,
+    plannerStart: planner.start_date,
+    plannerEnd: planner.end_date,
+    kidIds,
+    includeCost: !!share.include_cost,
+    includePersonalBlockDetails: !!share.include_personal_block_details,
+    kids: sortedKids.map((k: any) => ({
+      id: k.id,
+      name: k.name,
+      birth_date: k.birth_date,
+      avatar_url: k.avatar_url,
+      color: k.color,
+    })),
+    entries: (entries ?? []) as any,
+    blocks,
+  };
+}
+
 export async function fetchSharedSchedule(token: string): Promise<SharedScheduleRow | null> {
   // Uses the anon/public Supabase client — no auth required
   const supabase = (await createClient()) as any;
