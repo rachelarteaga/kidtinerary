@@ -22,6 +22,7 @@ import { PlannerRangePicker } from "@/components/planner/planner-range-picker";
 import { PlannerTitle } from "@/components/planner/planner-title";
 import { StatusPickerPopover, type StatusPickerAnchor } from "@/components/planner/status-picker-popover";
 import { ScrapeConfirmDrawer } from "@/components/planner/scrape-confirm-drawer";
+import { CampQuickViewModal } from "@/components/planner/camp-quick-view-modal";
 import { useScrapeJob } from "@/lib/use-scrape-job";
 import { reorderKidColumns, assignCampToWeek, removeKidFromPlanner } from "@/lib/actions";
 import { generateWeeks, getWeekKey, formatWeekRange } from "@/lib/format";
@@ -281,61 +282,37 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
   }, [entries, kids]);
 
   const drawerEntry = useMemo(() => {
-    // Two entry points: click a placed entry in a cell (drawerEntryId),
-    // or click a camp in the My Camps rail (quickViewCampId). Build the
-    // unified DrawerEntry shape for either.
-    if (drawerEntryId) {
-      const e = entries.find((x) => x.id === drawerEntryId);
-      if (!e) return null;
-      const uc = userCamps.find((u) => u.activity.id === e.session.activity.id);
-      return {
-        userCampId: uc?.id ?? "",
-        activityId: e.session.activity.id,
-        activityName: e.session.activity.name,
-        activitySlug: e.session.activity.slug,
-        orgId: uc?.activity.organization_id ?? null,
-        activityUrl: uc?.activity.registration_url ?? null,
-        activityDescription: uc?.activity.description ?? null,
-        ageMin: uc?.activity.age_min ?? null,
-        ageMax: uc?.activity.age_max ?? null,
-        categories: uc?.activity.categories ?? [],
-        orgName: uc?.activity.organization?.name ?? null,
-        verified: uc?.activity.verified ?? false,
-        placed: {
-          id: e.id,
-          childId: e.child_id,
-          weekStart: new Date(e.session.starts_at + "T00:00:00"),
-          status: e.status,
-          sessionPart: e.session_part,
-          daysOfWeek: e.days_of_week,
-          priceCents: e.price_cents,
-          priceUnit: e.price_unit,
-          extras: e.extras,
-          notes: e.notes,
-        },
-      };
-    }
-    if (quickViewCampId) {
-      const uc = userCamps.find((u) => u.id === quickViewCampId);
-      if (!uc) return null;
-      return {
-        userCampId: uc.id,
-        activityId: uc.activity.id,
-        activityName: uc.activity.name,
-        activitySlug: uc.activity.slug,
-        orgId: uc.activity.organization_id ?? null,
-        activityUrl: uc.activity.registration_url ?? null,
-        activityDescription: uc.activity.description ?? null,
-        ageMin: uc.activity.age_min ?? null,
-        ageMax: uc.activity.age_max ?? null,
-        categories: uc.activity.categories ?? [],
-        orgName: uc.activity.organization?.name ?? null,
-        verified: uc.activity.verified ?? false,
-        placed: null,
-      };
-    }
-    return null;
-  }, [drawerEntryId, quickViewCampId, entries, userCamps]);
+    if (!drawerEntryId) return null;
+    const e = entries.find((x) => x.id === drawerEntryId);
+    if (!e) return null;
+    const uc = userCamps.find((u) => u.activity.id === e.session.activity.id);
+    return {
+      userCampId: uc?.id ?? "",
+      activityId: e.session.activity.id,
+      activityName: e.session.activity.name,
+      activitySlug: e.session.activity.slug,
+      orgId: uc?.activity.organization_id ?? null,
+      activityUrl: uc?.activity.registration_url ?? null,
+      activityDescription: uc?.activity.description ?? null,
+      ageMin: uc?.activity.age_min ?? null,
+      ageMax: uc?.activity.age_max ?? null,
+      categories: uc?.activity.categories ?? [],
+      orgName: uc?.activity.organization?.name ?? null,
+      verified: uc?.activity.verified ?? false,
+      placed: {
+        id: e.id,
+        childId: e.child_id,
+        weekStart: new Date(e.session.starts_at + "T00:00:00"),
+        status: e.status,
+        sessionPart: e.session_part,
+        daysOfWeek: e.days_of_week,
+        priceCents: e.price_cents,
+        priceUnit: e.price_unit,
+        extras: e.extras,
+        notes: e.notes,
+      },
+    };
+  }, [drawerEntryId, entries, userCamps]);
 
   const drawerBlock = useMemo(() => {
     if (!drawerBlockId) return null;
@@ -508,14 +485,15 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
         />
 
         <CampDetailDrawer
-          open={drawerEntryId !== null || quickViewCampId !== null}
-          onClose={() => {
-            setDrawerEntryId(null);
-            setQuickViewCampId(null);
-          }}
+          open={drawerEntryId !== null}
+          onClose={() => setDrawerEntryId(null)}
           entry={drawerEntry}
           kids={kids}
           onChanged={() => router.refresh()}
+        />
+        <CampQuickViewModal
+          camp={userCamps.find((c) => c.id === quickViewCampId) ?? null}
+          onClose={() => setQuickViewCampId(null)}
         />
         <BlockDetailDrawer
           open={drawerBlockId !== null}
