@@ -622,9 +622,8 @@ interface SubmitCampContext {
 }
 
 export async function submitCamp(
-  input: string,
+  raw: SubmitCampRawInput,
   context: SubmitCampContext,
-  consentShare: boolean
 ): Promise<{
   error?: string;
   jobId?: string;
@@ -632,6 +631,10 @@ export async function submitCamp(
   plannerEntryId?: string | null;
   activityId?: string;
 }> {
+  const validated = validateSubmitCampInput(raw);
+  if (!validated.ok) return { error: validated.error };
+  const input = validated.value;
+
   const supabase = (await createClient()) as any;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
@@ -645,92 +648,68 @@ export async function submitCamp(
 
   if (!defaultPlanner) return { error: "No planner found — refresh and retry" };
 
-  const trimmed = input.trim();
-  if (!trimmed) return { error: "Enter a camp name or URL" };
-
-  // Try to match existing activity by exact name or by URL fuzzy match.
   let activityId: string | null = null;
 
-  const isURL = /^https?:\/\//i.test(trimmed);
-
-  if (isURL) {
-    try {
-      const origin = new URL(trimmed).origin;
-      const { data: existing } = await supabase
-        .from("activities")
-        .select("id")
-        .ilike("registration_url", `${origin}%`)
-        .limit(1)
-        .maybeSingle();
-      if (existing) activityId = existing.id;
-    } catch {
-      // Invalid URL; fall through to name match
-    }
+  if (input.activityId) {
+    activityId = input.activityId;
   } else {
-    const { data: existing } = await supabase
-      .from("activities")
-      .select("id")
-      .ilike("name", `%${trimmed}%`)
-      .limit(1)
-      .maybeSingle();
-    if (existing) activityId = existing.id;
-  }
-
-  // If no match, create a stub activity.
-  if (!activityId) {
     let orgId: string | null = null;
-    const { data: stubOrg } = await supabase
-      .from("organizations")
-      .select("id")
-      .eq("name", "User-submitted")
-      .maybeSingle();
-    if (stubOrg) {
-      orgId = stubOrg.id;
-    } else {
-      // Upsert against the unique(name) constraint so concurrent first-time
-      // submissions don't race each other into a duplicate-name error.
-      const { data: newOrg, error: orgErr } = await supabase
+    let activityName: string;
+
+    if (input.orgName && input.campName) {
+      const { data: existingOrg } = await supabase
         .from("organizations")
-        .upsert(
-          { name: "User-submitted" },
-          { onConflict: "name" }
-        )
         .select("id")
-        .single();
-      if (orgErr || !newOrg) {
-        console.error("submitCamp organization upsert error:", orgErr);
-        return { error: "Failed to create camp entry" };
+        .ilike("name", input.orgName)
+        .eq("source", "user")
+        .maybeSingle();
+
+      if (existingOrg) {
+        orgId = existingOrg.id;
+      } else {
+        const { data: newOrg, error: orgErr } = await supabase
+          .from("organizations")
+          .insert({ name: input.orgName, source: "user" })
+          .select("id")
+          .single();
+        if (orgErr || !newOrg) {
+          console.error("submitCamp org insert error:", orgErr);
+          return { error: "Failed to create organization" };
+        }
+        orgId = newOrg.id;
       }
-      orgId = newOrg.id;
-    }
-    if (!orgId) {
-      console.error("submitCamp: organization lookup returned no id");
-      return { error: "Failed to create camp entry" };
+      activityName = input.campName;
+    } else {
+      activityName = "New camp";
     }
 
-    const slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80) + "-" + Date.now().toString(36);
+    const slug =
+      activityName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80)
+      + "-" + Date.now().toString(36);
+
     const { data: stub, error: stubErr } = await supabase
       .from("activities")
       .insert({
         organization_id: orgId,
-        name: trimmed,
+        name: activityName,
         slug,
         is_active: true,
         verified: false,
-        registration_url: isURL ? trimmed : null,
+        source: "user",
+        shared: input.shared,
+        registration_url: input.url ?? null,
         categories: [],
       })
       .select("id")
       .single();
 
     if (stubErr || !stub) {
-      console.error("submitCamp stub insert error:", stubErr);
+      console.error("submitCamp activity insert error:", stubErr);
       return { error: "Failed to create camp entry" };
     }
     activityId = stub.id;
   }
 
-  // Count existing user_camps for color assignment
   const { count } = await supabase
     .from("user_camps")
     .select("id", { count: "exact", head: true })
@@ -748,6 +727,7 @@ export async function submitCamp(
     console.error("submitCamp user_camps upsert error:", ucUpsertErr);
     return { error: "Failed to save camp to shortlist" };
   }
+
   const { data: userCamp } = await supabase
     .from("user_camps")
     .select("id, color")
@@ -756,7 +736,6 @@ export async function submitCamp(
     .single();
   if (!userCamp) return { error: "Failed to retrieve user camp" };
 
-  // Optionally create a planner entry if scoped to week + kid.
   let plannerEntryId: string | null = null;
   if (context.childId && context.weekStart) {
     const weekEnd = new Date(context.weekStart);
@@ -774,8 +753,7 @@ export async function submitCamp(
     let sessionId = matchedSession?.id;
 
     if (!sessionId) {
-      if (!activityId) return { error: "Missing activity for placeholder session" };
-      const locationId = await ensureActivityLocation(supabase, activityId);
+      const locationId = await ensureActivityLocation(supabase, activityId!);
       if (!locationId) return { error: "Could not set up camp location" };
 
       const { data: newSession, error: sessErr } = await supabase
@@ -819,27 +797,30 @@ export async function submitCamp(
     plannerEntryId = entry.id;
   }
 
-  // Enqueue scrape job.
-  const { data: job } = await supabase
-    .from("scrape_jobs")
-    .insert({
-      user_id: user.id,
-      input: trimmed,
-      context: {
-        child_id: context.childId ?? null,
-        week_start: context.weekStart ?? null,
-        activity_id: activityId,
-      },
-      consent_share: consentShare,
-      status: "queued",
-    })
-    .select("id")
-    .single();
+  let jobId: string | undefined;
+  if (input.url) {
+    const { data: job } = await supabase
+      .from("scrape_jobs")
+      .insert({
+        user_id: user.id,
+        input: input.url,
+        context: {
+          child_id: context.childId ?? null,
+          week_start: context.weekStart ?? null,
+          activity_id: activityId,
+        },
+        consent_share: input.shared,
+        status: "queued",
+      })
+      .select("id")
+      .single();
+    jobId = job?.id;
+  }
 
   revalidatePath("/planner");
 
   return {
-    jobId: job?.id,
+    jobId,
     userCampId: userCamp.id,
     plannerEntryId,
     activityId: activityId ?? undefined,
