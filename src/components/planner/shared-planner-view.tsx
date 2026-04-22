@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { KidColumnHeader } from "./kid-column-header";
 import { SharedCampDetailPanel } from "./shared-camp-detail-panel";
+import { CellTimelineGrid, type TimelineEntry } from "./cell-timeline-grid";
 import { applyShareFilters } from "@/lib/share/apply-filters";
 import { generateWeeks, getWeekKey, formatWeekLabelCompact } from "@/lib/format";
+import type { DayOfWeek, PlannerEntryStatus, SessionPart } from "@/lib/supabase/types";
 
 // Status pill colors match globals.css tokens
 const STATUS_STYLE: Record<string, string> = {
@@ -146,6 +148,21 @@ export function SharedPlannerView({
     return generateWeeks(from, to);
   }, [plannerStart, plannerEnd]);
 
+  const plannerStartDate = useMemo(() => new Date(plannerStart + "T00:00:00"), [plannerStart]);
+  const plannerEndDate = useMemo(() => new Date(plannerEnd + "T00:00:00"), [plannerEnd]);
+
+  function buildTimelineEntries(cellEntries: EntryRow[]): TimelineEntry[] {
+    return cellEntries
+      .filter((e) => e.status !== "considering" && e.session_part && e.days_of_week)
+      .map((e) => ({
+        id: e.id,
+        color: colorByActivityId[e.session.activity.id] ?? "#f4b76f",
+        status: e.status as PlannerEntryStatus,
+        sessionPart: e.session_part as SessionPart,
+        daysOfWeek: (e.days_of_week ?? []) as DayOfWeek[],
+      }));
+  }
+
   // Build per-kid per-week legend rows (camps) + block detection.
   const rowsByWeek = useMemo(() => {
     return weekStartDates.map((weekStart) => {
@@ -286,11 +303,24 @@ export function SharedPlannerView({
                       );
                     }
 
+                    const timelineEntries = buildTimelineEntries(cellEntries);
+
                     return (
                       <div
                         key={`${row.weekKey}-${kid.id}`}
-                        className="rounded-lg border border-ink-3 bg-surface p-2 min-h-[60px] space-y-1"
+                        className="rounded-lg border border-ink-3 bg-surface p-2 min-h-[60px]"
                       >
+                        {viewMode === "detail" && timelineEntries.length > 0 && (
+                          <div className="mb-2">
+                            <CellTimelineGrid
+                              entries={timelineEntries}
+                              weekStart={row.weekStart}
+                              plannerStart={plannerStartDate}
+                              plannerEnd={plannerEndDate}
+                            />
+                          </div>
+                        )}
+                        <div className="space-y-1">
                         {cellEntries.map((e) => {
                           const activityId = e.session.activity.id;
                           const color = colorByActivityId[activityId] ?? "#f4b76f";
@@ -329,6 +359,7 @@ export function SharedPlannerView({
                             </button>
                           );
                         })}
+                        </div>
                       </div>
                     );
                   })}
