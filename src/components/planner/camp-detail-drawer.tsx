@@ -14,6 +14,7 @@ import {
   updatePlannerEntryStatus,
   removePlannerEntry,
   assignCampToWeek,
+  updateActivityFields,
 } from "@/lib/actions";
 import { extrasTotalCents } from "@/lib/extras-calc";
 import { formatWeekRange } from "@/lib/format";
@@ -37,6 +38,8 @@ interface DrawerEntry {
   childId: string;
   weekStart: Date;
   userCampId: string;
+  activityId: string;
+  orgId: string | null;
   activityName: string;
   activitySlug: string;
   activityUrl: string | null;
@@ -64,6 +67,11 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
   const [local, setLocal] = useState<DrawerEntry | null>(entry);
   const [isPending, startTransition] = useTransition();
 
+  const [editingField, setEditingField] = useState<"name" | "org" | "url" | null>(null);
+  const [draftName, setDraftName] = useState("");
+  const [draftOrg, setDraftOrg] = useState("");
+  const [draftUrl, setDraftUrl] = useState("");
+
   useEffect(() => {
     setLocal(entry);
   }, [entry]);
@@ -71,11 +79,50 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && !editingField) onClose();
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, onClose, editingField]);
+
+  function startEdit(field: "name" | "org" | "url") {
+    if (!local) return;
+    setDraftName(local.activityName);
+    setDraftOrg(local.orgName ?? "");
+    setDraftUrl(local.activityUrl ?? "");
+    setEditingField(field);
+  }
+
+  async function commitEdit() {
+    if (!local || !editingField) return;
+    const field = editingField;
+    setEditingField(null);
+    const patch: { name?: string; orgName?: string; url?: string | null } = {};
+    if (field === "name" && draftName !== local.activityName) {
+      patch.name = draftName;
+      setLocal({ ...local, activityName: draftName });
+    }
+    if (field === "org" && draftOrg !== (local.orgName ?? "")) {
+      patch.orgName = draftOrg;
+      setLocal({ ...local, orgName: draftOrg || null });
+    }
+    if (field === "url" && draftUrl !== (local.activityUrl ?? "")) {
+      patch.url = draftUrl || null;
+      setLocal({ ...local, activityUrl: draftUrl || null });
+    }
+    if (Object.keys(patch).length === 0) return;
+    startTransition(async () => {
+      const r = await updateActivityFields({ activityId: local.activityId, ...patch });
+      if (r.error) {
+        alert(r.error);
+      }
+      onChanged();
+    });
+  }
+
+  function cancelEdit() {
+    setEditingField(null);
+  }
 
   if (!open || !local) return null;
 
@@ -172,10 +219,99 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
               <div className="font-sans text-[11px] font-bold uppercase tracking-widest text-ink-2 mb-0.5">
                 {kidName} · {formatWeekRange(local.weekStart)}
               </div>
-              <h2 className="font-display font-extrabold text-2xl text-ink leading-tight">{local.activityName}</h2>
-              <div className="font-sans text-[10px] uppercase tracking-wide text-ink-2 mt-1">
-                {local.orgName ?? ""} {local.verified && <span className="text-[#5fc39c]">· verified ✓</span>}
-              </div>
+
+              {editingField === "name" ? (
+                <input
+                  autoFocus
+                  value={draftName}
+                  onChange={(e) => setDraftName(e.target.value)}
+                  onBlur={commitEdit}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitEdit();
+                    if (e.key === "Escape") cancelEdit();
+                  }}
+                  className="font-display font-extrabold text-2xl text-ink leading-tight w-full bg-transparent border-b border-ink focus:outline-none"
+                />
+              ) : (
+                <h2
+                  onClick={() => startEdit("name")}
+                  className={`font-display font-extrabold text-2xl leading-tight cursor-text ${
+                    local.activityName === "New camp" ? "italic text-ink-2" : "text-ink"
+                  }`}
+                >
+                  {local.activityName}
+                </h2>
+              )}
+
+              {local.activityName === "New camp" && (
+                <div className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mt-0.5">
+                  We&apos;re fetching details…
+                </div>
+              )}
+
+              {editingField === "org" ? (
+                <input
+                  autoFocus
+                  value={draftOrg}
+                  onChange={(e) => setDraftOrg(e.target.value)}
+                  onBlur={commitEdit}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitEdit();
+                    if (e.key === "Escape") cancelEdit();
+                  }}
+                  placeholder="Organization"
+                  className="font-sans text-[10px] uppercase tracking-wide text-ink mt-1 w-full bg-transparent border-b border-ink focus:outline-none"
+                />
+              ) : (
+                <div
+                  onClick={() => startEdit("org")}
+                  className="font-sans text-[10px] uppercase tracking-wide text-ink-2 mt-1 cursor-text"
+                >
+                  {local.orgName ?? "Add organization"}
+                  {local.verified && <span className="text-[#5fc39c]"> · verified ✓</span>}
+                </div>
+              )}
+
+              {editingField === "url" ? (
+                <input
+                  autoFocus
+                  value={draftUrl}
+                  onChange={(e) => setDraftUrl(e.target.value)}
+                  onBlur={commitEdit}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitEdit();
+                    if (e.key === "Escape") cancelEdit();
+                  }}
+                  placeholder="https://…"
+                  className="font-sans text-xs text-ink mt-1 w-full bg-transparent border-b border-ink focus:outline-none"
+                />
+              ) : local.activityUrl ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <a
+                    href={local.activityUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-sans text-xs text-ink underline truncate"
+                  >
+                    {local.activityUrl}
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => startEdit("url")}
+                    className="font-sans text-[10px] uppercase tracking-widest text-ink-2 hover:text-ink"
+                  >
+                    Edit
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => startEdit("url")}
+                  className="font-sans text-[10px] uppercase tracking-widest text-ink-2 hover:text-ink mt-1"
+                >
+                  Add a URL
+                </button>
+              )}
             </div>
             <button onClick={onClose} aria-label="Close" className="text-ink-2 hover:text-ink text-lg">✕</button>
           </div>
