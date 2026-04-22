@@ -566,10 +566,21 @@ export async function fetchSharedPlannerByToken(token: string): Promise<SharedBy
 
   const kidIds: string[] = Array.isArray(share.kid_ids) ? share.kid_ids : [];
 
-  const { data: kids } = await supabase
-    .from("children")
-    .select("id, name, birth_date, avatar_url, color, sort_order")
-    .in("id", kidIds.length > 0 ? kidIds : ["00000000-0000-0000-0000-000000000000"]); // empty guard
+  // Fetch kids through planner_kids so we inherit the owner's column order
+  // (drag-reorder updates planner_kids.sort_order, NOT children.sort_order).
+  const { data: plannerKidRows } = await supabase
+    .from("planner_kids")
+    .select(`
+      sort_order,
+      child:children!inner(id, name, birth_date, avatar_url, color)
+    `)
+    .eq("planner_id", share.planner_id)
+    .in("child_id", kidIds.length > 0 ? kidIds : ["00000000-0000-0000-0000-000000000000"])
+    .order("sort_order", { ascending: true });
+
+  const kids = (plannerKidRows ?? [])
+    .map((r: any) => r.child)
+    .filter((c: any) => c && c.id);
 
   const { data: entries } = await supabase
     .from("planner_entries")
@@ -628,10 +639,8 @@ export async function fetchSharedPlannerByToken(token: string): Promise<SharedBy
     colorByActivityId[uc.activity_id] = uc.color;
   }
 
-  // Sort kids by sort_order (mirrors owner's view)
-  const sortedKids = (kids ?? []).sort(
-    (a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
-  );
+  // kids is already ordered by planner_kids.sort_order from the query above.
+  const sortedKids = kids;
 
   return {
     type: "planner",
