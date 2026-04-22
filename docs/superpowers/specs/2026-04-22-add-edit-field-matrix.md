@@ -118,9 +118,9 @@ Entry point for all adds. Input fields.
 
 **Q2. ~~"Schedule (session part + days)"~~** — resolved: keep editable, it's the user-picked per-week schedule (not scraped).
 
-**Q3. "View full details" CTA** on curated preview — pick a label: "View details" / "See more info" / something else.
+**Q3. ~~Curated CTA label~~** — resolved: **"See more info"**.
 
-**Q4. Location editor UX** — free-text address? Dropdown of existing locations for this activity? (Today's schema has `activity_locations` as multi-row. For v1, single address field on the activity?)
+**Q4. ~~Location editor UX~~** — resolved: single address row with optional location name (label). Stored as one `activity_locations` row; existing schema preserved; multi-location list deferred.
 
 ---
 
