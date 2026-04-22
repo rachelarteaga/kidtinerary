@@ -792,6 +792,10 @@ export async function updateActivityFields(params: {
   name?: string;
   orgName?: string;
   url?: string | null;
+  description?: string | null;
+  ageMin?: number | null;
+  ageMax?: number | null;
+  categories?: string[];
 }): Promise<{ error?: string; orgId?: string | null }> {
   const supabase = (await createClient()) as any;
   const { data: { user } } = await supabase.auth.getUser();
@@ -859,6 +863,48 @@ export async function updateActivityFields(params: {
         resolvedOrgId = newOrg.id;
       }
     }
+  }
+
+  if (params.description !== undefined) {
+    if (params.description === null) {
+      patch.description = null;
+    } else {
+      const trimmed = params.description.trim();
+      patch.description = trimmed.length ? trimmed.slice(0, 4000) : null;
+    }
+  }
+
+  if (params.ageMin !== undefined) {
+    if (params.ageMin === null) {
+      patch.age_min = null;
+    } else if (!Number.isFinite(params.ageMin) || params.ageMin < 0 || params.ageMin > 25) {
+      return { error: "Min age must be between 0 and 25." };
+    } else {
+      patch.age_min = Math.floor(params.ageMin);
+    }
+  }
+
+  if (params.ageMax !== undefined) {
+    if (params.ageMax === null) {
+      patch.age_max = null;
+    } else if (!Number.isFinite(params.ageMax) || params.ageMax < 0 || params.ageMax > 25) {
+      return { error: "Max age must be between 0 and 25." };
+    } else {
+      patch.age_max = Math.floor(params.ageMax);
+    }
+  }
+
+  if (patch.age_min != null && patch.age_max != null && (patch.age_min as number) > (patch.age_max as number)) {
+    return { error: "Min age can't exceed max age." };
+  }
+
+  if (params.categories !== undefined) {
+    const ALLOWED = new Set([
+      "sports", "arts", "stem", "nature", "music", "theater",
+      "academic", "special_needs", "religious", "swimming", "cooking", "language",
+    ]);
+    const cleaned = Array.from(new Set(params.categories.filter((c) => ALLOWED.has(c))));
+    patch.categories = cleaned;
   }
 
   if (Object.keys(patch).length === 0) return {};

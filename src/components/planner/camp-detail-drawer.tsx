@@ -18,6 +18,7 @@ import {
 } from "@/lib/actions";
 import { extrasTotalCents } from "@/lib/extras-calc";
 import { formatWeekRange } from "@/lib/format";
+import { CATEGORIES } from "@/lib/constants";
 import type {
   PlannerEntryStatus,
   SessionPart,
@@ -25,6 +26,21 @@ import type {
   ExtraItem,
   PriceUnit,
 } from "@/lib/supabase/types";
+
+const CATEGORY_LABELS: Record<string, string> = {
+  sports: "Sports",
+  arts: "Arts",
+  stem: "STEM",
+  nature: "Nature",
+  music: "Music",
+  theater: "Theater",
+  academic: "Academic",
+  special_needs: "Special needs",
+  religious: "Religious",
+  swimming: "Swimming",
+  cooking: "Cooking",
+  language: "Language",
+};
 
 interface Kid {
   id: string;
@@ -44,6 +60,9 @@ interface DrawerEntry {
   activitySlug: string;
   activityUrl: string | null;
   activityDescription: string | null;
+  ageMin: number | null;
+  ageMax: number | null;
+  categories: string[];
   orgName: string | null;
   verified: boolean;
   status: PlannerEntryStatus;
@@ -396,15 +415,94 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
           )}
 
           <section>
-            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Camp info</h3>
-            {local.activityDescription && (
-              <p className="text-sm text-ink mb-2">{local.activityDescription}</p>
-            )}
-            {local.activityUrl && (
-              <Link href={local.activityUrl} target="_blank" className="text-sm text-ink underline">
-                {new URL(local.activityUrl).hostname} ↗
-              </Link>
-            )}
+            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Categories</h3>
+            <div className="flex flex-wrap gap-1.5">
+              {CATEGORIES.map((cat) => {
+                const selected = local.categories.includes(cat);
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => {
+                      const next = selected
+                        ? local.categories.filter((c) => c !== cat)
+                        : [...local.categories, cat];
+                      setLocal({ ...local, categories: next });
+                      startTransition(async () => {
+                        const r = await updateActivityFields({ activityId: local.activityId, categories: next });
+                        if (r.error) alert(r.error);
+                        onChanged();
+                      });
+                    }}
+                    className={`font-sans text-[10px] uppercase tracking-wide px-2.5 py-1 rounded-full border transition-colors ${
+                      selected
+                        ? "bg-ink text-ink-inverse border-ink"
+                        : "bg-transparent text-ink-2 border-ink-3 hover:border-ink hover:text-ink"
+                    }`}
+                  >
+                    {CATEGORY_LABELS[cat]}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          <section>
+            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Ages</h3>
+            <div className="flex items-center gap-2 text-sm text-ink">
+              <input
+                type="number"
+                min={0}
+                max={25}
+                value={local.ageMin ?? ""}
+                onChange={(e) => setLocal({ ...local, ageMin: e.target.value === "" ? null : Number(e.target.value) })}
+                onBlur={() => {
+                  startTransition(async () => {
+                    const r = await updateActivityFields({ activityId: local.activityId, ageMin: local.ageMin });
+                    if (r.error) alert(r.error);
+                    onChanged();
+                  });
+                }}
+                placeholder="min"
+                className="w-16 bg-surface border border-ink-3 rounded-md px-2 py-1 text-sm focus:outline-none focus:border-ink"
+              />
+              <span className="text-ink-2">to</span>
+              <input
+                type="number"
+                min={0}
+                max={25}
+                value={local.ageMax ?? ""}
+                onChange={(e) => setLocal({ ...local, ageMax: e.target.value === "" ? null : Number(e.target.value) })}
+                onBlur={() => {
+                  startTransition(async () => {
+                    const r = await updateActivityFields({ activityId: local.activityId, ageMax: local.ageMax });
+                    if (r.error) alert(r.error);
+                    onChanged();
+                  });
+                }}
+                placeholder="max"
+                className="w-16 bg-surface border border-ink-3 rounded-md px-2 py-1 text-sm focus:outline-none focus:border-ink"
+              />
+              <span className="text-ink-2 text-xs">years</span>
+            </div>
+          </section>
+
+          <section>
+            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">About</h3>
+            <textarea
+              value={local.activityDescription ?? ""}
+              onChange={(e) => setLocal({ ...local, activityDescription: e.target.value })}
+              onBlur={() => {
+                startTransition(async () => {
+                  const r = await updateActivityFields({ activityId: local.activityId, description: local.activityDescription });
+                  if (r.error) alert(r.error);
+                  onChanged();
+                });
+              }}
+              placeholder="What's this camp about?"
+              rows={4}
+              className="w-full bg-surface border border-ink-3 rounded-md px-3 py-2 text-sm text-ink focus:outline-none focus:border-ink resize-none"
+            />
           </section>
 
           <section className="pt-2 border-t border-ink-3">

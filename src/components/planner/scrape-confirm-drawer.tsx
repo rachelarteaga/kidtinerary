@@ -1,8 +1,25 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { ScrapeJobStatus, ScrapeConfidence } from "@/lib/supabase/types";
+import { updateActivityFields } from "@/lib/actions";
+import { CATEGORIES } from "@/lib/constants";
+
+const CATEGORY_LABELS: Record<string, string> = {
+  sports: "Sports",
+  arts: "Arts",
+  stem: "STEM",
+  nature: "Nature",
+  music: "Music",
+  theater: "Theater",
+  academic: "Academic",
+  special_needs: "Special needs",
+  religious: "Religious",
+  swimming: "Swimming",
+  cooking: "Cooking",
+  language: "Language",
+};
 
 interface ScrapedSession {
   id: string;
@@ -111,7 +128,16 @@ export function ScrapeConfirmDrawer({ open, jobId, inputUrl, scopeLabel, onClose
   const [job, setJob] = useState<JobPayload | null>(null);
   const [activity, setActivity] = useState<ScrapedActivity | null>(null);
   const [pollError, setPollError] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
   const attemptRef = useRef(0);
+
+  function saveField(patch: Parameters<typeof updateActivityFields>[0]) {
+    if (!activity) return;
+    startTransition(async () => {
+      const r = await updateActivityFields(patch);
+      if (r.error) alert(r.error);
+    });
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -271,11 +297,44 @@ export function ScrapeConfirmDrawer({ open, jobId, inputUrl, scopeLabel, onClose
                   </Field>
                 )}
 
-              {activity.description && (
-                <Field label="About" confidence={activity.data_confidence}>
-                  <p className="text-sm text-ink leading-snug">{activity.description}</p>
-                </Field>
-              )}
+              <Field label="Categories" confidence={activity.data_confidence}>
+                <div className="flex flex-wrap gap-1.5">
+                  {CATEGORIES.map((cat) => {
+                    const selected = activity.categories.includes(cat);
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => {
+                          const next = selected
+                            ? activity.categories.filter((c) => c !== cat)
+                            : [...activity.categories, cat];
+                          setActivity({ ...activity, categories: next });
+                          saveField({ activityId: activity.id, categories: next });
+                        }}
+                        className={`font-sans text-[10px] uppercase tracking-wide px-2.5 py-1 rounded-full border transition-colors ${
+                          selected
+                            ? "bg-ink text-ink-inverse border-ink"
+                            : "bg-transparent text-ink-2 border-ink-3 hover:border-ink hover:text-ink"
+                        }`}
+                      >
+                        {CATEGORY_LABELS[cat]}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+
+              <Field label="About" confidence={activity.data_confidence}>
+                <textarea
+                  value={activity.description ?? ""}
+                  onChange={(e) => setActivity({ ...activity, description: e.target.value })}
+                  onBlur={() => saveField({ activityId: activity.id, description: activity.description })}
+                  placeholder="What's this camp about?"
+                  rows={3}
+                  className="w-full bg-surface border border-ink-3 rounded-md px-3 py-2 text-sm text-ink focus:outline-none focus:border-ink resize-none"
+                />
+              </Field>
 
               {activity.sessions.length > 0 && (
                 <Field label="Dates" confidence={activity.data_confidence}>
@@ -315,13 +374,32 @@ export function ScrapeConfirmDrawer({ open, jobId, inputUrl, scopeLabel, onClose
                 </Field>
               )}
 
-              {(activity.age_min != null || activity.age_max != null) && (
-                <Field label="Ages" confidence={activity.data_confidence}>
-                  <span className="text-sm text-ink">
-                    {activity.age_min ?? "?"}–{activity.age_max ?? "?"}
-                  </span>
-                </Field>
-              )}
+              <Field label="Ages" confidence={activity.data_confidence}>
+                <div className="flex items-center gap-2 text-sm text-ink">
+                  <input
+                    type="number"
+                    min={0}
+                    max={25}
+                    value={activity.age_min ?? ""}
+                    onChange={(e) => setActivity({ ...activity, age_min: e.target.value === "" ? null : Number(e.target.value) })}
+                    onBlur={() => saveField({ activityId: activity.id, ageMin: activity.age_min })}
+                    placeholder="min"
+                    className="w-16 bg-surface border border-ink-3 rounded-md px-2 py-1 text-sm focus:outline-none focus:border-ink"
+                  />
+                  <span className="text-ink-2">to</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={25}
+                    value={activity.age_max ?? ""}
+                    onChange={(e) => setActivity({ ...activity, age_max: e.target.value === "" ? null : Number(e.target.value) })}
+                    onBlur={() => saveField({ activityId: activity.id, ageMax: activity.age_max })}
+                    placeholder="max"
+                    className="w-16 bg-surface border border-ink-3 rounded-md px-2 py-1 text-sm focus:outline-none focus:border-ink"
+                  />
+                  <span className="text-ink-2 text-xs">years</span>
+                </div>
+              </Field>
 
               {activity.registration_url && (
                 <Field label="Registration">
