@@ -159,3 +159,15 @@ export function formatWeekLabelCompact(weekStart: Date): string {
   const eDay = String(end.getDate()).padStart(2, "0");
   return `${sMonth} ${sDay} – ${eMonth} ${eDay}`;
 }
+
+// Progressive US phone formatter for `(xxx) xxx-xxxx`. A leading `+`
+// disables formatting so international numbers pass through unchanged.
+export function formatUsPhone(raw: string): string {
+  if (raw.trimStart().startsWith("+")) return raw;
+  const digits = raw.replace(/\D/g, "").slice(0, 11);
+  const us = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits.slice(0, 10);
+  if (us.length === 0) return "";
+  if (us.length <= 3) return `(${us}`;
+  if (us.length <= 6) return `(${us.slice(0, 3)}) ${us.slice(3)}`;
+  return `(${us.slice(0, 3)}) ${us.slice(3, 6)}-${us.slice(6)}`;
+}

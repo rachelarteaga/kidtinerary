@@ -4,6 +4,7 @@ import { EditProfileForm } from "@/components/account/edit-profile-form";
 
 vi.mock("@/lib/actions", () => ({ updateProfile: vi.fn() }));
 vi.mock("@/components/ui/toast", () => ({ useToast: () => ({ toast: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 describe("EditProfileForm", () => {
   const initial = {

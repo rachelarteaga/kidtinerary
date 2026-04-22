@@ -11,6 +11,7 @@ import {
   getWeekKey,
   generateWeeks,
   formatWeekRange,
+  formatUsPhone,
 } from "@/lib/format";
 
 describe("formatPrice", () => {
@@ -181,5 +182,40 @@ describe("formatWeekRange", () => {
     const result = formatWeekRange(new Date("2026-04-27T00:00:00"));
     expect(result).toContain("Apr");
     expect(result).toContain("May");
+  });
+});
+
+describe("formatUsPhone", () => {
+  it("returns empty string for empty input", () => {
+    expect(formatUsPhone("")).toBe("");
+  });
+
+  it("progressively formats digits as they're typed", () => {
+    expect(formatUsPhone("2")).toBe("(2");
+    expect(formatUsPhone("202")).toBe("(202");
+    expect(formatUsPhone("2025")).toBe("(202) 5");
+    expect(formatUsPhone("202555")).toBe("(202) 555");
+    expect(formatUsPhone("2025551234")).toBe("(202) 555-1234");
+  });
+
+  it("is idempotent for already-formatted input", () => {
+    expect(formatUsPhone("(202) 555-1234")).toBe("(202) 555-1234");
+  });
+
+  it("drops a leading US country code '1'", () => {
+    expect(formatUsPhone("12025551234")).toBe("(202) 555-1234");
+  });
+
+  it("passes through international numbers with a leading '+'", () => {
+    expect(formatUsPhone("+44 20 7946 0958")).toBe("+44 20 7946 0958");
+  });
+
+  it("ignores non-digit characters in the middle", () => {
+    expect(formatUsPhone("202-555-1234")).toBe("(202) 555-1234");
+    expect(formatUsPhone("202.555.1234")).toBe("(202) 555-1234");
+  });
+
+  it("truncates extra digits beyond 10 (or 11 with leading 1)", () => {
+    expect(formatUsPhone("202555123456789")).toBe("(202) 555-1234");
   });
 });
