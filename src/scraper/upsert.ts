@@ -111,6 +111,11 @@ export async function upsertActivity(
   if (options.existingActivityId) {
     const { slug: _slug, ...stubUpdatePayload } = activityPayload;
     void _slug;
+    // Preserve the user-submitted registration_url when the scraper didn't
+    // find one — otherwise we'd wipe the URL the user originally pasted.
+    if (stubUpdatePayload.registration_url == null) {
+      delete (stubUpdatePayload as { registration_url?: string | null }).registration_url;
+    }
     const { data: updated, error: updateError } = await supabase
       .from("activities")
       .update(stubUpdatePayload)
