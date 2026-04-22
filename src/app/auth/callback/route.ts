@@ -7,9 +7,22 @@ export async function GET(request: Request) {
   const next = searchParams.get("next") ?? "/onboarding";
 
   if (code) {
-    const supabase = await createClient();
+    // TODO: remove cast when types are generated
+    const supabase = (await createClient()) as any;
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("onboarding_completed")
+          .eq("id", user.id)
+          .maybeSingle();
+        const destination = profile?.onboarding_completed ? next : "/onboarding";
+        return NextResponse.redirect(`${origin}${destination}`);
+      }
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
