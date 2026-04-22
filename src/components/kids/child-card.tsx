@@ -13,8 +13,10 @@ interface ChildCardProps {
     name: string;
     birth_date: string;
     interests: string[];
+    avatar_url: string | null;
   };
-  onEdit: (child: { id: string; name: string; birth_date: string; interests: string[] }) => void;
+  index: number;
+  onEdit: (child: { id: string; name: string; birth_date: string; interests: string[]; avatar_url: string | null }) => void;
 }
 
 export function ChildCard({ child, onEdit }: ChildCardProps) {
