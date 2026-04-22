@@ -796,6 +796,8 @@ export async function updateActivityFields(params: {
   ageMin?: number | null;
   ageMax?: number | null;
   categories?: string[];
+  address?: string | null;
+  locationName?: string | null;
 }): Promise<{ error?: string; orgId?: string | null }> {
   const supabase = (await createClient()) as any;
   const { data: { user } } = await supabase.auth.getUser();
@@ -907,21 +909,54 @@ export async function updateActivityFields(params: {
     patch.categories = cleaned;
   }
 
-  if (Object.keys(patch).length === 0) return {};
+  const hasActivityPatch = Object.keys(patch).length > 0;
+  const hasLocationPatch = params.address !== undefined || params.locationName !== undefined;
+  if (!hasActivityPatch && !hasLocationPatch) return {};
 
-  const { data: updatedRows, error: updErr } = await supabase
-    .from("activities")
-    .update(patch)
-    .eq("id", params.activityId)
-    .select("id");
+  if (hasActivityPatch) {
+    const { data: updatedRows, error: updErr } = await supabase
+      .from("activities")
+      .update(patch)
+      .eq("id", params.activityId)
+      .select("id");
 
-  if (updErr) {
-    console.error("updateActivityFields update error:", updErr);
-    return { error: "Failed to save changes" };
+    if (updErr) {
+      console.error("updateActivityFields update error:", updErr);
+      return { error: "Failed to save changes" };
+    }
+    if (!updatedRows || updatedRows.length === 0) {
+      console.error("updateActivityFields update silently affected 0 rows — check activities UPDATE RLS policy");
+      return { error: "Couldn't save changes — the database rejected the update (RLS policy may be missing)." };
+    }
   }
-  if (!updatedRows || updatedRows.length === 0) {
-    console.error("updateActivityFields update silently affected 0 rows — check activities UPDATE RLS policy");
-    return { error: "Couldn't save changes — the database rejected the update (RLS policy may be missing)." };
+
+  if (hasLocationPatch) {
+    const locationId = await ensureActivityLocation(supabase, params.activityId);
+    if (!locationId) return { error: "Could not set up camp location" };
+
+    const locPatch: Record<string, unknown> = {};
+    if (params.address !== undefined) {
+      locPatch.address = params.address?.trim() ?? "";
+    }
+    if (params.locationName !== undefined) {
+      const trimmedName = params.locationName?.trim() ?? "";
+      locPatch.location_name = trimmedName.length ? trimmedName : null;
+    }
+
+    const { data: locRows, error: locErr } = await supabase
+      .from("activity_locations")
+      .update(locPatch)
+      .eq("id", locationId)
+      .select("id");
+
+    if (locErr) {
+      console.error("updateActivityFields location update error:", locErr);
+      return { error: "Failed to save location" };
+    }
+    if (!locRows || locRows.length === 0) {
+      console.error("updateActivityFields location update silently affected 0 rows — check activity_locations UPDATE RLS policy");
+      return { error: "Couldn't save location — the database rejected the update." };
+    }
   }
 
   revalidatePath("/planner");
