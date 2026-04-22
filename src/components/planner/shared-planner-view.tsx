@@ -1,0 +1,349 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { KidColumnHeader } from "./kid-column-header";
+import { SharedCampDetailPanel } from "./shared-camp-detail-panel";
+import { applyShareFilters } from "@/lib/share/apply-filters";
+import { generateWeeks, getWeekKey, formatWeekLabelCompact } from "@/lib/format";
+
+// Status pill colors match globals.css tokens
+const STATUS_STYLE: Record<string, string> = {
+  considering: "bg-status-considering",
+  waitlisted: "bg-status-waitlisted",
+  registered: "bg-status-registered",
+};
+
+interface KidRow {
+  id: string;
+  name: string;
+  birth_date: string;
+  avatar_url: string | null;
+  color: string;
+}
+
+interface EntryRow {
+  id: string;
+  child_id: string;
+  status: string;
+  sort_order: number;
+  notes: string | null;
+  price_cents: number | null;
+  price_unit: string | null;
+  session_part: string | null;
+  days_of_week: string[] | null;
+  session: {
+    id: string;
+    starts_at: string;
+    ends_at: string;
+    activity: {
+      id: string;
+      name: string;
+      registration_url: string | null;
+      organization: { id: string; name: string } | null;
+      activity_locations: { id: string; address: string; location_name: string | null }[];
+    };
+  };
+}
+
+interface BlockRow {
+  id: string;
+  type: string;
+  title: string;
+  start_date: string;
+  end_date: string;
+  kid_ids: string[];
+}
+
+interface Props {
+  token: string;
+  plannerName: string;
+  plannerStart: string;
+  plannerEnd: string;
+  kids: KidRow[];
+  entries: EntryRow[];
+  blocks: BlockRow[];
+  filters: { kidIds: string[]; includeCost: boolean; includePersonalBlockDetails: boolean };
+  colorByActivityId: Record<string, string>;
+}
+
+function ageYears(birthDate: string): number {
+  const ms = Date.now() - new Date(birthDate).getTime();
+  return Math.floor(ms / (365.25 * 24 * 60 * 60 * 1000));
+}
+
+export function SharedPlannerView({
+  token,
+  plannerName,
+  plannerStart,
+  plannerEnd,
+  kids,
+  entries,
+  blocks,
+  filters,
+  colorByActivityId,
+}: Props) {
+  // Apply owner's share filters (kid filter, cost mask, personal-block title mask).
+  // Project raw rows into the minimal shape applyShareFilters needs, then reuse the
+  // resulting id-subsets to filter the rich arrays.
+  const filteredIdSets = useMemo(() => {
+    const projected = applyShareFilters(
+      {
+        kids: kids.map((k) => ({
+          id: k.id, name: k.name, avatar_url: k.avatar_url, birth_date: k.birth_date, color: k.color,
+        })),
+        entries: entries.map((e) => ({
+          id: e.id, child_id: e.child_id, activity_name: e.session.activity.name,
+          price_weekly_cents: e.price_cents,
+        })),
+        blocks: blocks.map((b) => ({
+          id: b.id, child_id: b.kid_ids[0] ?? "", type: b.type, title: b.title,
+        })),
+      },
+      filters
+    );
+    return {
+      kidIds: new Set(projected.kids.map((k) => k.id)),
+      entryIds: new Set(projected.entries.map((e) => e.id)),
+      blockIds: new Set(projected.blocks.map((b) => b.id)),
+    };
+  }, [kids, entries, blocks, filters]);
+
+  const visibleKids = kids.filter((k) => filteredIdSets.kidIds.has(k.id));
+  const visibleEntries = entries.filter((e) => filteredIdSets.entryIds.has(e.id));
+  const visibleBlocks = blocks.filter((b) => filteredIdSets.blockIds.has(b.id));
+
+  const [viewMode, setViewMode] = useState<"detail" | "simple">("detail");
+  const storageKey = `share-view-mode:${token}`;
+  useEffect(() => {
+    const saved = window.localStorage.getItem(storageKey);
+    if (saved === "detail" || saved === "simple") setViewMode(saved);
+  }, [storageKey]);
+  function setMode(m: "detail" | "simple") {
+    setViewMode(m);
+    window.localStorage.setItem(storageKey, m);
+  }
+
+  const [openCampEntryId, setOpenCampEntryId] = useState<string | null>(null);
+  const openCamp = useMemo(() => {
+    if (!openCampEntryId) return null;
+    const e = visibleEntries.find((x) => x.id === openCampEntryId);
+    if (!e) return null;
+    const loc = e.session.activity.activity_locations[0];
+    return {
+      entryId: e.id,
+      org: e.session.activity.organization?.name ?? "",
+      name: e.session.activity.name,
+      location: loc ? `${loc.location_name ? loc.location_name + "\n" : ""}${loc.address}` : "",
+      url: e.session.activity.registration_url,
+      about: "", // sessions don't currently expose a description — leave blank; deferred
+      weeklyCostCents: filters.includeCost ? e.price_cents : null,
+    };
+  }, [openCampEntryId, visibleEntries, filters.includeCost]);
+
+  const weekStartDates = useMemo(() => {
+    const from = new Date(plannerStart + "T00:00:00");
+    const to = new Date(plannerEnd + "T00:00:00");
+    return generateWeeks(from, to);
+  }, [plannerStart, plannerEnd]);
+
+  // Build per-kid per-week legend rows (camps) + block detection.
+  const rowsByWeek = useMemo(() => {
+    return weekStartDates.map((weekStart) => {
+      const weekKey = getWeekKey(weekStart);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+
+      const cellsByKid: Record<string, { entries: EntryRow[] }> = {};
+      for (const k of visibleKids) cellsByKid[k.id] = { entries: [] };
+
+      for (const e of visibleEntries) {
+        const ws = new Date(e.session.starts_at + "T00:00:00");
+        if (getWeekKey(ws) !== weekKey) continue;
+        if (!cellsByKid[e.child_id]) continue;
+        cellsByKid[e.child_id].entries.push(e);
+      }
+
+      // Blocks overlapping this week
+      const overlappingBlocks = visibleBlocks.filter(
+        (b) => new Date(b.start_date) <= weekEnd && new Date(b.end_date) >= weekStart
+      );
+      const blockByKid: Record<string, BlockRow | undefined> = {};
+      for (const b of overlappingBlocks) {
+        for (const kidId of b.kid_ids) {
+          if (filteredIdSets.kidIds.has(kidId)) blockByKid[kidId] = b;
+        }
+      }
+
+      return { weekStart, weekKey, cellsByKid, blockByKid };
+    });
+  }, [weekStartDates, visibleKids, visibleEntries, visibleBlocks, filteredIdSets.kidIds]);
+
+  const cols = visibleKids.length;
+  const gridTemplate = `140px ${"1fr ".repeat(cols).trim()}`;
+
+  return (
+    <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <header className="mb-6 flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <p className="font-sans text-[10px] uppercase tracking-widest text-ink-2 font-semibold">Shared · view-only</p>
+          <h1 className="font-display font-extrabold text-3xl mt-1">{plannerName}</h1>
+          <p className="text-ink-2 text-sm mt-1">
+            {visibleKids.length} kid{visibleKids.length === 1 ? "" : "s"}
+          </p>
+        </div>
+        <div className="inline-flex border border-ink rounded-full p-0.5 text-[11px] font-bold uppercase tracking-widest">
+          <button
+            type="button"
+            onClick={() => setMode("detail")}
+            className={`px-3 py-1.5 rounded-full ${viewMode === "detail" ? "bg-ink text-ink-inverse" : "text-ink-2"}`}
+          >
+            Detailed
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("simple")}
+            className={`px-3 py-1.5 rounded-full ${viewMode === "simple" ? "bg-ink text-ink-inverse" : "text-ink-2"}`}
+          >
+            Simple
+          </button>
+        </div>
+      </header>
+
+      {visibleKids.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-ink-3 bg-surface/30 p-8 text-center">
+          <p className="font-display font-extrabold text-xl text-ink">Nothing to show</p>
+          <p className="text-ink-2 text-sm mt-1">The share link doesn&apos;t include any kids.</p>
+        </div>
+      ) : (
+        <div>
+          <div className="grid gap-2 mb-[14px]" style={{ gridTemplateColumns: gridTemplate }}>
+            <div />
+            {visibleKids.map((c, i) => (
+              <KidColumnHeader
+                key={c.id}
+                child={{ id: c.id, name: c.name, birth_date: c.birth_date, color: c.color, avatar_url: c.avatar_url }}
+                index={i}
+                ageYears={ageYears(c.birth_date)}
+                readOnly
+              />
+            ))}
+          </div>
+
+          <div className="space-y-2">
+            {rowsByWeek.map((row) => {
+              const weekLabel = formatWeekLabelCompact(row.weekStart);
+              return (
+                <div key={row.weekKey} className="grid gap-2" style={{ gridTemplateColumns: gridTemplate }}>
+                  <div className="font-sans text-[11px] font-bold uppercase tracking-widest text-ink-2 self-stretch flex items-center pl-1.5 pr-3 border-r border-ink-3 whitespace-nowrap text-left">
+                    {weekLabel}
+                  </div>
+                  {visibleKids.map((kid) => {
+                    const block = row.blockByKid[kid.id];
+                    const cellEntries = row.cellsByKid[kid.id]?.entries ?? [];
+
+                    if (block) {
+                      // Personal block — title already masked to "" by applyShareFilters when opted out
+                      const label = block.title?.trim() ? block.title : "NOTHING SCHEDULED";
+                      const isMasked = !block.title?.trim();
+                      return (
+                        <div
+                          key={`${row.weekKey}-${kid.id}`}
+                          className="rounded-lg border border-ink-3 p-3 min-h-[60px] flex items-center justify-center"
+                          style={{
+                            backgroundImage: "radial-gradient(rgba(21,21,21,0.09) 0.7px, transparent 0.7px)",
+                            backgroundSize: "5px 5px",
+                            backgroundColor: "rgba(21,21,21,0.04)",
+                          }}
+                        >
+                          <span
+                            className={
+                              isMasked
+                                ? "font-sans text-[11px] uppercase tracking-[0.08em] text-ink-2"
+                                : "font-sans text-xs font-semibold text-ink"
+                            }
+                          >
+                            {label}
+                          </span>
+                        </div>
+                      );
+                    }
+
+                    if (cellEntries.length === 0) {
+                      return (
+                        <div
+                          key={`${row.weekKey}-${kid.id}`}
+                          className="rounded-lg border border-ink-3 p-3 min-h-[60px] flex items-center justify-center"
+                          style={{
+                            backgroundImage: "radial-gradient(rgba(21,21,21,0.09) 0.7px, transparent 0.7px)",
+                            backgroundSize: "5px 5px",
+                            backgroundColor: "rgba(21,21,21,0.04)",
+                          }}
+                        >
+                          <span className="font-sans text-[11px] uppercase tracking-[0.08em] text-ink-2">
+                            NOTHING SCHEDULED
+                          </span>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div
+                        key={`${row.weekKey}-${kid.id}`}
+                        className="rounded-lg border border-ink-3 bg-surface p-2 min-h-[60px] space-y-1"
+                      >
+                        {cellEntries.map((e) => {
+                          const activityId = e.session.activity.id;
+                          const color = colorByActivityId[activityId] ?? "#f4b76f";
+                          const orgName = e.session.activity.organization?.name ?? null;
+                          const showOrg = !!orgName && orgName !== e.session.activity.name && viewMode === "detail";
+                          const priceLabel =
+                            filters.includeCost && e.price_cents != null
+                              ? `$${Math.round(e.price_cents / 100)}`
+                              : null;
+                          return (
+                            <button
+                              key={e.id}
+                              type="button"
+                              onClick={() => setOpenCampEntryId(e.id)}
+                              className="w-full flex items-start gap-1.5 text-left text-xs text-ink hover:underline"
+                            >
+                              <span className="w-2 h-2 mt-1 rounded-full flex-shrink-0" style={{ background: color }} />
+                              <span className="flex-1 min-w-0">
+                                <span className="truncate block">{e.session.activity.name}</span>
+                                {showOrg && (
+                                  <span className="block truncate font-sans text-[10px] text-ink-2 leading-tight">
+                                    {orgName}
+                                  </span>
+                                )}
+                              </span>
+                              {priceLabel && (
+                                <span className="font-sans text-[10px] font-semibold text-ink-2 flex-shrink-0 mt-0.5">
+                                  {priceLabel}
+                                </span>
+                              )}
+                              <span
+                                className={`font-sans font-semibold text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full border border-ink flex-shrink-0 mt-0.5 ${STATUS_STYLE[e.status] ?? ""}`}
+                              >
+                                {e.status}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <SharedCampDetailPanel
+        open={openCampEntryId !== null && openCamp !== null}
+        onClose={() => setOpenCampEntryId(null)}
+        camp={openCamp ?? { org: "", name: "", location: "", url: null, about: "" }}
+      />
+    </main>
+  );
+}

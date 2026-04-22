@@ -465,6 +465,7 @@ export type SharedByTokenResult =
       kidIds: string[];
       includeCost: boolean;
       includePersonalBlockDetails: boolean;
+      colorByActivityId: Record<string, string>;
       kids: {
         id: string;
         name: string;
@@ -524,7 +525,7 @@ export async function fetchSharedPlannerByToken(token: string): Promise<SharedBy
   const { data: share, error: shareErr } = await supabase
     .from("shared_schedules")
     .select(
-      "token, scope, planner_id, camp_id, kid_ids, include_cost, include_personal_block_details, recommender_note"
+      "token, scope, user_id, planner_id, camp_id, kid_ids, include_cost, include_personal_block_details, recommender_note"
     )
     .eq("token", token)
     .single();
@@ -599,6 +600,22 @@ export async function fetchSharedPlannerByToken(token: string): Promise<SharedBy
     }))
     .filter((b: { kid_ids: string[] }) => b.kid_ids.some((id: string) => kidIds.includes(id)));
 
+  // Collect owner's camp colors for activities present in the entries
+  const activityIds = Array.from(
+    new Set((entries ?? []).map((e: any) => e.session.activity.id))
+  );
+
+  const { data: userCamps } = await supabase
+    .from("user_camps")
+    .select("activity_id, color")
+    .eq("user_id", share.user_id)
+    .in("activity_id", activityIds.length > 0 ? activityIds : ["00000000-0000-0000-0000-000000000000"]);
+
+  const colorByActivityId: Record<string, string> = {};
+  for (const uc of (userCamps ?? []) as { activity_id: string; color: string }[]) {
+    colorByActivityId[uc.activity_id] = uc.color;
+  }
+
   // Sort kids by sort_order (mirrors owner's view)
   const sortedKids = (kids ?? []).sort(
     (a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
@@ -614,6 +631,7 @@ export async function fetchSharedPlannerByToken(token: string): Promise<SharedBy
     kidIds,
     includeCost: !!share.include_cost,
     includePersonalBlockDetails: !!share.include_personal_block_details,
+    colorByActivityId,
     kids: sortedKids.map((k: any) => ({
       id: k.id,
       name: k.name,

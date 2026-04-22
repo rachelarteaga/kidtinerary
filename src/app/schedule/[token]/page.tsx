@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { fetchSharedPlannerByToken } from "@/lib/queries";
+import { SharedPlannerView } from "@/components/planner/shared-planner-view";
 
 export const dynamic = "force-dynamic";
 
@@ -21,19 +22,20 @@ export default async function SharedSchedulePage({ params }: PageProps) {
 
   // type === "planner"
   return (
-    <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <header className="mb-6">
-        <p className="font-sans text-[10px] uppercase tracking-widest text-ink-2 font-semibold">Shared · view-only</p>
-        <h1 className="font-display font-extrabold text-4xl mt-1">{result.plannerName}</h1>
-        <p className="text-ink-2 mt-1">
-          {result.kids.length} kid{result.kids.length === 1 ? "" : "s"}
-        </p>
-      </header>
-      <div className="rounded-lg border border-ink-3 bg-surface p-6">
-        <p className="font-sans text-sm text-ink-2">
-          Public planner view is being set up. This placeholder renders until Task 3.7d lands the full grid.
-        </p>
-      </div>
-    </main>
+    <SharedPlannerView
+      token={result.token}
+      plannerName={result.plannerName}
+      plannerStart={result.plannerStart}
+      plannerEnd={result.plannerEnd}
+      kids={result.kids}
+      entries={result.entries}
+      blocks={result.blocks}
+      filters={{
+        kidIds: result.kidIds,
+        includeCost: result.includeCost,
+        includePersonalBlockDetails: result.includePersonalBlockDetails,
+      }}
+      colorByActivityId={result.colorByActivityId}
+    />
   );
 }
