@@ -9,6 +9,8 @@ import {
   validateSubmitCampInput,
   type SubmitCampRawInput,
 } from "@/lib/submit-camp-validation";
+import { geocodeAddress } from "@/lib/geocode";
+import { validateProfileInput } from "@/lib/actions-profile-validation";
 
 /**
  * Find-or-create a placeholder activity_location for an activity.
@@ -1583,4 +1585,44 @@ export async function updatePlannerRangeWithCleanup(
   if (error) return { error: "Failed to update planner range" };
   revalidatePath("/planner");
   return { removedEntries: outOfRangeEntryIds.length, removedBlocks: outOfRangeBlockIds.length };
+}
+
+export async function updateProfile(input: {
+  fullName: string;
+  address: string;
+  phone: string;
+}): Promise<{ error?: string }> {
+  const validation = validateProfileInput(input);
+  if (validation.error) return { error: validation.error };
+
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+
+  // 1. Name → auth.users.user_metadata
+  const { error: authErr } = await supabase.auth.updateUser({
+    data: { full_name: input.fullName.trim() },
+  });
+  if (authErr) return { error: authErr.message };
+
+  // 2. Address → profiles.address (geocoded formatted form when available).
+  //    Location (PostGIS point) is not set here — matches onboarding pattern.
+  const addr = input.address.trim();
+  let storedAddress: string | null = addr || null;
+  if (addr) {
+    const geo = await geocodeAddress(addr);
+    if (geo) storedAddress = geo.formatted_address;
+  }
+
+  const { error: profErr } = await supabase
+    .from("profiles")
+    .update({
+      address: storedAddress,
+      phone: input.phone.trim() || null,
+    })
+    .eq("id", user.id);
+  if (profErr) return { error: profErr.message };
+
+  revalidatePath("/account/profile");
+  return {};
 }
