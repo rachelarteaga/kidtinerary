@@ -67,13 +67,6 @@ export function ChildCard({ child, onEdit }: ChildCardProps) {
         </div>
       )}
 
-      {/* Planner summary stub */}
-      <div className="bg-surface/50 rounded-lg p-3">
-        <p className="font-sans text-[10px] uppercase tracking-wide text-ink-2">
-          Planner coming soon
-        </p>
-      </div>
-
       {/* Delete */}
       {showConfirm ? (
         <div className="flex items-center gap-3 mt-4 pt-4 border-t border-ink-3">
