@@ -909,14 +909,19 @@ export async function updateActivityFields(params: {
 
   if (Object.keys(patch).length === 0) return {};
 
-  const { error: updErr } = await supabase
+  const { data: updatedRows, error: updErr } = await supabase
     .from("activities")
     .update(patch)
-    .eq("id", params.activityId);
+    .eq("id", params.activityId)
+    .select("id");
 
   if (updErr) {
     console.error("updateActivityFields update error:", updErr);
     return { error: "Failed to save changes" };
+  }
+  if (!updatedRows || updatedRows.length === 0) {
+    console.error("updateActivityFields update silently affected 0 rows — check activities UPDATE RLS policy");
+    return { error: "Couldn't save changes — the database rejected the update (RLS policy may be missing)." };
   }
 
   revalidatePath("/planner");
