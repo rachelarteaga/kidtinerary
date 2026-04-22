@@ -15,13 +15,23 @@ export function ChildStep({ onComplete }: ChildStepProps) {
   const [kids, setKids] = useState<KidDraft[]>([]);
   const [name, setName] = useState("");
   const [birthDate, setBirthDate] = useState("");
+  const [addError, setAddError] = useState<string | null>(null);
 
   const atMax = kids.length >= MAX_KIDS;
   const canAdd = !atMax && name.trim().length > 0 && birthDate.length > 0;
 
   function addKid() {
     if (!canAdd) return;
-    setKids((prev) => [...prev, { name: name.trim(), birthDate }]);
+    const trimmed = name.trim();
+    const duplicate = kids.some(
+      (k) => k.name.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (duplicate) {
+      setAddError(`You already added a kid named ${trimmed}.`);
+      return;
+    }
+    setAddError(null);
+    setKids((prev) => [...prev, { name: trimmed, birthDate }]);
     setName("");
     setBirthDate("");
   }
@@ -77,7 +87,10 @@ export function ChildStep({ onComplete }: ChildStepProps) {
               id="childName"
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (addError) setAddError(null);
+              }}
               placeholder="Emma"
               className="w-full bg-surface border border-ink rounded-lg px-4 py-2.5 text-ink focus:outline-none focus:border-ink transition-colors"
             />
@@ -105,6 +118,9 @@ export function ChildStep({ onComplete }: ChildStepProps) {
           >
             {kids.length === 0 ? "Add kid" : "Add another kid"}
           </Button>
+          {addError && (
+            <p className="text-sm text-[#ef8c8f]">{addError}</p>
+          )}
         </div>
       )}
 

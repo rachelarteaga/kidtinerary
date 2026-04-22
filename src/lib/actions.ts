@@ -171,11 +171,25 @@ export async function addChild(
     return { error: "Not authenticated" };
   }
 
+  const trimmedName = name.trim();
+  const { data: existing } = await supabase
+    .from("children")
+    .select("name")
+    .eq("user_id", user.id);
+
+  if (
+    existing?.some(
+      (k: { name: string }) => k.name.toLowerCase() === trimmedName.toLowerCase()
+    )
+  ) {
+    return { error: `You already have a kid named ${trimmedName}.` };
+  }
+
   const { data, error } = await supabase
     .from("children")
     .insert({
       user_id: user.id,
-      name,
+      name: trimmedName,
       birth_date: birthDate,
       interests,
     })
@@ -208,9 +222,25 @@ export async function updateChild(
     return { error: "Not authenticated" };
   }
 
+  const trimmedName = name.trim();
+  const { data: existing } = await supabase
+    .from("children")
+    .select("id, name")
+    .eq("user_id", user.id)
+    .neq("id", childId);
+
+  if (
+    existing?.some(
+      (k: { id: string; name: string }) =>
+        k.name.toLowerCase() === trimmedName.toLowerCase()
+    )
+  ) {
+    return { error: `You already have a kid named ${trimmedName}.` };
+  }
+
   const { error } = await supabase
     .from("children")
-    .update({ name, birth_date: birthDate, interests })
+    .update({ name: trimmedName, birth_date: birthDate, interests })
     .eq("id", childId)
     .eq("user_id", user.id);
 
