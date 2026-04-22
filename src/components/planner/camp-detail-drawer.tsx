@@ -231,8 +231,8 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
   return (
     <>
       <div className="fixed inset-0 bg-ink/25 z-40" onClick={onClose} />
-      <aside className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-base shadow-2xl z-50 overflow-y-auto">
-        <header className="bg-surface px-5 py-4 border-b border-ink-3">
+      <aside className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-base shadow-2xl z-50 flex flex-col">
+        <header className="bg-surface px-5 py-4 border-b border-ink-3 shrink-0">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
               <div className="font-sans text-[11px] font-bold uppercase tracking-widest text-ink-2 mb-0.5">
@@ -339,7 +339,7 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
           </div>
         </header>
 
-        <div className="p-5 space-y-5">
+        <div className="p-5 space-y-5 flex-1 overflow-y-auto">
           <section>
             <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Schedule</h3>
             <ScheduleEditor
@@ -505,16 +505,25 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
             />
           </section>
 
-          <section className="pt-2 border-t border-ink-3">
-            <button
-              onClick={handleRemove}
-              disabled={isPending}
-              className="text-xs text-[#ef8c8f] hover:text-[#ef8c8f]/80"
-            >
-              Remove this camp from {kidName}&apos;s week
-            </button>
-          </section>
         </div>
+
+        <footer className="p-4 border-t border-ink-3 bg-surface shrink-0 flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={handleRemove}
+            disabled={isPending}
+            className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 rounded-full border border-[#ef8c8f] text-[#c1474a] hover:bg-[#ef8c8f]/10 disabled:opacity-50"
+          >
+            Delete from week
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-ink/90"
+          >
+            Done
+          </button>
+        </footer>
       </aside>
     </>
   );

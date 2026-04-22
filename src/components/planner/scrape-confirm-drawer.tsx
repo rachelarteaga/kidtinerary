@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { ScrapeJobStatus, ScrapeConfidence } from "@/lib/supabase/types";
-import { updateActivityFields } from "@/lib/actions";
+import { updateActivityFields, removeCampFromShortlist } from "@/lib/actions";
 import { CATEGORIES } from "@/lib/constants";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -75,6 +75,7 @@ interface JobPayload {
 interface Props {
   open: boolean;
   jobId: string | null;
+  userCampId: string | null;
   inputUrl: string;
   scopeLabel: string | null;
   onClose: () => void;
@@ -123,21 +124,21 @@ function confidenceBadge(confidence: string) {
   }
 }
 
-export function ScrapeConfirmDrawer({ open, jobId, inputUrl, scopeLabel, onClose }: Props) {
+export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLabel, onClose }: Props) {
   const router = useRouter();
   const [job, setJob] = useState<JobPayload | null>(null);
   const [activity, setActivity] = useState<ScrapedActivity | null>(null);
   const [pollError, setPollError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const attemptRef = useRef(0);
 
-  function saveField(patch: Parameters<typeof updateActivityFields>[0]) {
-    if (!activity) return;
-    startTransition(async () => {
-      const r = await updateActivityFields(patch);
-      if (r.error) alert(r.error);
-    });
-  }
+  const [draftCategories, setDraftCategories] = useState<string[] | null>(null);
+  const [draftDescription, setDraftDescription] = useState<string | null>(null);
+  const [draftAgeMin, setDraftAgeMin] = useState<number | null | undefined>(undefined);
+  const [draftAgeMax, setDraftAgeMax] = useState<number | null | undefined>(undefined);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     if (!open) return;
@@ -154,6 +155,11 @@ export function ScrapeConfirmDrawer({ open, jobId, inputUrl, scopeLabel, onClose
     setJob(null);
     setActivity(null);
     setPollError(null);
+    setDraftCategories(null);
+    setDraftDescription(null);
+    setDraftAgeMin(undefined);
+    setDraftAgeMax(undefined);
+    initializedRef.current = false;
     attemptRef.current = 0;
 
     let cancelled = false;
@@ -170,7 +176,16 @@ export function ScrapeConfirmDrawer({ open, jobId, inputUrl, scopeLabel, onClose
         if (cancelled) return;
 
         setJob(data.job);
-        if (data.activity) setActivity(data.activity);
+        if (data.activity) {
+          setActivity(data.activity);
+          if (!initializedRef.current) {
+            setDraftCategories(data.activity.categories ?? []);
+            setDraftDescription(data.activity.description ?? null);
+            setDraftAgeMin(data.activity.age_min ?? null);
+            setDraftAgeMax(data.activity.age_max ?? null);
+            initializedRef.current = true;
+          }
+        }
 
         if (data.job.status === "resolved" || data.job.status === "failed") {
           return;
@@ -300,17 +315,17 @@ export function ScrapeConfirmDrawer({ open, jobId, inputUrl, scopeLabel, onClose
               <Field label="Categories" confidence={activity.data_confidence}>
                 <div className="flex flex-wrap gap-1.5">
                   {CATEGORIES.map((cat) => {
-                    const selected = activity.categories.includes(cat);
+                    const current = draftCategories ?? activity.categories;
+                    const selected = current.includes(cat);
                     return (
                       <button
                         key={cat}
                         type="button"
                         onClick={() => {
                           const next = selected
-                            ? activity.categories.filter((c) => c !== cat)
-                            : [...activity.categories, cat];
-                          setActivity({ ...activity, categories: next });
-                          saveField({ activityId: activity.id, categories: next });
+                            ? current.filter((c) => c !== cat)
+                            : [...current, cat];
+                          setDraftCategories(next);
                         }}
                         className={`font-sans text-[10px] uppercase tracking-wide px-2.5 py-1 rounded-full border transition-colors ${
                           selected
@@ -327,9 +342,8 @@ export function ScrapeConfirmDrawer({ open, jobId, inputUrl, scopeLabel, onClose
 
               <Field label="About" confidence={activity.data_confidence}>
                 <textarea
-                  value={activity.description ?? ""}
-                  onChange={(e) => setActivity({ ...activity, description: e.target.value })}
-                  onBlur={() => saveField({ activityId: activity.id, description: activity.description })}
+                  value={draftDescription ?? ""}
+                  onChange={(e) => setDraftDescription(e.target.value)}
                   placeholder="What's this camp about?"
                   rows={3}
                   className="w-full bg-surface border border-ink-3 rounded-md px-3 py-2 text-sm text-ink focus:outline-none focus:border-ink resize-none"
@@ -380,9 +394,8 @@ export function ScrapeConfirmDrawer({ open, jobId, inputUrl, scopeLabel, onClose
                     type="number"
                     min={0}
                     max={25}
-                    value={activity.age_min ?? ""}
-                    onChange={(e) => setActivity({ ...activity, age_min: e.target.value === "" ? null : Number(e.target.value) })}
-                    onBlur={() => saveField({ activityId: activity.id, ageMin: activity.age_min })}
+                    value={draftAgeMin ?? ""}
+                    onChange={(e) => setDraftAgeMin(e.target.value === "" ? null : Number(e.target.value))}
                     placeholder="min"
                     className="w-16 bg-surface border border-ink-3 rounded-md px-2 py-1 text-sm focus:outline-none focus:border-ink"
                   />
@@ -391,9 +404,8 @@ export function ScrapeConfirmDrawer({ open, jobId, inputUrl, scopeLabel, onClose
                     type="number"
                     min={0}
                     max={25}
-                    value={activity.age_max ?? ""}
-                    onChange={(e) => setActivity({ ...activity, age_max: e.target.value === "" ? null : Number(e.target.value) })}
-                    onBlur={() => saveField({ activityId: activity.id, ageMax: activity.age_max })}
+                    value={draftAgeMax ?? ""}
+                    onChange={(e) => setDraftAgeMax(e.target.value === "" ? null : Number(e.target.value))}
                     placeholder="max"
                     className="w-16 bg-surface border border-ink-3 rounded-md px-2 py-1 text-sm focus:outline-none focus:border-ink"
                   />
@@ -417,29 +429,77 @@ export function ScrapeConfirmDrawer({ open, jobId, inputUrl, scopeLabel, onClose
           )}
         </div>
 
-        <footer className="p-5 border-t border-ink-3 bg-surface flex justify-end gap-2">
+        <footer className="p-5 border-t border-ink-3 bg-surface flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              if (!userCampId) {
+                handleClose();
+                return;
+              }
+              if (!confirm("Delete this camp from your shortlist? This can't be undone.")) return;
+              setDeleting(true);
+              const r = await removeCampFromShortlist(userCampId);
+              setDeleting(false);
+              if (r.error) {
+                alert(r.error);
+                return;
+              }
+              router.refresh();
+              onClose();
+            }}
+            disabled={deleting || saving}
+            className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 rounded-full border border-[#ef8c8f] text-[#c1474a] hover:bg-[#ef8c8f]/10 disabled:opacity-50"
+          >
+            {deleting ? "Deleting…" : "Delete"}
+          </button>
+
           {isResolving && !hasFailed ? (
             <button
+              type="button"
               onClick={handleClose}
               className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 text-ink-2 hover:text-ink"
             >
               Continue in background
             </button>
           ) : (
-            <>
+            <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={handleClose}
-                className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 text-ink-2 hover:text-ink"
+                disabled={saving || deleting}
+                className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 text-ink-2 hover:text-ink disabled:opacity-50"
               >
-                Close
+                Cancel
               </button>
               <button
-                onClick={handleClose}
-                className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-ink/90"
+                type="button"
+                onClick={async () => {
+                  if (!activity) {
+                    handleClose();
+                    return;
+                  }
+                  setSaving(true);
+                  const patch: Parameters<typeof updateActivityFields>[0] = { activityId: activity.id };
+                  if (draftCategories !== null) patch.categories = draftCategories;
+                  if (draftDescription !== null || activity.description !== null) patch.description = draftDescription;
+                  if (draftAgeMin !== undefined) patch.ageMin = draftAgeMin;
+                  if (draftAgeMax !== undefined) patch.ageMax = draftAgeMax;
+                  const r = await updateActivityFields(patch);
+                  setSaving(false);
+                  if (r.error) {
+                    alert(r.error);
+                    return;
+                  }
+                  router.refresh();
+                  onClose();
+                }}
+                disabled={saving || deleting}
+                className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-ink/90 disabled:opacity-50"
               >
-                {hasFailed ? "Keep it" : "Save"}
+                {saving ? "Saving…" : hasFailed ? "Keep it" : "Save"}
               </button>
-            </>
+            </div>
           )}
         </footer>
       </aside>

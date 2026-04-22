@@ -63,7 +63,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
   const [drawerBlockId, setDrawerBlockId] = useState<string | null>(null);
   const [quickViewCampId, setQuickViewCampId] = useState<string | null>(null);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
-  const [scrapeDrawer, setScrapeDrawer] = useState<{ jobId: string; url: string; scopeLabel: string | null } | null>(null);
+  const [scrapeDrawer, setScrapeDrawer] = useState<{ jobId: string; userCampId: string | null; url: string; scopeLabel: string | null } | null>(null);
   const [draggingCamp, setDraggingCamp] = useState<{ name: string; color: string } | null>(null);
   const isDraggingCamp = draggingCamp !== null;
   const [pendingAssignment, setPendingAssignment] = useState<{
@@ -469,7 +469,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
                 : kid
                 ? kid.name
                 : weekLabel;
-              setScrapeDrawer({ jobId: result.jobId, url: result.url, scopeLabel });
+              setScrapeDrawer({ jobId: result.jobId, userCampId: result.userCampId ?? null, url: result.url, scopeLabel });
             } else if (result.jobId) {
               setActiveJobId(result.jobId);
             }
@@ -503,6 +503,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
         <ScrapeConfirmDrawer
           open={scrapeDrawer !== null}
           jobId={scrapeDrawer?.jobId ?? null}
+          userCampId={scrapeDrawer?.userCampId ?? null}
           inputUrl={scrapeDrawer?.url ?? ""}
           scopeLabel={scrapeDrawer?.scopeLabel ?? null}
           onClose={() => setScrapeDrawer(null)}
