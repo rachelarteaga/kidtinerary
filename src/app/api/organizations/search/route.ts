@@ -6,15 +6,16 @@ export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get("q")?.trim() ?? "";
   if (q.length < 2) return NextResponse.json({ results: [] });
 
+  // Orgs that have at least one shared+verified activity attached.
   const { data } = await supabase
-    .from("activities")
-    .select("id, name, slug, verified, organization:organizations(id, name), activity_locations(address)")
-    .ilike("name", `%${q}%`)
-    .eq("is_active", true)
+    .from("organizations")
+    .select("id, name, activities!inner(id)")
     .eq("source", "user")
-    .eq("shared", true)
-    .eq("verified", true)
+    .eq("activities.shared", true)
+    .eq("activities.verified", true)
+    .ilike("name", `%${q}%`)
     .limit(8);
 
-  return NextResponse.json({ results: data ?? [] });
+  const results = (data ?? []).map((o: { id: string; name: string }) => ({ id: o.id, name: o.name }));
+  return NextResponse.json({ results });
 }

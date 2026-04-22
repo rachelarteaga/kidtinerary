@@ -1,8 +1,25 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { ScrapeJobStatus, ScrapeConfidence } from "@/lib/supabase/types";
+import { updateActivityFields, removeCampFromShortlist } from "@/lib/actions";
+import { CATEGORIES } from "@/lib/constants";
+
+const CATEGORY_LABELS: Record<string, string> = {
+  sports: "Sports",
+  arts: "Arts",
+  stem: "STEM",
+  nature: "Nature",
+  music: "Music",
+  theater: "Theater",
+  academic: "Academic",
+  special_needs: "Special needs",
+  religious: "Religious",
+  swimming: "Swimming",
+  cooking: "Cooking",
+  language: "Language",
+};
 
 interface ScrapedSession {
   id: string;
@@ -58,6 +75,7 @@ interface JobPayload {
 interface Props {
   open: boolean;
   jobId: string | null;
+  userCampId: string | null;
   inputUrl: string;
   scopeLabel: string | null;
   onClose: () => void;
@@ -106,12 +124,18 @@ function confidenceBadge(confidence: string) {
   }
 }
 
-export function ScrapeConfirmDrawer({ open, jobId, inputUrl, scopeLabel, onClose }: Props) {
+export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLabel, onClose }: Props) {
   const router = useRouter();
   const [job, setJob] = useState<JobPayload | null>(null);
   const [activity, setActivity] = useState<ScrapedActivity | null>(null);
   const [pollError, setPollError] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const attemptRef = useRef(0);
+
+  const [draftCategories, setDraftCategories] = useState<string[] | null>(null);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     if (!open) return;
@@ -128,6 +152,8 @@ export function ScrapeConfirmDrawer({ open, jobId, inputUrl, scopeLabel, onClose
     setJob(null);
     setActivity(null);
     setPollError(null);
+    setDraftCategories(null);
+    initializedRef.current = false;
     attemptRef.current = 0;
 
     let cancelled = false;
@@ -144,7 +170,13 @@ export function ScrapeConfirmDrawer({ open, jobId, inputUrl, scopeLabel, onClose
         if (cancelled) return;
 
         setJob(data.job);
-        if (data.activity) setActivity(data.activity);
+        if (data.activity) {
+          setActivity(data.activity);
+          if (!initializedRef.current) {
+            setDraftCategories(data.activity.categories ?? []);
+            initializedRef.current = true;
+          }
+        }
 
         if (data.job.status === "resolved" || data.job.status === "failed") {
           return;
@@ -249,61 +281,35 @@ export function ScrapeConfirmDrawer({ open, jobId, inputUrl, scopeLabel, onClose
 
           {!isResolving && !hasFailed && activity && (
             <>
+              {/* 1. Camp name */}
               <Field label="Camp name" confidence="scraped">
                 <span className="text-sm text-ink">{activity.name}</span>
               </Field>
 
+              {/* 2. Organization */}
               {activity.organization?.name &&
                 activity.organization.name !== activity.name &&
                 activity.organization.name !== "User-submitted" && (
                   <Field label="Hosted by" confidence="scraped">
                     <span className="text-sm text-ink">{activity.organization.name}</span>
-                    {activity.organization.website && (
-                      <a
-                        href={activity.organization.website}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block text-[11px] text-ink-2 underline mt-0.5 truncate"
-                      >
-                        {activity.organization.website}
-                      </a>
-                    )}
                   </Field>
                 )}
 
-              {activity.description && (
-                <Field label="About" confidence={activity.data_confidence}>
-                  <p className="text-sm text-ink leading-snug">{activity.description}</p>
+              {/* 3. URL */}
+              {activity.registration_url && (
+                <Field label="URL">
+                  <a
+                    href={activity.registration_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm text-ink underline break-all"
+                  >
+                    {activity.registration_url}
+                  </a>
                 </Field>
               )}
 
-              {activity.sessions.length > 0 && (
-                <Field label="Dates" confidence={activity.data_confidence}>
-                  <ul className="space-y-1">
-                    {activity.sessions.slice(0, 4).map((s) => (
-                      <li key={s.id} className="text-sm text-ink">
-                        {formatDateRange(s.starts_at, s.ends_at)}
-                        {s.is_sold_out && <span className="ml-2 text-[11px] text-[#c1474a] uppercase tracking-wide">sold out</span>}
-                      </li>
-                    ))}
-                    {activity.sessions.length > 4 && (
-                      <li className="text-[11px] text-ink-2">+{activity.sessions.length - 4} more</li>
-                    )}
-                  </ul>
-                </Field>
-              )}
-
-              {activity.prices.length > 0 && (
-                <Field label="Price" confidence={activity.prices[0].confidence}>
-                  <div className="text-sm text-ink">
-                    {formatPrice(activity.prices[0].price_cents, activity.prices[0].price_unit)}
-                    {activity.prices[0].label && activity.prices[0].label !== "Standard" && (
-                      <span className="text-ink-2 ml-2 text-[12px]">· {activity.prices[0].label}</span>
-                    )}
-                  </div>
-                </Field>
-              )}
-
+              {/* 4. Location */}
               {activity.locations.length > 0 && (
                 <Field label="Location" confidence={activity.data_confidence}>
                   <div className="text-sm text-ink">
@@ -315,53 +321,176 @@ export function ScrapeConfirmDrawer({ open, jobId, inputUrl, scopeLabel, onClose
                 </Field>
               )}
 
-              {(activity.age_min != null || activity.age_max != null) && (
-                <Field label="Ages" confidence={activity.data_confidence}>
-                  <span className="text-sm text-ink">
-                    {activity.age_min ?? "?"}–{activity.age_max ?? "?"}
-                  </span>
-                </Field>
+              {/* 5. Categories — draft */}
+              <div>
+                <div className="flex items-center mb-1">
+                  <label className="font-sans text-[10px] font-bold uppercase tracking-widest text-ink-2">Categories</label>
+                  <span className="ml-1.5 font-sans text-[9px] uppercase tracking-wide text-[#8a6b00] bg-hero/20 px-1.5 py-0.5 rounded">Beta</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {CATEGORIES.map((cat) => {
+                    const current = draftCategories ?? activity.categories;
+                    const selected = current.includes(cat);
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => {
+                          const next = selected
+                            ? current.filter((c) => c !== cat)
+                            : [...current, cat];
+                          setDraftCategories(next);
+                        }}
+                        className={`font-sans text-[10px] uppercase tracking-wide px-2.5 py-1 rounded-full border transition-colors ${
+                          selected
+                            ? "bg-ink text-ink-inverse border-ink"
+                            : "bg-transparent text-ink-2 border-ink-3 hover:border-ink hover:text-ink"
+                        }`}
+                      >
+                        {CATEGORY_LABELS[cat]}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 6. About — read-only beta */}
+              <div>
+                <div className="flex items-center mb-1">
+                  <label className="font-sans text-[10px] font-bold uppercase tracking-widest text-ink-2">About</label>
+                  <span className="ml-1.5 font-sans text-[9px] uppercase tracking-wide text-[#8a6b00] bg-hero/20 px-1.5 py-0.5 rounded">Beta</span>
+                </div>
+                <p className="text-sm text-ink leading-snug whitespace-pre-wrap">
+                  {activity.description ?? <span className="text-ink-2 italic">No description detected</span>}
+                </p>
+              </div>
+
+              {/* 7. Ages — read-only, beta */}
+              <div>
+                <div className="flex items-center mb-1">
+                  <label className="font-sans text-[10px] font-bold uppercase tracking-widest text-ink-2">Ages</label>
+                  <span className="ml-1.5 font-sans text-[9px] uppercase tracking-wide text-[#8a6b00] bg-hero/20 px-1.5 py-0.5 rounded">Beta</span>
+                </div>
+                <div className="text-sm text-ink">
+                  {activity.age_min != null || activity.age_max != null
+                    ? `${activity.age_min ?? "?"}–${activity.age_max ?? "?"} years`
+                    : <span className="text-ink-2 italic">No age range detected</span>}
+                </div>
+              </div>
+
+              {/* 8. Scraped price options — beta */}
+              {activity.prices.length > 0 && (
+                <div>
+                  <div className="flex items-center mb-1">
+                    <label className="font-sans text-[10px] font-bold uppercase tracking-widest text-ink-2">Scraped prices</label>
+                    <span className="ml-1.5 font-sans text-[9px] uppercase tracking-wide text-[#8a6b00] bg-hero/20 px-1.5 py-0.5 rounded">Beta</span>
+                  </div>
+                  <ul className="text-sm text-ink space-y-1">
+                    {activity.prices.slice(0, 5).map((p) => (
+                      <li key={p.id} className="flex items-baseline justify-between gap-2">
+                        <span className="text-ink-2">{p.label || "Standard"}</span>
+                        <span>{formatPrice(p.price_cents, p.price_unit)}</span>
+                      </li>
+                    ))}
+                    {activity.prices.length > 5 && (
+                      <li className="text-[11px] text-ink-2">+{activity.prices.length - 5} more</li>
+                    )}
+                  </ul>
+                </div>
               )}
 
-              {activity.registration_url && (
-                <Field label="Registration">
-                  <a
-                    href={activity.registration_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm text-ink underline break-all"
-                  >
-                    {activity.registration_url}
-                  </a>
-                </Field>
+              {/* 9. Scraped dates/sessions — beta */}
+              {activity.sessions.length > 0 && (
+                <div>
+                  <div className="flex items-center mb-1">
+                    <label className="font-sans text-[10px] font-bold uppercase tracking-widest text-ink-2">Dates</label>
+                    <span className="ml-1.5 font-sans text-[9px] uppercase tracking-wide text-[#8a6b00] bg-hero/20 px-1.5 py-0.5 rounded">Beta</span>
+                  </div>
+                  <ul className="space-y-1">
+                    {activity.sessions.slice(0, 4).map((s) => (
+                      <li key={s.id} className="text-sm text-ink">
+                        {formatDateRange(s.starts_at, s.ends_at)}
+                        {s.is_sold_out && <span className="ml-2 text-[11px] text-[#c1474a] uppercase tracking-wide">sold out</span>}
+                      </li>
+                    ))}
+                    {activity.sessions.length > 4 && (
+                      <li className="text-[11px] text-ink-2">+{activity.sessions.length - 4} more</li>
+                    )}
+                  </ul>
+                </div>
               )}
             </>
           )}
         </div>
 
-        <footer className="p-5 border-t border-ink-3 bg-surface flex justify-end gap-2">
+        <footer className="p-5 border-t border-ink-3 bg-surface flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              if (!userCampId) {
+                handleClose();
+                return;
+              }
+              if (!confirm("Delete this camp from your shortlist? This can't be undone.")) return;
+              setDeleting(true);
+              const r = await removeCampFromShortlist(userCampId);
+              setDeleting(false);
+              if (r.error) {
+                alert(r.error);
+                return;
+              }
+              router.refresh();
+              onClose();
+            }}
+            disabled={deleting || saving}
+            className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 rounded-full border border-[#ef8c8f] text-[#c1474a] hover:bg-[#ef8c8f]/10 disabled:opacity-50"
+          >
+            {deleting ? "Deleting…" : "Delete"}
+          </button>
+
           {isResolving && !hasFailed ? (
             <button
+              type="button"
               onClick={handleClose}
               className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 text-ink-2 hover:text-ink"
             >
               Continue in background
             </button>
           ) : (
-            <>
+            <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={handleClose}
-                className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 text-ink-2 hover:text-ink"
+                disabled={saving || deleting}
+                className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 text-ink-2 hover:text-ink disabled:opacity-50"
               >
-                Close
+                Cancel
               </button>
               <button
-                onClick={handleClose}
-                className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-ink/90"
+                type="button"
+                onClick={async () => {
+                  if (!activity) {
+                    handleClose();
+                    return;
+                  }
+                  setSaving(true);
+                  const patch: Parameters<typeof updateActivityFields>[0] = { activityId: activity.id };
+                  if (draftCategories !== null) patch.categories = draftCategories;
+                  const r = await updateActivityFields(patch);
+                  setSaving(false);
+                  if (r.error) {
+                    alert(r.error);
+                    return;
+                  }
+                  router.refresh();
+                  onClose();
+                }}
+                disabled={saving || deleting}
+                className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-ink/90 disabled:opacity-50"
               >
-                {hasFailed ? "Keep it" : "Save"}
+                {saving ? "Saving…" : hasFailed ? "Keep it" : "Save"}
               </button>
-            </>
+            </div>
           )}
         </footer>
       </aside>

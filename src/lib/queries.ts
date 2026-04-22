@@ -563,7 +563,13 @@ export interface UserCampWithActivity {
     name: string;
     slug: string;
     verified: boolean;
+    source: "user" | "curated";
     categories: string[];
+    description: string | null;
+    age_min: number | null;
+    age_max: number | null;
+    registration_url: string | null;
+    organization_id: string | null;
     organization: { id: string; name: string } | null;
     activity_locations: { id: string; address: string; location_name: string | null }[];
     price_options: { id: string; label: string; price_cents: number; price_unit: string }[];
@@ -587,7 +593,7 @@ export async function fetchUserCamps(userId: string): Promise<UserCampWithActivi
     .select(`
       id, created_at, color,
       activity:activities!inner(
-        id, name, slug, verified, categories,
+        id, name, slug, verified, source, categories, description, age_min, age_max, registration_url, organization_id,
         organization:organizations(id, name),
         activity_locations(id, address, location_name),
         price_options(id, label, price_cents, price_unit),

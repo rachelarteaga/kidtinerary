@@ -5,6 +5,10 @@ import { revalidatePath } from "next/cache";
 import { paletteColorForCampIndex } from "@/lib/camp-palette";
 import type { SessionPart, DayOfWeek, ExtraItem, PriceUnit } from "@/lib/supabase/types";
 import { normalizeDays } from "@/lib/schedule";
+import {
+  validateSubmitCampInput,
+  type SubmitCampRawInput,
+} from "@/lib/submit-camp-validation";
 
 /**
  * Find-or-create a placeholder activity_location for an activity.
@@ -578,9 +582,8 @@ interface SubmitCampContext {
 }
 
 export async function submitCamp(
-  input: string,
+  raw: SubmitCampRawInput,
   context: SubmitCampContext,
-  consentShare: boolean
 ): Promise<{
   error?: string;
   jobId?: string;
@@ -588,6 +591,10 @@ export async function submitCamp(
   plannerEntryId?: string | null;
   activityId?: string;
 }> {
+  const validated = validateSubmitCampInput(raw);
+  if (!validated.ok) return { error: validated.error };
+  const input = validated.value;
+
   const supabase = (await createClient()) as any;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
@@ -601,92 +608,68 @@ export async function submitCamp(
 
   if (!defaultPlanner) return { error: "No planner found — refresh and retry" };
 
-  const trimmed = input.trim();
-  if (!trimmed) return { error: "Enter a camp name or URL" };
-
-  // Try to match existing activity by exact name or by URL fuzzy match.
   let activityId: string | null = null;
 
-  const isURL = /^https?:\/\//i.test(trimmed);
-
-  if (isURL) {
-    try {
-      const origin = new URL(trimmed).origin;
-      const { data: existing } = await supabase
-        .from("activities")
-        .select("id")
-        .ilike("registration_url", `${origin}%`)
-        .limit(1)
-        .maybeSingle();
-      if (existing) activityId = existing.id;
-    } catch {
-      // Invalid URL; fall through to name match
-    }
+  if (input.activityId) {
+    activityId = input.activityId;
   } else {
-    const { data: existing } = await supabase
-      .from("activities")
-      .select("id")
-      .ilike("name", `%${trimmed}%`)
-      .limit(1)
-      .maybeSingle();
-    if (existing) activityId = existing.id;
-  }
-
-  // If no match, create a stub activity.
-  if (!activityId) {
     let orgId: string | null = null;
-    const { data: stubOrg } = await supabase
-      .from("organizations")
-      .select("id")
-      .eq("name", "User-submitted")
-      .maybeSingle();
-    if (stubOrg) {
-      orgId = stubOrg.id;
-    } else {
-      // Upsert against the unique(name) constraint so concurrent first-time
-      // submissions don't race each other into a duplicate-name error.
-      const { data: newOrg, error: orgErr } = await supabase
+    let activityName: string;
+
+    if (input.orgName && input.campName) {
+      const { data: existingOrg } = await supabase
         .from("organizations")
-        .upsert(
-          { name: "User-submitted" },
-          { onConflict: "name" }
-        )
         .select("id")
-        .single();
-      if (orgErr || !newOrg) {
-        console.error("submitCamp organization upsert error:", orgErr);
-        return { error: "Failed to create camp entry" };
+        .ilike("name", input.orgName)
+        .eq("source", "user")
+        .maybeSingle();
+
+      if (existingOrg) {
+        orgId = existingOrg.id;
+      } else {
+        const { data: newOrg, error: orgErr } = await supabase
+          .from("organizations")
+          .insert({ name: input.orgName, source: "user" })
+          .select("id")
+          .single();
+        if (orgErr || !newOrg) {
+          console.error("submitCamp org insert error:", orgErr);
+          return { error: "Failed to create organization" };
+        }
+        orgId = newOrg.id;
       }
-      orgId = newOrg.id;
-    }
-    if (!orgId) {
-      console.error("submitCamp: organization lookup returned no id");
-      return { error: "Failed to create camp entry" };
+      activityName = input.campName;
+    } else {
+      activityName = "New camp";
     }
 
-    const slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80) + "-" + Date.now().toString(36);
+    const slug =
+      activityName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80)
+      + "-" + Date.now().toString(36);
+
     const { data: stub, error: stubErr } = await supabase
       .from("activities")
       .insert({
         organization_id: orgId,
-        name: trimmed,
+        name: activityName,
         slug,
         is_active: true,
         verified: false,
-        registration_url: isURL ? trimmed : null,
+        source: "user",
+        shared: input.shared,
+        registration_url: input.url ?? null,
         categories: [],
       })
       .select("id")
       .single();
 
     if (stubErr || !stub) {
-      console.error("submitCamp stub insert error:", stubErr);
+      console.error("submitCamp activity insert error:", stubErr);
       return { error: "Failed to create camp entry" };
     }
     activityId = stub.id;
   }
 
-  // Count existing user_camps for color assignment
   const { count } = await supabase
     .from("user_camps")
     .select("id", { count: "exact", head: true })
@@ -704,6 +687,7 @@ export async function submitCamp(
     console.error("submitCamp user_camps upsert error:", ucUpsertErr);
     return { error: "Failed to save camp to shortlist" };
   }
+
   const { data: userCamp } = await supabase
     .from("user_camps")
     .select("id, color")
@@ -712,7 +696,6 @@ export async function submitCamp(
     .single();
   if (!userCamp) return { error: "Failed to retrieve user camp" };
 
-  // Optionally create a planner entry if scoped to week + kid.
   let plannerEntryId: string | null = null;
   if (context.childId && context.weekStart) {
     const weekEnd = new Date(context.weekStart);
@@ -730,8 +713,7 @@ export async function submitCamp(
     let sessionId = matchedSession?.id;
 
     if (!sessionId) {
-      if (!activityId) return { error: "Missing activity for placeholder session" };
-      const locationId = await ensureActivityLocation(supabase, activityId);
+      const locationId = await ensureActivityLocation(supabase, activityId!);
       if (!locationId) return { error: "Could not set up camp location" };
 
       const { data: newSession, error: sessErr } = await supabase
@@ -775,31 +757,210 @@ export async function submitCamp(
     plannerEntryId = entry.id;
   }
 
-  // Enqueue scrape job.
-  const { data: job } = await supabase
-    .from("scrape_jobs")
-    .insert({
-      user_id: user.id,
-      input: trimmed,
-      context: {
-        child_id: context.childId ?? null,
-        week_start: context.weekStart ?? null,
-        activity_id: activityId,
-      },
-      consent_share: consentShare,
-      status: "queued",
-    })
-    .select("id")
-    .single();
+  let jobId: string | undefined;
+  if (input.url) {
+    const { data: job } = await supabase
+      .from("scrape_jobs")
+      .insert({
+        user_id: user.id,
+        input: input.url,
+        context: {
+          child_id: context.childId ?? null,
+          week_start: context.weekStart ?? null,
+          activity_id: activityId,
+        },
+        consent_share: input.shared,
+        status: "queued",
+      })
+      .select("id")
+      .single();
+    jobId = job?.id;
+  }
 
   revalidatePath("/planner");
 
   return {
-    jobId: job?.id,
+    jobId,
     userCampId: userCamp.id,
     plannerEntryId,
     activityId: activityId ?? undefined,
   };
+}
+
+export async function updateActivityFields(params: {
+  activityId: string;
+  name?: string;
+  orgName?: string;
+  url?: string | null;
+  description?: string | null;
+  ageMin?: number | null;
+  ageMax?: number | null;
+  categories?: string[];
+  address?: string | null;
+  locationName?: string | null;
+}): Promise<{ error?: string; orgId?: string | null }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  // Auth guard: caller must own a user_camps row for this activity.
+  const { data: ownership } = await supabase
+    .from("user_camps")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("activity_id", params.activityId)
+    .maybeSingle();
+  if (!ownership) return { error: "Not your camp" };
+
+  const patch: Record<string, unknown> = {};
+
+  if (params.name !== undefined) {
+    const trimmed = params.name.trim();
+    if (!trimmed) return { error: "Name can't be blank" };
+    patch.name = trimmed;
+  }
+
+  if (params.url !== undefined) {
+    if (params.url === null || params.url.trim() === "") {
+      patch.registration_url = null;
+    } else {
+      const trimmed = params.url.trim();
+      try {
+        new URL(trimmed);
+      } catch {
+        return { error: "That doesn't look like a valid URL." };
+      }
+      patch.registration_url = trimmed;
+    }
+  }
+
+  let resolvedOrgId: string | null | undefined = undefined;
+
+  if (params.orgName !== undefined) {
+    const trimmed = params.orgName.trim();
+    if (!trimmed) {
+      patch.organization_id = null;
+      resolvedOrgId = null;
+    } else {
+      const { data: existingOrg } = await supabase
+        .from("organizations")
+        .select("id")
+        .ilike("name", trimmed)
+        .eq("source", "user")
+        .maybeSingle();
+      if (existingOrg) {
+        patch.organization_id = existingOrg.id;
+        resolvedOrgId = existingOrg.id;
+      } else {
+        const { data: newOrg, error: orgErr } = await supabase
+          .from("organizations")
+          .insert({ name: trimmed, source: "user" })
+          .select("id")
+          .single();
+        if (orgErr || !newOrg) {
+          console.error("updateActivityFields org insert error:", orgErr);
+          return { error: "Failed to save organization" };
+        }
+        patch.organization_id = newOrg.id;
+        resolvedOrgId = newOrg.id;
+      }
+    }
+  }
+
+  if (params.description !== undefined) {
+    if (params.description === null) {
+      patch.description = null;
+    } else {
+      const trimmed = params.description.trim();
+      patch.description = trimmed.length ? trimmed.slice(0, 4000) : null;
+    }
+  }
+
+  if (params.ageMin !== undefined) {
+    if (params.ageMin === null) {
+      patch.age_min = null;
+    } else if (!Number.isFinite(params.ageMin) || params.ageMin < 0 || params.ageMin > 25) {
+      return { error: "Min age must be between 0 and 25." };
+    } else {
+      patch.age_min = Math.floor(params.ageMin);
+    }
+  }
+
+  if (params.ageMax !== undefined) {
+    if (params.ageMax === null) {
+      patch.age_max = null;
+    } else if (!Number.isFinite(params.ageMax) || params.ageMax < 0 || params.ageMax > 25) {
+      return { error: "Max age must be between 0 and 25." };
+    } else {
+      patch.age_max = Math.floor(params.ageMax);
+    }
+  }
+
+  if (patch.age_min != null && patch.age_max != null && (patch.age_min as number) > (patch.age_max as number)) {
+    return { error: "Min age can't exceed max age." };
+  }
+
+  if (params.categories !== undefined) {
+    const ALLOWED = new Set([
+      "sports", "arts", "stem", "nature", "music", "theater",
+      "academic", "special_needs", "religious", "swimming", "cooking", "language",
+    ]);
+    const cleaned = Array.from(new Set(params.categories.filter((c) => ALLOWED.has(c))));
+    patch.categories = cleaned;
+  }
+
+  const hasActivityPatch = Object.keys(patch).length > 0;
+  const hasLocationPatch = params.address !== undefined || params.locationName !== undefined;
+  if (!hasActivityPatch && !hasLocationPatch) return {};
+
+  if (hasActivityPatch) {
+    const { data: updatedRows, error: updErr } = await supabase
+      .from("activities")
+      .update(patch)
+      .eq("id", params.activityId)
+      .select("id");
+
+    if (updErr) {
+      console.error("updateActivityFields update error:", updErr);
+      return { error: "Failed to save changes" };
+    }
+    if (!updatedRows || updatedRows.length === 0) {
+      console.error("updateActivityFields update silently affected 0 rows — check activities UPDATE RLS policy");
+      return { error: "Couldn't save changes — the database rejected the update (RLS policy may be missing)." };
+    }
+  }
+
+  if (hasLocationPatch) {
+    const locationId = await ensureActivityLocation(supabase, params.activityId);
+    if (!locationId) return { error: "Could not set up camp location" };
+
+    const locPatch: Record<string, unknown> = {};
+    if (params.address !== undefined) {
+      locPatch.address = params.address?.trim() ?? "";
+    }
+    if (params.locationName !== undefined) {
+      const trimmedName = params.locationName?.trim() ?? "";
+      locPatch.location_name = trimmedName.length ? trimmedName : null;
+    }
+
+    const { data: locRows, error: locErr } = await supabase
+      .from("activity_locations")
+      .update(locPatch)
+      .eq("id", locationId)
+      .select("id");
+
+    if (locErr) {
+      console.error("updateActivityFields location update error:", locErr);
+      return { error: "Failed to save location" };
+    }
+    if (!locRows || locRows.length === 0) {
+      console.error("updateActivityFields location update silently affected 0 rows — check activity_locations UPDATE RLS policy");
+      return { error: "Couldn't save location — the database rejected the update." };
+    }
+  }
+
+  revalidatePath("/planner");
+  return { orgId: resolvedOrgId };
 }
 
 export async function assignCampToWeek(

@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reorder fields — kidtinerary</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 24px; background: #fafafa; color: #1a1a1a; max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  p.muted { color: #666; margin: 0 0 20px; font-size: 13px; }
+  h2 { font-size: 15px; margin: 28px 0 10px; letter-spacing: 0.03em; text-transform: uppercase; color: #555; }
+  .surface { background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 14px; margin-bottom: 18px; }
+  .surface-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #fff; border: 1px solid #e5e5e5; border-radius: 6px; margin-bottom: 4px; cursor: grab; user-select: none; transition: background 0.12s, border-color 0.12s; }
+  li:hover { border-color: #aaa; background: #f7f7f7; }
+  li.dragging { opacity: 0.4; border-style: dashed; }
+  li.over { background: #fff8dc; border-color: #d4a017; }
+  .handle { color: #bbb; font-size: 13px; cursor: grab; }
+  .field-name { flex: 1; font-weight: 500; }
+  .meta { font-size: 12px; color: #888; }
+  button { padding: 6px 12px; font-size: 12px; border: 1px solid #1a1a1a; background: #1a1a1a; color: #fff; border-radius: 20px; cursor: pointer; letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600; }
+  button:hover { background: #333; }
+  button.ghost { background: #fff; color: #1a1a1a; }
+  button.ghost:hover { background: #f0f0f0; }
+  .toolbar { position: sticky; top: 0; z-index: 10; background: #fafafa; padding: 10px 0; margin: 0 0 14px; border-bottom: 1px solid #e5e5e5; display: flex; gap: 8px; align-items: center; }
+  #output { width: 100%; min-height: 260px; margin-top: 16px; padding: 12px; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid #e5e5e5; border-radius: 6px; background: #fff; white-space: pre; }
+  .status { font-size: 12px; color: #666; margin-left: auto; }
+  .status.ok { color: #2f8f6b; }
+</style>
+</head>
+<body>
+  <h1>Reorder fields — drag to reshape</h1>
+  <p class="muted">Drag any row up or down inside its surface. Click <b>Copy order</b> to grab the result as markdown — paste it in our chat or save it as the spec.</p>
+
+  <div class="toolbar">
+    <button onclick="copyAll()">Copy order (all surfaces)</button>
+    <button class="ghost" onclick="resetOrder()">Reset</button>
+    <span id="status" class="status"></span>
+  </div>
+
+  <div id="app"></div>
+
+  <textarea id="output" placeholder="Your reordered markdown will appear here…"></textarea>
+
+<script>
+const INITIAL = {
+  "Preview modal — rail click": [
+    ["Camp name", "👁"],
+    ["Organization", "👁"],
+    ["Source (You added / Curated)", "👁"],
+    ["Placements summary", "👁 — e.g. '2 considering, 1 registered'"],
+    ["Avg $/week across registered", "👁 — from price paid"],
+    ["Location", "👁"],
+    ["Categories", "👁"],
+    ["About / description", "👁"],
+    ["URL", "👁"],
+    ["CTA → Edit / View full details", "→ action"],
+  ],
+  "Drawer — Placed (cell click)": [
+    ["Status dropdown", "✎ considering / waitlisted / registered"],
+    ["Camp name", "✎ inline header"],
+    ["Organization", "✎ inline header"],
+    ["URL", "✎ inline header"],
+    ["Source badge", "👁"],
+    ["Schedule (session part + days)", "✎ user-picked per week"],
+    ["This-week price + extras", "✎ price paid (feeds card + totals)"],
+    ["Notes (per week)", "✎"],
+    ["Categories", "✎"],
+    ["Ages", "👁 (beta)"],
+    ["Location", "✎"],
+    ["About / description", "✎"],
+    ["Scraped price options", "👁 (beta)"],
+    ["Scraped dates / sessions", "👁 (beta)"],
+    ["Also add for [other kid]", "→ action"],
+    ["Delete from week", "→ footer"],
+    ["Done", "→ footer"],
+  ],
+  "Drawer — Shortlist (preview CTA)": [
+    ["Camp name", "✎ inline header"],
+    ["Organization", "✎ inline header"],
+    ["URL", "✎ inline header"],
+    ["Source badge", "👁"],
+    ["Categories", "✎"],
+    ["Ages", "👁 (beta)"],
+    ["Location", "✎"],
+    ["About / description", "✎"],
+    ["Scraped price options", "👁 (beta)"],
+    ["Delete from shortlist", "→ footer"],
+    ["Done", "→ footer"],
+  ],
+  "Scrape-confirm drawer (post URL submit)": [
+    ["Camp name (scraped)", "👁"],
+    ["Organization (scraped)", "👁"],
+    ["URL", "👁"],
+    ["Categories", "✎ draft"],
+    ["About / description", "✎ draft"],
+    ["Ages", "👁 (beta)"],
+    ["Location", "👁"],
+    ["Dates / sessions", "👁 (beta)"],
+    ["Scraped price options", "👁 (beta)"],
+    ["Delete (remove from shortlist)", "→ footer"],
+    ["Cancel", "→ footer"],
+    ["Save", "→ footer"],
+  ],
+  "Add form (entry point for all adds)": [
+    ["Organization", "✎ input + autocomplete"],
+    ["Camp name", "✎ input + autocomplete"],
+    ["OR divider", "—"],
+    ["URL", "✎ input"],
+    ["Consent to share", "✎ checkbox"],
+    ["Cancel", "→ footer"],
+    ["Add camp", "→ footer"],
+  ],
+};
+
+const app = document.getElementById("app");
+const output = document.getElementById("output");
+const status = document.getElementById("status");
+
+function render() {
+  app.innerHTML = "";
+  for (const [title, rows] of Object.entries(state)) {
+    const surface = document.createElement("div");
+    surface.className = "surface";
+    const h = document.createElement("div");
+    h.className = "surface-header";
+    h.innerHTML = `<h2 style="margin:0">${title}</h2>`;
+    surface.appendChild(h);
+    const ul = document.createElement("ul");
+    ul.dataset.surface = title;
+    rows.forEach((row, i) => {
+      const li = document.createElement("li");
+      li.draggable = true;
+      li.dataset.index = i;
+      li.innerHTML = `<span class="handle">⋮⋮</span><span class="field-name">${row[0]}</span><span class="meta">${row[1]}</span>`;
+      li.addEventListener("dragstart", onDragStart);
+      li.addEventListener("dragend", onDragEnd);
+      li.addEventListener("dragover", onDragOver);
+      li.addEventListener("dragleave", onDragLeave);
+      li.addEventListener("drop", onDrop);
+      ul.appendChild(li);
+    });
+    surface.appendChild(ul);
+    app.appendChild(surface);
+  }
+  updateOutput();
+}
+
+let dragged = null;
+let draggedSurface = null;
+
+function onDragStart(e) {
+  dragged = e.currentTarget;
+  draggedSurface = dragged.parentElement.dataset.surface;
+  dragged.classList.add("dragging");
+  e.dataTransfer.effectAllowed = "move";
+}
+function onDragEnd() {
+  if (dragged) dragged.classList.remove("dragging");
+  document.querySelectorAll("li.over").forEach((n) => n.classList.remove("over"));
+  dragged = null;
+}
+function onDragOver(e) {
+  if (!dragged) return;
+  if (e.currentTarget.parentElement.dataset.surface !== draggedSurface) return;
+  e.preventDefault();
+  e.currentTarget.classList.add("over");
+}
+function onDragLeave(e) {
+  e.currentTarget.classList.remove("over");
+}
+function onDrop(e) {
+  e.preventDefault();
+  if (!dragged) return;
+  const target = e.currentTarget;
+  if (target === dragged) return;
+  if (target.parentElement.dataset.surface !== draggedSurface) return;
+  const surface = draggedSurface;
+  const rows = state[surface];
+  const from = +dragged.dataset.index;
+  const to = +target.dataset.index;
+  const [moved] = rows.splice(from, 1);
+  rows.splice(to, 0, moved);
+  target.classList.remove("over");
+  render();
+}
+
+function toMarkdown() {
+  let out = "";
+  for (const [title, rows] of Object.entries(state)) {
+    out += `## ${title}\n\n`;
+    rows.forEach((row, i) => {
+      out += `${i + 1}. ${row[0]}` + (row[1] ? `  // ${row[1]}` : "") + "\n";
+    });
+    out += "\n";
+  }
+  return out.trim() + "\n";
+}
+
+function updateOutput() {
+  output.value = toMarkdown();
+}
+
+function copyAll() {
+  updateOutput();
+  navigator.clipboard.writeText(output.value).then(
+    () => {
+      status.textContent = "Copied to clipboard";
+      status.className = "status ok";
+      setTimeout(() => { status.textContent = ""; status.className = "status"; }, 2000);
+    },
+    () => {
+      status.textContent = "Copy failed — select the text below and copy manually";
+      status.className = "status";
+    }
+  );
+}
+
+function resetOrder() {
+  state = JSON.parse(JSON.stringify(INITIAL));
+  render();
+}
+
+let state = JSON.parse(JSON.stringify(INITIAL));
+render();
+</script>
+</body>
+</html>

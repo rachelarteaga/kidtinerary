@@ -20,9 +20,9 @@ import { CampDetailDrawer } from "@/components/planner/camp-detail-drawer";
 import { BlockDetailDrawer } from "@/components/planner/block-detail-drawer";
 import { PlannerRangePicker } from "@/components/planner/planner-range-picker";
 import { PlannerTitle } from "@/components/planner/planner-title";
-import { CampQuickViewModal } from "@/components/planner/camp-quick-view-modal";
 import { StatusPickerPopover, type StatusPickerAnchor } from "@/components/planner/status-picker-popover";
 import { ScrapeConfirmDrawer } from "@/components/planner/scrape-confirm-drawer";
+import { CampPreviewModal, type PreviewSummary } from "@/components/planner/camp-preview-modal";
 import { useScrapeJob } from "@/lib/use-scrape-job";
 import { reorderKidColumns, assignCampToWeek, removeKidFromPlanner } from "@/lib/actions";
 import { generateWeeks, getWeekKey, formatWeekRange } from "@/lib/format";
@@ -60,10 +60,11 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
 
   const [entryModal, setEntryModal] = useState<{ childId: string | null; weekStart: string | null; tab: "camp" | "block" } | null>(null);
   const [drawerEntryId, setDrawerEntryId] = useState<string | null>(null);
+  const [shortlistCampId, setShortlistCampId] = useState<string | null>(null);
   const [drawerBlockId, setDrawerBlockId] = useState<string | null>(null);
   const [quickViewCampId, setQuickViewCampId] = useState<string | null>(null);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
-  const [scrapeDrawer, setScrapeDrawer] = useState<{ jobId: string; url: string; scopeLabel: string | null } | null>(null);
+  const [scrapeDrawer, setScrapeDrawer] = useState<{ jobId: string; userCampId: string | null; url: string; scopeLabel: string | null } | null>(null);
   const [draggingCamp, setDraggingCamp] = useState<{ name: string; color: string } | null>(null);
   const isDraggingCamp = draggingCamp !== null;
   const [pendingAssignment, setPendingAssignment] = useState<{
@@ -281,31 +282,111 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
     return m;
   }, [entries, kids]);
 
-  const drawerEntry = useMemo(() => {
-    if (!drawerEntryId) return null;
-    const e = entries.find((x) => x.id === drawerEntryId);
-    if (!e) return null;
-    const uc = userCamps.find((u) => u.activity.id === e.session.activity.id);
+  const previewCamp = useMemo(
+    () => (quickViewCampId ? userCamps.find((c) => c.id === quickViewCampId) ?? null : null),
+    [quickViewCampId, userCamps],
+  );
+
+  const previewSummary = useMemo<PreviewSummary | null>(() => {
+    if (!previewCamp) return null;
+    const activityId = previewCamp.activity.id;
+    const matching = entries.filter((e) => e.session.activity.id === activityId);
+    const counts = { considering: 0, waitlisted: 0, registered: 0 };
+    let totalRegisteredPerWeekCents = 0;
+    let registeredWithPriceCount = 0;
+    for (const e of matching) {
+      counts[e.status] = (counts[e.status] ?? 0) + 1;
+      if (e.status === "registered" && e.price_cents != null) {
+        const daysPerWeek = e.days_of_week.length;
+        const basePerWeek =
+          e.price_unit === "per_day" ? e.price_cents * daysPerWeek : e.price_cents;
+        totalRegisteredPerWeekCents += basePerWeek + extrasTotalCents(e.extras, daysPerWeek);
+        registeredWithPriceCount += 1;
+      }
+    }
     return {
-      id: e.id,
-      childId: e.child_id,
-      weekStart: new Date(e.session.starts_at + "T00:00:00"),
-      userCampId: uc?.id ?? "",
-      activityName: e.session.activity.name,
-      activitySlug: e.session.activity.slug,
-      activityUrl: null as string | null,
-      activityDescription: null as string | null,
-      orgName: uc?.activity.organization?.name ?? null,
-      verified: uc?.activity.verified ?? false,
-      status: e.status,
-      sessionPart: e.session_part,
-      daysOfWeek: e.days_of_week,
-      priceCents: e.price_cents,
-      priceUnit: e.price_unit,
-      extras: e.extras,
-      notes: e.notes,
+      counts,
+      avgPricePaidPerWeekCents:
+        registeredWithPriceCount > 0
+          ? Math.round(totalRegisteredPerWeekCents / registeredWithPriceCount)
+          : null,
     };
-  }, [drawerEntryId, entries, userCamps]);
+  }, [previewCamp, entries]);
+
+  const drawerEntry = useMemo(() => {
+    // Two entry points: clicked a placed entry in a cell (drawerEntryId),
+    // or clicked "Edit camp details" from the rail preview (shortlistCampId).
+    if (drawerEntryId) {
+      const e = entries.find((x) => x.id === drawerEntryId);
+      if (!e) return null;
+      const uc = userCamps.find((u) => u.activity.id === e.session.activity.id);
+      const primaryLoc = uc?.activity.activity_locations?.[0] ?? null;
+      return {
+        userCampId: uc?.id ?? "",
+        activityId: e.session.activity.id,
+        activityName: e.session.activity.name,
+        activitySlug: e.session.activity.slug,
+        source: uc?.activity.source ?? "user",
+        orgId: uc?.activity.organization_id ?? null,
+        activityUrl: uc?.activity.registration_url ?? null,
+        activityDescription: uc?.activity.description ?? null,
+        ageMin: uc?.activity.age_min ?? null,
+        ageMax: uc?.activity.age_max ?? null,
+        categories: uc?.activity.categories ?? [],
+        orgName: uc?.activity.organization?.name ?? null,
+        verified: uc?.activity.verified ?? false,
+        locationName: primaryLoc?.location_name ?? null,
+        address: primaryLoc?.address ?? null,
+        scrapedPrices: uc?.activity.price_options ?? [],
+        scrapedSessions: uc?.activity.sessions ?? [],
+        placed: {
+          id: e.id,
+          childId: e.child_id,
+          weekStart: new Date(e.session.starts_at + "T00:00:00"),
+          status: e.status,
+          sessionPart: e.session_part,
+          daysOfWeek: e.days_of_week,
+          priceCents: e.price_cents,
+          priceUnit: e.price_unit,
+          extras: e.extras,
+          notes: e.notes,
+          kidsAlreadyPlacedIds: entries
+            .filter(
+              (x) =>
+                x.session.activity.id === e.session.activity.id &&
+                x.session.starts_at === e.session.starts_at,
+            )
+            .map((x) => x.child_id),
+        },
+      };
+    }
+    if (shortlistCampId) {
+      const uc = userCamps.find((u) => u.id === shortlistCampId);
+      if (!uc) return null;
+      const primaryLoc = uc.activity.activity_locations?.[0] ?? null;
+      return {
+        userCampId: uc.id,
+        activityId: uc.activity.id,
+        activityName: uc.activity.name,
+        activitySlug: uc.activity.slug,
+        source: uc.activity.source,
+        orgId: uc.activity.organization_id ?? null,
+        activityUrl: uc.activity.registration_url ?? null,
+        activityDescription: uc.activity.description ?? null,
+        ageMin: uc.activity.age_min ?? null,
+        ageMax: uc.activity.age_max ?? null,
+        categories: uc.activity.categories ?? [],
+        orgName: uc.activity.organization?.name ?? null,
+        verified: uc.activity.verified ?? false,
+        locationName: primaryLoc?.location_name ?? null,
+        address: primaryLoc?.address ?? null,
+        scrapedPrices: uc.activity.price_options ?? [],
+        scrapedSessions: uc.activity.sessions ?? [],
+        placed: null,
+      };
+    }
+    return null;
+  }, [drawerEntryId, shortlistCampId, entries, userCamps]);
 
   const drawerBlock = useMemo(() => {
     if (!drawerBlockId) return null;
@@ -464,7 +545,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
                 : kid
                 ? kid.name
                 : weekLabel;
-              setScrapeDrawer({ jobId: result.jobId, url: result.url, scopeLabel });
+              setScrapeDrawer({ jobId: result.jobId, userCampId: result.userCampId ?? null, url: result.url, scopeLabel });
             } else if (result.jobId) {
               setActiveJobId(result.jobId);
             }
@@ -478,11 +559,23 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
         />
 
         <CampDetailDrawer
-          open={drawerEntryId !== null}
-          onClose={() => setDrawerEntryId(null)}
+          open={drawerEntryId !== null || shortlistCampId !== null}
+          onClose={() => {
+            setDrawerEntryId(null);
+            setShortlistCampId(null);
+          }}
           entry={drawerEntry}
           kids={kids}
           onChanged={() => router.refresh()}
+        />
+        <CampPreviewModal
+          camp={previewCamp}
+          summary={previewSummary}
+          onClose={() => setQuickViewCampId(null)}
+          onEdit={() => {
+            if (previewCamp) setShortlistCampId(previewCamp.id);
+            setQuickViewCampId(null);
+          }}
         />
         <BlockDetailDrawer
           open={drawerBlockId !== null}
@@ -491,13 +584,10 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           kids={kids}
           onChanged={() => router.refresh()}
         />
-        <CampQuickViewModal
-          camp={userCamps.find((c) => c.id === quickViewCampId) ?? null}
-          onClose={() => setQuickViewCampId(null)}
-        />
         <ScrapeConfirmDrawer
           open={scrapeDrawer !== null}
           jobId={scrapeDrawer?.jobId ?? null}
+          userCampId={scrapeDrawer?.userCampId ?? null}
           inputUrl={scrapeDrawer?.url ?? ""}
           scopeLabel={scrapeDrawer?.scopeLabel ?? null}
           onClose={() => setScrapeDrawer(null)}
