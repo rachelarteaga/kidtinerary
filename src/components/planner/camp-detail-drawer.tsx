@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import Link from "next/link";
 import { StatusDropdown } from "./status-dropdown";
 import { ScheduleEditor } from "./schedule-editor";
 import { ExtrasEditor } from "./extras-editor";
@@ -63,10 +62,25 @@ interface PlacedFields {
   notes: string | null;
 }
 
+interface ScrapedPrice {
+  id: string;
+  label: string;
+  price_cents: number;
+  price_unit: string;
+}
+
+interface ScrapedSession {
+  id: string;
+  starts_at: string;
+  ends_at: string;
+  time_slot: string;
+}
+
 interface DrawerEntry {
   userCampId: string;
   activityId: string;
   orgId: string | null;
+  source: "user" | "curated";
   activityName: string;
   activitySlug: string;
   activityUrl: string | null;
@@ -76,6 +90,10 @@ interface DrawerEntry {
   categories: string[];
   orgName: string | null;
   verified: boolean;
+  locationName: string | null;
+  address: string | null;
+  scrapedPrices: ScrapedPrice[];
+  scrapedSessions: ScrapedSession[];
   /** Null when the camp is in the shortlist but not placed on a week/kid yet. */
   placed: PlacedFields | null;
 }
@@ -112,6 +130,7 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
 
   function startEdit(field: "name" | "org" | "url") {
     if (!local) return;
+    if (local.source === "curated") return; // curated rows are read-only
     setDraftName(local.activityName);
     setDraftOrg(local.orgName ?? "");
     setDraftUrl(local.activityUrl ?? "");
@@ -151,6 +170,7 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
 
   if (!open || !local) return null;
 
+  const isCurated = local.source === "curated";
   const kidName = local.placed ? kids.find((k) => k.id === local.placed!.childId)?.name ?? "" : "";
 
   function persistSchedule(part: SessionPart, days: DayOfWeek[]) {
@@ -356,10 +376,15 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
                   type="button"
                   onClick={() => startEdit("url")}
                   className="font-sans text-[10px] uppercase tracking-widest text-ink-2 hover:text-ink mt-1"
+                  disabled={isCurated}
                 >
                   Add a URL
                 </button>
               )}
+
+              <div className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mt-2">
+                {isCurated ? "Curated by Kidtinerary" : "You added this"}
+              </div>
             </div>
             <button onClick={onClose} aria-label="Close" className="text-ink-2 hover:text-ink text-lg">✕</button>
           </div>
@@ -371,6 +396,7 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
         </header>
 
         <div className="p-5 space-y-5 flex-1 overflow-y-auto">
+          {/* 6. Schedule — placed only */}
           {local.placed && (
           <section>
             <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Schedule</h3>
@@ -383,9 +409,10 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
           </section>
           )}
 
+          {/* 7. This-week price + extras — placed only */}
           {local.placed && (
           <section>
-            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Price</h3>
+            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Price paid (this week)</h3>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-ink text-sm">$</span>
               <input
@@ -417,9 +444,43 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
           </section>
           )}
 
+          {/* 8. Location — always shown */}
+          <section>
+            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Location</h3>
+            <input
+              value={local.locationName ?? ""}
+              onChange={(e) => setLocal({ ...local, locationName: e.target.value })}
+              onBlur={() => {
+                startTransition(async () => {
+                  const r = await updateActivityFields({ activityId: local.activityId, locationName: local.locationName ?? "" });
+                  if (r.error) alert(r.error);
+                  onChanged();
+                });
+              }}
+              disabled={isCurated}
+              placeholder="Location name (optional)"
+              className="w-full bg-surface border border-ink-3 rounded-md px-3 py-2 text-sm text-ink focus:outline-none focus:border-ink disabled:opacity-70 mb-2"
+            />
+            <input
+              value={local.address ?? ""}
+              onChange={(e) => setLocal({ ...local, address: e.target.value })}
+              onBlur={() => {
+                startTransition(async () => {
+                  const r = await updateActivityFields({ activityId: local.activityId, address: local.address ?? "" });
+                  if (r.error) alert(r.error);
+                  onChanged();
+                });
+              }}
+              disabled={isCurated}
+              placeholder="Address"
+              className="w-full bg-surface border border-ink-3 rounded-md px-3 py-2 text-sm text-ink focus:outline-none focus:border-ink disabled:opacity-70"
+            />
+          </section>
+
+          {/* 9. Notes — placed only */}
           {local.placed && (
           <section>
-            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Notes (optional)</h3>
+            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Notes (this week)</h3>
             <textarea
               value={local.placed.notes ?? ""}
               onChange={(e) => persistNotes(e.target.value)}
@@ -429,6 +490,134 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
           </section>
           )}
 
+          {/* Helper: activity-level edits propagate */}
+          {local.placed && !isCurated && (
+            <p className="text-[11px] text-ink-2 italic -mt-3">
+              Edits to categories, description, and info below affect every week this camp is placed.
+            </p>
+          )}
+
+          {/* 10. Categories */}
+          <section>
+            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Categories</h3>
+            <div className="flex flex-wrap gap-1.5">
+              {CATEGORIES.map((cat) => {
+                const selected = local.categories.includes(cat);
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    disabled={isCurated}
+                    onClick={() => {
+                      if (isCurated) return;
+                      const next = selected
+                        ? local.categories.filter((c) => c !== cat)
+                        : [...local.categories, cat];
+                      setLocal({ ...local, categories: next });
+                      startTransition(async () => {
+                        const r = await updateActivityFields({ activityId: local.activityId, categories: next });
+                        if (r.error) alert(r.error);
+                        onChanged();
+                      });
+                    }}
+                    className={`font-sans text-[10px] uppercase tracking-wide px-2.5 py-1 rounded-full border transition-colors ${
+                      selected
+                        ? "bg-ink text-ink-inverse border-ink"
+                        : "bg-transparent text-ink-2 border-ink-3 hover:border-ink hover:text-ink"
+                    } disabled:hover:border-ink-3 disabled:hover:text-ink-2 disabled:opacity-70`}
+                  >
+                    {CATEGORY_LABELS[cat]}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* 11. About */}
+          <section>
+            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">About</h3>
+            <textarea
+              value={local.activityDescription ?? ""}
+              onChange={(e) => setLocal({ ...local, activityDescription: e.target.value })}
+              onBlur={() => {
+                startTransition(async () => {
+                  const r = await updateActivityFields({ activityId: local.activityId, description: local.activityDescription });
+                  if (r.error) alert(r.error);
+                  onChanged();
+                });
+              }}
+              disabled={isCurated}
+              placeholder="What's this camp about?"
+              rows={4}
+              className="w-full bg-surface border border-ink-3 rounded-md px-3 py-2 text-sm text-ink focus:outline-none focus:border-ink resize-none disabled:opacity-70"
+            />
+          </section>
+
+          {/* 12. Ages — read-only beta */}
+          <section>
+            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2 flex items-center">
+              Ages
+              <span className="ml-1.5 font-sans text-[9px] uppercase tracking-wide text-[#8a6b00] bg-hero/20 px-1.5 py-0.5 rounded">Beta</span>
+            </h3>
+            <div className="text-sm text-ink">
+              {local.ageMin != null || local.ageMax != null
+                ? `${local.ageMin ?? "?"}–${local.ageMax ?? "?"} years`
+                : <span className="text-ink-2 italic">No age range yet</span>}
+            </div>
+          </section>
+
+          {/* 13. Scraped price options — beta, read-only, show only if data */}
+          {local.scrapedPrices.length > 0 && (
+            <section>
+              <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2 flex items-center">
+                Scraped prices
+                <span className="ml-1.5 font-sans text-[9px] uppercase tracking-wide text-[#8a6b00] bg-hero/20 px-1.5 py-0.5 rounded">Beta</span>
+              </h3>
+              <ul className="text-sm text-ink space-y-1">
+                {local.scrapedPrices.slice(0, 5).map((p) => {
+                  const unit = p.price_unit === "per_week" ? "/ week" : p.price_unit === "per_day" ? "/ day" : p.price_unit === "per_session" ? "/ session" : "";
+                  return (
+                    <li key={p.id} className="flex items-baseline justify-between gap-2">
+                      <span className="text-ink-2">{p.label || "Standard"}</span>
+                      <span>${(p.price_cents / 100).toFixed(0)} {unit}</span>
+                    </li>
+                  );
+                })}
+                {local.scrapedPrices.length > 5 && (
+                  <li className="text-[11px] text-ink-2">+{local.scrapedPrices.length - 5} more</li>
+                )}
+              </ul>
+            </section>
+          )}
+
+          {/* 14. Scraped dates/sessions — beta, read-only, show only if data */}
+          {local.scrapedSessions.length > 0 && (
+            <section>
+              <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2 flex items-center">
+                Scraped dates
+                <span className="ml-1.5 font-sans text-[9px] uppercase tracking-wide text-[#8a6b00] bg-hero/20 px-1.5 py-0.5 rounded">Beta</span>
+              </h3>
+              <ul className="text-sm text-ink space-y-1">
+                {local.scrapedSessions.slice(0, 5).map((s) => {
+                  const start = new Date(s.starts_at + "T00:00:00");
+                  const end = new Date(s.ends_at + "T00:00:00");
+                  const sameMonth = start.getMonth() === end.getMonth();
+                  const startFmt = start.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                  const endFmt = sameMonth
+                    ? end.toLocaleDateString("en-US", { day: "numeric" })
+                    : end.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                  return (
+                    <li key={s.id}>{startFmt} – {endFmt}</li>
+                  );
+                })}
+                {local.scrapedSessions.length > 5 && (
+                  <li className="text-[11px] text-ink-2">+{local.scrapedSessions.length - 5} more</li>
+                )}
+              </ul>
+            </section>
+          )}
+
+          {/* 15. Also add for — placed only */}
           {local.placed && kids.length > 1 && (
             <section>
               <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Also add for</h3>
@@ -450,97 +639,6 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
               <p className="text-[11px] text-ink-2 italic mt-1.5">Copies schedule, price, extras.</p>
             </section>
           )}
-
-          <section>
-            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Categories</h3>
-            <div className="flex flex-wrap gap-1.5">
-              {CATEGORIES.map((cat) => {
-                const selected = local.categories.includes(cat);
-                return (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => {
-                      const next = selected
-                        ? local.categories.filter((c) => c !== cat)
-                        : [...local.categories, cat];
-                      setLocal({ ...local, categories: next });
-                      startTransition(async () => {
-                        const r = await updateActivityFields({ activityId: local.activityId, categories: next });
-                        if (r.error) alert(r.error);
-                        onChanged();
-                      });
-                    }}
-                    className={`font-sans text-[10px] uppercase tracking-wide px-2.5 py-1 rounded-full border transition-colors ${
-                      selected
-                        ? "bg-ink text-ink-inverse border-ink"
-                        : "bg-transparent text-ink-2 border-ink-3 hover:border-ink hover:text-ink"
-                    }`}
-                  >
-                    {CATEGORY_LABELS[cat]}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-          <section>
-            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Ages</h3>
-            <div className="flex items-center gap-2 text-sm text-ink">
-              <input
-                type="number"
-                min={0}
-                max={25}
-                value={local.ageMin ?? ""}
-                onChange={(e) => setLocal({ ...local, ageMin: e.target.value === "" ? null : Number(e.target.value) })}
-                onBlur={() => {
-                  startTransition(async () => {
-                    const r = await updateActivityFields({ activityId: local.activityId, ageMin: local.ageMin });
-                    if (r.error) alert(r.error);
-                    onChanged();
-                  });
-                }}
-                placeholder="min"
-                className="w-16 bg-surface border border-ink-3 rounded-md px-2 py-1 text-sm focus:outline-none focus:border-ink"
-              />
-              <span className="text-ink-2">to</span>
-              <input
-                type="number"
-                min={0}
-                max={25}
-                value={local.ageMax ?? ""}
-                onChange={(e) => setLocal({ ...local, ageMax: e.target.value === "" ? null : Number(e.target.value) })}
-                onBlur={() => {
-                  startTransition(async () => {
-                    const r = await updateActivityFields({ activityId: local.activityId, ageMax: local.ageMax });
-                    if (r.error) alert(r.error);
-                    onChanged();
-                  });
-                }}
-                placeholder="max"
-                className="w-16 bg-surface border border-ink-3 rounded-md px-2 py-1 text-sm focus:outline-none focus:border-ink"
-              />
-              <span className="text-ink-2 text-xs">years</span>
-            </div>
-          </section>
-
-          <section>
-            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">About</h3>
-            <textarea
-              value={local.activityDescription ?? ""}
-              onChange={(e) => setLocal({ ...local, activityDescription: e.target.value })}
-              onBlur={() => {
-                startTransition(async () => {
-                  const r = await updateActivityFields({ activityId: local.activityId, description: local.activityDescription });
-                  if (r.error) alert(r.error);
-                  onChanged();
-                });
-              }}
-              placeholder="What's this camp about?"
-              rows={4}
-              className="w-full bg-surface border border-ink-3 rounded-md px-3 py-2 text-sm text-ink focus:outline-none focus:border-ink resize-none"
-            />
-          </section>
 
         </div>
 

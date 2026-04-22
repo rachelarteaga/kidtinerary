@@ -317,11 +317,13 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
     const e = entries.find((x) => x.id === drawerEntryId);
     if (!e) return null;
     const uc = userCamps.find((u) => u.activity.id === e.session.activity.id);
+    const primaryLoc = uc?.activity.activity_locations?.[0] ?? null;
     return {
       userCampId: uc?.id ?? "",
       activityId: e.session.activity.id,
       activityName: e.session.activity.name,
       activitySlug: e.session.activity.slug,
+      source: uc?.activity.source ?? "user",
       orgId: uc?.activity.organization_id ?? null,
       activityUrl: uc?.activity.registration_url ?? null,
       activityDescription: uc?.activity.description ?? null,
@@ -330,6 +332,10 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
       categories: uc?.activity.categories ?? [],
       orgName: uc?.activity.organization?.name ?? null,
       verified: uc?.activity.verified ?? false,
+      locationName: primaryLoc?.location_name ?? null,
+      address: primaryLoc?.address ?? null,
+      scrapedPrices: uc?.activity.price_options ?? [],
+      scrapedSessions: uc?.activity.sessions ?? [],
       placed: {
         id: e.id,
         childId: e.child_id,
