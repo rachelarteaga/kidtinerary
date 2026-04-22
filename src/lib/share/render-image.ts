@@ -15,7 +15,10 @@ export async function sharePlannerImage(opts: {
 }): Promise<{ shared: boolean; error?: string }> {
   let blob: Blob | null;
   try {
-    blob = await toBlob(opts.element, { cacheBust: true, pixelRatio: 2 });
+    // skipFonts avoids the CSSOM cross-origin error that html-to-image
+    // hits when next/font injects Google Fonts stylesheets. The snapshot
+    // falls back to the browser's default system font.
+    blob = await toBlob(opts.element, { cacheBust: true, pixelRatio: 2, skipFonts: true });
   } catch (e: unknown) {
     return { shared: false, error: (e as Error).message };
   }
