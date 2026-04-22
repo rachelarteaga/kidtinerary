@@ -39,7 +39,7 @@ export function AddCampModal({ open, onClose, scope, shareCampsDefault, onSubmit
   const [pickedActivityId, setPickedActivityId] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const orgRef = useRef<HTMLInputElement>(null);
+  const urlRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -51,7 +51,7 @@ export function AddCampModal({ open, onClose, scope, shareCampsDefault, onSubmit
       setCampHits([]);
       setPickedActivityId(undefined);
       setError(null);
-      setTimeout(() => orgRef.current?.focus(), 50);
+      setTimeout(() => urlRef.current?.focus(), 50);
     }
   }, [open, shareCampsDefault]);
 
@@ -127,14 +127,34 @@ export function AddCampModal({ open, onClose, scope, shareCampsDefault, onSubmit
     <>
       <h2 className="font-display font-extrabold text-2xl mb-1">Add a camp</h2>
       <p className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-4">
-        Tell us who&apos;s hosting and what it&apos;s called — or drop a URL
+        Drop a URL and we&apos;ll fill in the rest — or type it in manually
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
+          <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2 block mb-1">URL</label>
+          <input
+            ref={urlRef}
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://sciencecamp.com/summer"
+            className="w-full bg-surface border border-ink rounded-lg px-4 py-2.5 text-ink focus:outline-none focus:border-ink"
+            autoComplete="off"
+          />
+          <p className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mt-1.5">
+            We&apos;ll populate the rest of the details for you.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex-1 border-t border-ink-3" />
+          <span className="font-sans text-[10px] uppercase tracking-widest text-ink-2">OR</span>
+          <div className="flex-1 border-t border-ink-3" />
+        </div>
+
+        <div>
           <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2 block mb-1">Organization</label>
           <input
-            ref={orgRef}
             value={orgName}
             onChange={(e) => { setOrgName(e.target.value); setPickedActivityId(undefined); }}
             placeholder="YMCA of the Triangle"
@@ -185,26 +205,6 @@ export function AddCampModal({ open, onClose, scope, shareCampsDefault, onSubmit
               ))}
             </div>
           )}
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="flex-1 border-t border-ink-3" />
-          <span className="font-sans text-[10px] uppercase tracking-widest text-ink-2">OR</span>
-          <div className="flex-1 border-t border-ink-3" />
-        </div>
-
-        <div>
-          <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2 block mb-1">URL</label>
-          <input
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://sciencecamp.com/summer"
-            className="w-full bg-surface border border-ink rounded-lg px-4 py-2.5 text-ink focus:outline-none focus:border-ink"
-            autoComplete="off"
-          />
-          <p className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mt-1.5">
-            We&apos;ll populate the rest of the details for you.
-          </p>
         </div>
 
         <label className="flex items-start gap-2 cursor-pointer">
