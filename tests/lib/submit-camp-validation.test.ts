@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validateSubmitCampInput } from "@/lib/actions";
+import { validateSubmitCampInput } from "@/lib/submit-camp-validation";
 
 describe("validateSubmitCampInput", () => {
   it("accepts org + camp name", () => {
