@@ -6,6 +6,7 @@ import { updateProfile } from "@/lib/actions";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { formatUsPhone } from "@/lib/format";
+import { createClient } from "@/lib/supabase/client";
 
 interface Initial {
   fullName: string;
@@ -30,6 +31,10 @@ export function EditProfileForm({ initial }: { initial: Initial }) {
         toast(result.error, "error");
         return;
       }
+      // Pull the freshly-rotated session cookie into the browser SDK so
+      // onAuthStateChange fires USER_UPDATED for live-mounted consumers
+      // (e.g., the nav name pill).
+      await createClient().auth.refreshSession();
       toast("Profile updated", "success");
       router.refresh();
     });
