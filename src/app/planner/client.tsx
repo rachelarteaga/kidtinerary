@@ -54,9 +54,10 @@ interface Props {
   blocks: PlannerBlockWithKids[];
   shareCampsDefault: boolean;
   planner: PlannerRow;
+  sharesActiveCount: number;
 }
 
-export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, shareCampsDefault, planner }: Props) {
+export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, shareCampsDefault, planner, sharesActiveCount }: Props) {
   const router = useRouter();
 
   const [entryModal, setEntryModal] = useState<{ childId: string | null; weekStart: string | null; tab: "camp" | "block" } | null>(null);
@@ -436,7 +437,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
               <header className="bg-surface flex items-start justify-between flex-wrap gap-3 pt-[22px] pb-[18px] flex-shrink-0">
                 <div>
                   <div className="mb-1">
-                    <PlannerTitle plannerId={planner.id} name={planner.name} />
+                    <PlannerTitle plannerId={planner.id} name={planner.name} sharesActiveCount={sharesActiveCount} />
                   </div>
                   <p className="text-ink-2">
                     {kids.length} kid{kids.length === 1 ? "" : "s"} · {weekStarts.length} weeks
