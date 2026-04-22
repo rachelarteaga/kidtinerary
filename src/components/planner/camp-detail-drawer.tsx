@@ -60,6 +60,8 @@ interface PlacedFields {
   priceUnit: PriceUnit | null;
   extras: ExtraItem[];
   notes: string | null;
+  /** Kid IDs that already have this activity placed on this same week — used to hide them from "Also add for". */
+  kidsAlreadyPlacedIds: string[];
 }
 
 interface ScrapedPrice {
@@ -448,20 +450,6 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
           <section>
             <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Location</h3>
             <input
-              value={local.locationName ?? ""}
-              onChange={(e) => setLocal({ ...local, locationName: e.target.value })}
-              onBlur={() => {
-                startTransition(async () => {
-                  const r = await updateActivityFields({ activityId: local.activityId, locationName: local.locationName ?? "" });
-                  if (r.error) alert(r.error);
-                  onChanged();
-                });
-              }}
-              disabled={isCurated}
-              placeholder="Location name (optional)"
-              className="w-full bg-surface border border-ink-3 rounded-md px-3 py-2 text-sm text-ink focus:outline-none focus:border-ink disabled:opacity-70 mb-2"
-            />
-            <input
               value={local.address ?? ""}
               onChange={(e) => setLocal({ ...local, address: e.target.value })}
               onBlur={() => {
@@ -499,7 +487,10 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
 
           {/* 10. Categories */}
           <section>
-            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Categories</h3>
+            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2 flex items-center">
+              Categories
+              <span className="ml-1.5 font-sans text-[9px] uppercase tracking-wide text-[#8a6b00] bg-hero/20 px-1.5 py-0.5 rounded">Beta</span>
+            </h3>
             <div className="flex flex-wrap gap-1.5">
               {CATEGORIES.map((cat) => {
                 const selected = local.categories.includes(cat);
@@ -533,24 +524,15 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
             </div>
           </section>
 
-          {/* 11. About */}
+          {/* 11. About — read-only beta */}
           <section>
-            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">About</h3>
-            <textarea
-              value={local.activityDescription ?? ""}
-              onChange={(e) => setLocal({ ...local, activityDescription: e.target.value })}
-              onBlur={() => {
-                startTransition(async () => {
-                  const r = await updateActivityFields({ activityId: local.activityId, description: local.activityDescription });
-                  if (r.error) alert(r.error);
-                  onChanged();
-                });
-              }}
-              disabled={isCurated}
-              placeholder="What's this camp about?"
-              rows={4}
-              className="w-full bg-surface border border-ink-3 rounded-md px-3 py-2 text-sm text-ink focus:outline-none focus:border-ink resize-none disabled:opacity-70"
-            />
+            <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2 flex items-center">
+              About
+              <span className="ml-1.5 font-sans text-[9px] uppercase tracking-wide text-[#8a6b00] bg-hero/20 px-1.5 py-0.5 rounded">Beta</span>
+            </h3>
+            <p className="text-sm text-ink leading-snug whitespace-pre-wrap">
+              {local.activityDescription ?? <span className="text-ink-2 italic">No description yet</span>}
+            </p>
           </section>
 
           {/* 12. Ages — read-only beta */}
@@ -617,47 +599,53 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
             </section>
           )}
 
-          {/* 15. Also add for — placed only */}
-          {local.placed && kids.length > 1 && (
-            <section>
-              <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Also add for</h3>
-              <div className="flex gap-1.5 flex-wrap">
-                {kids.filter((k) => k.id !== local.placed!.childId).map((k) => {
-                  const kidIndex = kids.findIndex((kk) => kk.id === k.id);
-                  return (
-                  <button
-                    key={k.id}
-                    onClick={() => addForKid(k.id)}
-                    className="flex items-center gap-1.5 rounded-full border border-ink-3 bg-surface px-3 py-1 text-xs hover:border-ink"
-                  >
-                    <KidAvatar name={k.name} color={k.color} index={kidIndex} avatarUrl={k.avatar_url} size={18} />
-                    {k.name} <span className="text-ink-2">+</span>
-                  </button>
-                  );
-                })}
-              </div>
-              <p className="text-[11px] text-ink-2 italic mt-1.5">Copies schedule, price, extras.</p>
-            </section>
-          )}
 
         </div>
 
-        <footer className="p-4 border-t border-ink-3 bg-surface shrink-0 flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={handleRemove}
-            disabled={isPending}
-            className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 rounded-full border border-[#ef8c8f] text-[#c1474a] hover:bg-[#ef8c8f]/10 disabled:opacity-50"
-          >
-            {local.placed ? "Delete from week" : "Delete from shortlist"}
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-ink/90"
-          >
-            Done
-          </button>
+        <footer className="border-t border-ink-3 bg-surface shrink-0">
+          {local.placed && kids.length > 1 && (() => {
+            const alreadyPlaced = new Set(local.placed.kidsAlreadyPlacedIds);
+            const eligibleKids = kids.filter((k) => !alreadyPlaced.has(k.id));
+            if (eligibleKids.length === 0) return null;
+            return (
+              <div className="px-4 pt-3 pb-3 border-b border-ink-3">
+                <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Also add for</h3>
+                <div className="flex gap-1.5 flex-wrap">
+                  {eligibleKids.map((k) => {
+                    const kidIndex = kids.findIndex((kk) => kk.id === k.id);
+                    return (
+                      <button
+                        key={k.id}
+                        onClick={() => addForKid(k.id)}
+                        className="flex items-center gap-1.5 rounded-full border border-ink-3 bg-base px-3 py-1 text-xs hover:border-ink"
+                      >
+                        <KidAvatar name={k.name} color={k.color} index={kidIndex} avatarUrl={k.avatar_url} size={18} />
+                        {k.name} <span className="text-ink-2">+</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] text-ink-2 italic mt-1.5">Copies schedule, price, extras.</p>
+              </div>
+            );
+          })()}
+          <div className="p-4 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={handleRemove}
+              disabled={isPending}
+              className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 rounded-full border border-[#ef8c8f] text-[#c1474a] hover:bg-[#ef8c8f]/10 disabled:opacity-50"
+            >
+              {local.placed ? "Delete from week" : "Delete from shortlist"}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-ink/90"
+            >
+              Done
+            </button>
+          </div>
         </footer>
       </aside>
     </>

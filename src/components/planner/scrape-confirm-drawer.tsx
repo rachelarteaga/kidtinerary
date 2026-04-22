@@ -135,7 +135,6 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
   const attemptRef = useRef(0);
 
   const [draftCategories, setDraftCategories] = useState<string[] | null>(null);
-  const [draftDescription, setDraftDescription] = useState<string | null>(null);
   const initializedRef = useRef(false);
 
   useEffect(() => {
@@ -154,7 +153,6 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
     setActivity(null);
     setPollError(null);
     setDraftCategories(null);
-    setDraftDescription(null);
     initializedRef.current = false;
     attemptRef.current = 0;
 
@@ -176,7 +174,6 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
           setActivity(data.activity);
           if (!initializedRef.current) {
             setDraftCategories(data.activity.categories ?? []);
-            setDraftDescription(data.activity.description ?? null);
             initializedRef.current = true;
           }
         }
@@ -295,16 +292,6 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
                 activity.organization.name !== "User-submitted" && (
                   <Field label="Hosted by" confidence="scraped">
                     <span className="text-sm text-ink">{activity.organization.name}</span>
-                    {activity.organization.website && (
-                      <a
-                        href={activity.organization.website}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block text-[11px] text-ink-2 underline mt-0.5 truncate"
-                      >
-                        {activity.organization.website}
-                      </a>
-                    )}
                   </Field>
                 )}
 
@@ -335,7 +322,11 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
               )}
 
               {/* 5. Categories — draft */}
-              <Field label="Categories" confidence={activity.data_confidence}>
+              <div>
+                <div className="flex items-center mb-1">
+                  <label className="font-sans text-[10px] font-bold uppercase tracking-widest text-ink-2">Categories</label>
+                  <span className="ml-1.5 font-sans text-[9px] uppercase tracking-wide text-[#8a6b00] bg-hero/20 px-1.5 py-0.5 rounded">Beta</span>
+                </div>
                 <div className="flex flex-wrap gap-1.5">
                   {CATEGORIES.map((cat) => {
                     const current = draftCategories ?? activity.categories;
@@ -361,18 +352,18 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
                     );
                   })}
                 </div>
-              </Field>
+              </div>
 
-              {/* 6. About — draft */}
-              <Field label="About" confidence={activity.data_confidence}>
-                <textarea
-                  value={draftDescription ?? ""}
-                  onChange={(e) => setDraftDescription(e.target.value)}
-                  placeholder="What's this camp about?"
-                  rows={3}
-                  className="w-full bg-surface border border-ink-3 rounded-md px-3 py-2 text-sm text-ink focus:outline-none focus:border-ink resize-none"
-                />
-              </Field>
+              {/* 6. About — read-only beta */}
+              <div>
+                <div className="flex items-center mb-1">
+                  <label className="font-sans text-[10px] font-bold uppercase tracking-widest text-ink-2">About</label>
+                  <span className="ml-1.5 font-sans text-[9px] uppercase tracking-wide text-[#8a6b00] bg-hero/20 px-1.5 py-0.5 rounded">Beta</span>
+                </div>
+                <p className="text-sm text-ink leading-snug whitespace-pre-wrap">
+                  {activity.description ?? <span className="text-ink-2 italic">No description detected</span>}
+                </p>
+              </div>
 
               {/* 7. Ages — read-only, beta */}
               <div>
@@ -485,7 +476,6 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
                   setSaving(true);
                   const patch: Parameters<typeof updateActivityFields>[0] = { activityId: activity.id };
                   if (draftCategories !== null) patch.categories = draftCategories;
-                  if (draftDescription !== null || activity.description !== null) patch.description = draftDescription;
                   const r = await updateActivityFields(patch);
                   setSaving(false);
                   if (r.error) {

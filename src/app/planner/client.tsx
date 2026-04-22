@@ -350,6 +350,13 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           priceUnit: e.price_unit,
           extras: e.extras,
           notes: e.notes,
+          kidsAlreadyPlacedIds: entries
+            .filter(
+              (x) =>
+                x.session.activity.id === e.session.activity.id &&
+                x.session.starts_at === e.session.starts_at,
+            )
+            .map((x) => x.child_id),
         },
       };
     }

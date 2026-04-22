@@ -145,8 +145,9 @@ export function CampPreviewModal({ camp, summary, onClose, onEdit }: Props) {
 
           {a.categories && a.categories.length > 0 && (
             <section>
-              <h3 className="font-sans text-[10px] font-bold uppercase tracking-widest text-ink-2 mb-2">
+              <h3 className="font-sans text-[10px] font-bold uppercase tracking-widest text-ink-2 mb-2 flex items-center">
                 Categories
+                <span className="ml-1.5 font-sans text-[9px] uppercase tracking-wide text-[#8a6b00] bg-hero/20 px-1.5 py-0.5 rounded">Beta</span>
               </h3>
               <div className="flex flex-wrap gap-1.5">
                 {a.categories.map((cat) => (
@@ -163,8 +164,9 @@ export function CampPreviewModal({ camp, summary, onClose, onEdit }: Props) {
 
           {a.description && (
             <section>
-              <h3 className="font-sans text-[10px] font-bold uppercase tracking-widest text-ink-2 mb-1">
+              <h3 className="font-sans text-[10px] font-bold uppercase tracking-widest text-ink-2 mb-1 flex items-center">
                 About
+                <span className="ml-1.5 font-sans text-[9px] uppercase tracking-wide text-[#8a6b00] bg-hero/20 px-1.5 py-0.5 rounded">Beta</span>
               </h3>
               <p className="font-sans text-sm text-ink leading-snug whitespace-pre-wrap">{a.description}</p>
             </section>
