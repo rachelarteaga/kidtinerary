@@ -827,6 +827,96 @@ export async function submitCamp(
   };
 }
 
+export async function updateActivityFields(params: {
+  activityId: string;
+  name?: string;
+  orgName?: string;
+  url?: string | null;
+}): Promise<{ error?: string; orgId?: string | null }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  // Auth guard: caller must own a user_camps row for this activity.
+  const { data: ownership } = await supabase
+    .from("user_camps")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("activity_id", params.activityId)
+    .maybeSingle();
+  if (!ownership) return { error: "Not your camp" };
+
+  const patch: Record<string, unknown> = {};
+
+  if (params.name !== undefined) {
+    const trimmed = params.name.trim();
+    if (!trimmed) return { error: "Name can't be blank" };
+    patch.name = trimmed;
+  }
+
+  if (params.url !== undefined) {
+    if (params.url === null || params.url.trim() === "") {
+      patch.registration_url = null;
+    } else {
+      const trimmed = params.url.trim();
+      try {
+        new URL(trimmed);
+      } catch {
+        return { error: "That doesn't look like a valid URL." };
+      }
+      patch.registration_url = trimmed;
+    }
+  }
+
+  let resolvedOrgId: string | null | undefined = undefined;
+
+  if (params.orgName !== undefined) {
+    const trimmed = params.orgName.trim();
+    if (!trimmed) {
+      patch.organization_id = null;
+      resolvedOrgId = null;
+    } else {
+      const { data: existingOrg } = await supabase
+        .from("organizations")
+        .select("id")
+        .ilike("name", trimmed)
+        .eq("source", "user")
+        .maybeSingle();
+      if (existingOrg) {
+        patch.organization_id = existingOrg.id;
+        resolvedOrgId = existingOrg.id;
+      } else {
+        const { data: newOrg, error: orgErr } = await supabase
+          .from("organizations")
+          .insert({ name: trimmed, source: "user" })
+          .select("id")
+          .single();
+        if (orgErr || !newOrg) {
+          console.error("updateActivityFields org insert error:", orgErr);
+          return { error: "Failed to save organization" };
+        }
+        patch.organization_id = newOrg.id;
+        resolvedOrgId = newOrg.id;
+      }
+    }
+  }
+
+  if (Object.keys(patch).length === 0) return {};
+
+  const { error: updErr } = await supabase
+    .from("activities")
+    .update(patch)
+    .eq("id", params.activityId);
+
+  if (updErr) {
+    console.error("updateActivityFields update error:", updErr);
+    return { error: "Failed to save changes" };
+  }
+
+  revalidatePath("/planner");
+  return { orgId: resolvedOrgId };
+}
+
 export async function assignCampToWeek(
   userCampId: string,
   childId: string,
