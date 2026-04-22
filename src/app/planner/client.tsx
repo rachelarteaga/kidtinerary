@@ -22,7 +22,7 @@ import { PlannerRangePicker } from "@/components/planner/planner-range-picker";
 import { PlannerTitle } from "@/components/planner/planner-title";
 import { StatusPickerPopover, type StatusPickerAnchor } from "@/components/planner/status-picker-popover";
 import { ScrapeConfirmDrawer } from "@/components/planner/scrape-confirm-drawer";
-import { CampQuickViewModal } from "@/components/planner/camp-quick-view-modal";
+import { CampPreviewModal, type PreviewSummary } from "@/components/planner/camp-preview-modal";
 import { useScrapeJob } from "@/lib/use-scrape-job";
 import { reorderKidColumns, assignCampToWeek, removeKidFromPlanner } from "@/lib/actions";
 import { generateWeeks, getWeekKey, formatWeekRange } from "@/lib/format";
@@ -281,6 +281,37 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
     return m;
   }, [entries, kids]);
 
+  const previewCamp = useMemo(
+    () => (quickViewCampId ? userCamps.find((c) => c.id === quickViewCampId) ?? null : null),
+    [quickViewCampId, userCamps],
+  );
+
+  const previewSummary = useMemo<PreviewSummary | null>(() => {
+    if (!previewCamp) return null;
+    const activityId = previewCamp.activity.id;
+    const matching = entries.filter((e) => e.session.activity.id === activityId);
+    const counts = { considering: 0, waitlisted: 0, registered: 0 };
+    let totalRegisteredPerWeekCents = 0;
+    let registeredWithPriceCount = 0;
+    for (const e of matching) {
+      counts[e.status] = (counts[e.status] ?? 0) + 1;
+      if (e.status === "registered" && e.price_cents != null) {
+        const daysPerWeek = e.days_of_week.length;
+        const basePerWeek =
+          e.price_unit === "per_day" ? e.price_cents * daysPerWeek : e.price_cents;
+        totalRegisteredPerWeekCents += basePerWeek + extrasTotalCents(e.extras, daysPerWeek);
+        registeredWithPriceCount += 1;
+      }
+    }
+    return {
+      counts,
+      avgPricePaidPerWeekCents:
+        registeredWithPriceCount > 0
+          ? Math.round(totalRegisteredPerWeekCents / registeredWithPriceCount)
+          : null,
+    };
+  }, [previewCamp, entries]);
+
   const drawerEntry = useMemo(() => {
     if (!drawerEntryId) return null;
     const e = entries.find((x) => x.id === drawerEntryId);
@@ -491,9 +522,15 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           kids={kids}
           onChanged={() => router.refresh()}
         />
-        <CampQuickViewModal
-          camp={userCamps.find((c) => c.id === quickViewCampId) ?? null}
+        <CampPreviewModal
+          camp={previewCamp}
+          summary={previewSummary}
           onClose={() => setQuickViewCampId(null)}
+          onEdit={() => {
+            // Phase H: open drawer in shortlist mode. For now, close preview —
+            // camp is still accessible via the planner cell if placed.
+            setQuickViewCampId(null);
+          }}
         />
         <BlockDetailDrawer
           open={drawerBlockId !== null}
