@@ -46,8 +46,8 @@ Header (kid · week) + body + sticky footer.
 3. Organization                              // ✎ (inline header)
 4. URL                                       // ✎ (inline header)
 5. Source badge                              // 👁
-6. Schedule (session part + days)            // ?? user to clarify (see Open questions)
-7. This-week price + extras                  // ?? user to clarify (see Open questions)
+6. Schedule (session part + days)            // ✎ user-picked per week (full/AM/PM/overnight + weekday toggles)
+7. This-week price + extras                  // ✎ user-entered "price paid" — feeds in-line card price + planner total
 8. Notes (per week)                          // ✎
 9. Categories                                // ✎
 10. Ages                                     // 👁 (beta)
@@ -114,9 +114,9 @@ Entry point for all adds. Input fields.
 
 ## Open questions (need your answer before I start)
 
-**Q1. "This-week price + extras"** — is this the editable "price paid" you want to keep, or did you want to remove this editor? It's currently user-typed per-week and feeds the in-line card price + planner total (the exact thing you said should be editable).
+**Q1. ~~"This-week price + extras"~~** — resolved: keep editable, this IS the "price paid" that feeds the card price + planner total.
 
-**Q2. "Schedule (session part + days)"** — is this the user-picked session part + weekdays editor you want to keep (controls the timeline rendering), or did you want to remove it? Not scraped.
+**Q2. ~~"Schedule (session part + days)"~~** — resolved: keep editable, it's the user-picked per-week schedule (not scraped).
 
 **Q3. "View full details" CTA** on curated preview — pick a label: "View details" / "See more info" / something else.
 
