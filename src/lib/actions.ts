@@ -1597,7 +1597,7 @@ export async function updateProfile(input: {
 
   const supabase = (await createClient()) as any;
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Not signed in." };
+  if (!user) return { error: "Not authenticated" };
 
   // 1. Name → auth.users.user_metadata
   const { error: authErr } = await supabase.auth.updateUser({

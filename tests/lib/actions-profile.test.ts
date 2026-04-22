@@ -21,4 +21,9 @@ describe("validateProfileInput", () => {
     const result = validateProfileInput({ fullName: "Rachel", address: "123 Main", phone: "+12025551234" });
     expect(result.error).toBeUndefined();
   });
+
+  it("accepts US format (202) 555-1234", () => {
+    const result = validateProfileInput({ fullName: "Rachel", address: "123 Main", phone: "(202) 555-1234" });
+    expect(result.error).toBeUndefined();
+  });
 });
