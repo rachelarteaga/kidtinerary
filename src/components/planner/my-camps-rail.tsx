@@ -66,7 +66,7 @@ export function MyCampsRail({ camps, onChipClick, onAddClick, onChanged }: Props
 
       {pendingRemove && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-ink/40" onClick={() => setPendingRemove(null)} />
+          <div className="absolute inset-0 bg-ink/40 cursor-pointer" onClick={() => setPendingRemove(null)} />
           <div className="relative bg-surface rounded-2xl shadow-xl w-full max-w-sm p-6">
             <h3 className="font-display font-extrabold text-xl text-ink mb-2">Remove {pendingRemove.name}?</h3>
             <p className="text-sm text-ink-2 mb-4 leading-relaxed">

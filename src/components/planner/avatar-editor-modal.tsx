@@ -84,7 +84,7 @@ export function AvatarEditorModal({ open, onClose, childId, childName, imageUrl 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-ink/40" onClick={onClose} />
+      <div className="absolute inset-0 bg-ink/40 cursor-pointer" onClick={onClose} />
       <div className="relative bg-base rounded-2xl shadow-xl w-full max-w-md p-5">
         <h2 className="font-display font-extrabold text-xl text-ink mb-1">{childName}&apos;s photo</h2>
         <p className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-3">

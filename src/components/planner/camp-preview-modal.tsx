@@ -70,7 +70,7 @@ export function CampPreviewModal({ camp, summary, onClose, onEdit }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-16 pb-8 overflow-y-auto">
-      <div className="absolute inset-0 bg-ink/40" onClick={onClose} />
+      <div className="absolute inset-0 bg-ink/40 cursor-pointer" onClick={onClose} />
 
       <div className="relative bg-surface border border-ink rounded-2xl shadow-[3px_3px_0_0_rgba(0,0,0,0.15)] w-full max-w-xl">
         <header className="px-6 pt-6 pb-4 border-b border-ink-3">
@@ -177,7 +177,7 @@ export function CampPreviewModal({ camp, summary, onClose, onEdit }: Props) {
           <button
             type="button"
             onClick={onEdit}
-            className="font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-[#333] border border-ink shadow-[3px_3px_0_0_rgba(0,0,0,0.15)] inline-flex items-center gap-1.5"
+            className="font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-[#333] border border-ink inline-flex items-center gap-1.5"
           >
             {ctaLabel}
             <span aria-hidden>→</span>

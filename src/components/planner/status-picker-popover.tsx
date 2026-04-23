@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import type { PlannerEntryStatus } from "@/lib/supabase/types";
 
@@ -14,35 +14,18 @@ export interface StatusPickerAnchor {
 interface Props {
   anchor: StatusPickerAnchor;
   campName: string;
-  campColor: string;
   onChoose: (status: PlannerEntryStatus) => void;
   onCancel: () => void;
 }
 
-const OPTIONS: { status: PlannerEntryStatus; label: string }[] = [
-  { status: "registered", label: "Registered" },
-  { status: "waitlisted", label: "Waitlisted" },
-  { status: "considering", label: "Considering" },
+const OPTIONS: { status: PlannerEntryStatus; label: string; bg: string }[] = [
+  { status: "registered", label: "Registered", bg: "var(--color-status-registered)" },
+  { status: "waitlisted", label: "Waitlisted", bg: "var(--color-status-waitlisted)" },
+  { status: "considering", label: "Considering", bg: "var(--color-status-considering)" },
 ];
 
-const WIDTH = 200;
-// Static content: header row + 3 option buttons + padding. Stable across renders.
-const HEIGHT = 150;
-const GAP = 6;
-
-export function StatusPickerPopover({ anchor, campName, campColor, onChoose, onCancel }: Props) {
+export function StatusPickerPopover({ anchor, campName, onChoose, onCancel }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const pos = useMemo(() => {
-    const vh = typeof window === "undefined" ? 800 : window.innerHeight;
-    const vw = typeof window === "undefined" ? 1200 : window.innerWidth;
-    const below = anchor.top + anchor.height + HEIGHT + GAP <= vh;
-    const top = below
-      ? anchor.top + anchor.height + GAP
-      : Math.max(8, anchor.top - HEIGHT - GAP);
-    const rawLeft = anchor.left + anchor.width / 2 - WIDTH / 2;
-    const left = Math.min(Math.max(8, rawLeft), vw - WIDTH - 8);
-    return { top, left };
-  }, [anchor]);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -53,7 +36,6 @@ export function StatusPickerPopover({ anchor, campName, campColor, onChoose, onC
     }
     document.addEventListener("keydown", handleKey);
     document.addEventListener("mousedown", handleDown);
-    ref.current?.querySelector<HTMLButtonElement>("button")?.focus();
     return () => {
       document.removeEventListener("keydown", handleKey);
       document.removeEventListener("mousedown", handleDown);
@@ -67,20 +49,50 @@ export function StatusPickerPopover({ anchor, campName, campColor, onChoose, onC
       ref={ref}
       role="dialog"
       aria-label={`Choose status for ${campName}`}
-      style={{ position: "fixed", top: pos.top, left: pos.left, width: WIDTH, zIndex: 60 }}
-      className="bg-surface rounded-lg border border-ink shadow-[3px_3px_0_0_rgba(0,0,0,0.15)] p-2"
+      style={{
+        position: "fixed",
+        top: anchor.top + anchor.height / 2,
+        left: anchor.left,
+        width: anchor.width,
+        minHeight: anchor.height,
+        transform: "translateY(-50%)",
+        containerType: "inline-size",
+        zIndex: 60,
+      }}
+      className="bg-white/75 backdrop-blur-[1px] border border-ink rounded-lg flex flex-col items-center justify-center gap-1.5 px-2 py-3"
     >
-      <div className="flex items-center gap-1.5 px-2 pt-1 pb-2 border-b border-ink-3 mb-1">
-        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: campColor }} />
-        <div className="font-medium text-sm text-ink truncate">{campName}</div>
+      <button
+        type="button"
+        onClick={onCancel}
+        aria-label="Cancel status selection"
+        className="absolute top-1 right-1 w-5 h-5 flex items-center justify-center rounded-full text-ink-2 hover:text-ink hover:bg-ink/5 focus:outline-none cursor-pointer"
+      >
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden>
+          <path d="M1 1 L9 9 M9 1 L1 9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      </button>
+      <style>{`
+        @container (max-width: 260px) {
+          .status-picker-row { flex-direction: column; gap: 6px; width: 100%; }
+          .status-picker-row > button { width: 100%; }
+        }
+      `}</style>
+      <div className="flex flex-col items-center gap-0.5 max-w-full px-2">
+        <div className="font-sans text-[9px] uppercase tracking-widest text-ink-2">
+          Select status
+        </div>
+        <div className="font-display font-extrabold text-sm text-ink truncate max-w-full text-center leading-tight">
+          {campName}
+        </div>
       </div>
-      <div className="flex flex-col gap-0.5">
+      <div className="status-picker-row flex flex-row items-center justify-center gap-1.5">
         {OPTIONS.map((o) => (
           <button
             key={o.status}
             type="button"
             onClick={() => onChoose(o.status)}
-            className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-hero-light/40 focus:bg-hero-light/40 focus:outline-none font-sans font-semibold text-[11px] uppercase tracking-widest text-ink"
+            className="font-sans font-semibold text-[10px] uppercase tracking-widest px-2.5 py-1.5 rounded-full border border-ink text-ink whitespace-nowrap hover:brightness-95 focus:outline-none transition-[filter]"
+            style={{ background: o.bg }}
           >
             {o.label}
           </button>

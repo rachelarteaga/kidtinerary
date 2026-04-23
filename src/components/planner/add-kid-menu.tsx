@@ -96,7 +96,7 @@ export function AddKidMenu({ plannerId, availableKids }: Props) {
 
       {creatingNew && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-ink/40" onClick={() => setCreatingNew(false)} />
+          <div className="absolute inset-0 bg-ink/40 cursor-pointer" onClick={() => setCreatingNew(false)} />
           <div className="relative bg-base rounded-2xl shadow-xl w-full max-w-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display font-extrabold text-2xl text-ink">Add a new kid</h2>

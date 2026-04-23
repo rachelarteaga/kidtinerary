@@ -153,7 +153,7 @@ export function CellTimelineGrid({ entries, weekStart, plannerStart, plannerEnd,
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-70"
           aria-hidden
         >
-          <path d="M14 2 A 10 10 0 1 0 22 13 A 8 8 0 0 1 14 2 Z" />
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
         </svg>
       </button>
     );

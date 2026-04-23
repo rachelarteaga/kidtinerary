@@ -12,7 +12,7 @@ interface Props {
 const OPTIONS: { value: PlannerEntryStatus; label: string; color: string }[] = [
   { value: "considering", label: "Considering", color: "#e8edf1" },
   { value: "waitlisted", label: "Waitlisted", color: "#ffd4b8" },
-  { value: "registered", label: "Registered", color: "#fbbf0e" },
+  { value: "registered", label: "Registered", color: "#5ac195" },
 ];
 
 export function StatusDropdown({ status, onChange, size = "md" }: Props) {

@@ -48,7 +48,7 @@ function AddEntryModalInner({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-ink/40" onClick={onClose} />
+      <div className="absolute inset-0 bg-ink/40 cursor-pointer" onClick={onClose} />
       <div className="relative bg-base rounded-2xl shadow-xl w-full max-w-md p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="inline-flex rounded-full border border-ink-3 bg-surface overflow-hidden">
