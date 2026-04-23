@@ -290,7 +290,7 @@ export function SharedPlannerView({
                       return (
                         <div
                           key={`${row.weekKey}-${kid.id}`}
-                          className={`rounded-lg border border-ink-3 flex items-center justify-center text-center ${compact ? "self-start px-2 py-1.5" : "p-3 min-h-[60px]"}`}
+                          className={`rounded-lg border border-ink-3 flex items-center justify-center text-center ${compact ? "px-2 py-1.5" : "p-3 min-h-[60px]"}`}
                           style={{
                             backgroundImage: "radial-gradient(rgba(21,21,21,0.09) 0.7px, transparent 0.7px)",
                             backgroundSize: "5px 5px",
@@ -308,7 +308,7 @@ export function SharedPlannerView({
                       return (
                         <div
                           key={`${row.weekKey}-${kid.id}`}
-                          className={`rounded-lg border border-ink-3 flex items-center ${compact ? "self-start gap-2 px-2 py-1.5" : "gap-3 p-3 min-h-[60px]"}`}
+                          className={`rounded-lg border border-ink-3 flex items-center ${compact ? "gap-2 px-2 py-1.5" : "gap-3 p-3 min-h-[60px]"}`}
                           style={{
                             backgroundImage: "radial-gradient(rgba(21,21,21,0.09) 0.7px, transparent 0.7px)",
                             backgroundSize: "5px 5px",
