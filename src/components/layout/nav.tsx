@@ -66,7 +66,7 @@ export function Nav() {
   return (
     <header className="sticky top-0 z-40 bg-hero border-b border-ink shadow-[0_3px_0_0_rgba(0,0,0,0.15)]">
       <div className="px-6 sm:px-8 lg:px-10 flex items-center justify-between py-[18px]">
-        <Link href="/planner" className="font-display font-extrabold text-[24px] tracking-tight text-ink">
+        <Link href="/" className="font-display font-extrabold text-[24px] tracking-tight text-ink">
           kidtinerary
         </Link>
 
