@@ -14,6 +14,7 @@ interface ChildLite {
 interface Props {
   open: boolean;
   onClose: () => void;
+  plannerId: string;
   scope: { childId: string | null; weekStart: string | null };
   shareCampsDefault: boolean;
   kids: ChildLite[];
@@ -37,6 +38,7 @@ export function AddEntryModal(props: Props) {
 
 function AddEntryModalInner({
   onClose,
+  plannerId,
   scope,
   shareCampsDefault,
   kids,
@@ -77,6 +79,7 @@ function AddEntryModalInner({
             open={true}
             embedded={true}
             onClose={onClose}
+            plannerId={plannerId}
             scope={scope}
             shareCampsDefault={shareCampsDefault}
             onSubmitted={onCampSubmitted}
@@ -86,6 +89,7 @@ function AddEntryModalInner({
             open={true}
             embedded={true}
             onClose={onClose}
+            plannerId={plannerId}
             // eslint-disable-next-line react/no-children-prop
             children={kids}
             scope={scope}

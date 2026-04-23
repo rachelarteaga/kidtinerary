@@ -158,14 +158,14 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
       if (!pendingAssignment) return;
       const { userCampId, childId, weekStart } = pendingAssignment;
       setPendingAssignment(null);
-      const result = await assignCampToWeek(userCampId, childId, weekStart, status);
+      const result = await assignCampToWeek(planner.id, userCampId, childId, weekStart, status);
       if (result.error) {
         alert(result.error);
         return;
       }
       router.refresh();
     },
-    [pendingAssignment, router]
+    [pendingAssignment, planner.id, router]
   );
 
   const handleRemoveKid = useCallback(
@@ -545,6 +545,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
         <AddEntryModal
           open={entryModal !== null}
           onClose={() => setEntryModal(null)}
+          plannerId={planner.id}
           scope={entryModal ?? { childId: null, weekStart: null }}
           shareCampsDefault={shareCampsDefault}
           kids={kids}
@@ -585,6 +586,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           }}
           entry={drawerEntry}
           kids={kids}
+          plannerId={planner.id}
           onChanged={() => router.refresh()}
         />
         <CampPreviewModal

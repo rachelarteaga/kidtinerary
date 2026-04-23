@@ -11,10 +11,14 @@ export async function GET(request: NextRequest) {
   }
 
   const childId = request.nextUrl.searchParams.get("childId");
+  const plannerId = request.nextUrl.searchParams.get("plannerId");
   if (!childId) {
     return NextResponse.json({ error: "childId required" }, { status: 400 });
   }
+  if (!plannerId) {
+    return NextResponse.json({ error: "plannerId required" }, { status: 400 });
+  }
 
-  const entries = await fetchPlannerEntries(user.id, childId);
+  const entries = await fetchPlannerEntries(user.id, childId, plannerId);
   return NextResponse.json({ entries });
 }

@@ -12,8 +12,12 @@ export async function GET(request: NextRequest) {
   }
 
   const childId = request.nextUrl.searchParams.get("childId");
+  const plannerId = request.nextUrl.searchParams.get("plannerId");
   if (!childId) {
     return NextResponse.json({ error: "childId required" }, { status: 400 });
+  }
+  if (!plannerId) {
+    return NextResponse.json({ error: "plannerId required" }, { status: 400 });
   }
 
   const { data: child } = await supabase
@@ -27,7 +31,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Child not found" }, { status: 404 });
   }
 
-  const entries = await fetchPlannerEntries(user.id, childId);
+  const entries = await fetchPlannerEntries(user.id, childId, plannerId);
   const origin = request.nextUrl.origin;
 
   const icsContent = generateICS(entries, child.name, origin);
