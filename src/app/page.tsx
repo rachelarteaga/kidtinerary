@@ -4,10 +4,8 @@ export default function Home() {
   return (
     <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
       <section className="text-center">
-        <h1 className="font-display font-extrabold text-ink leading-[1.05] tracking-tight text-5xl sm:text-6xl md:text-7xl mb-6">
-          Plan your kids&apos; time off
-          <br />
-          — together.
+        <h1 className="font-display font-extrabold text-ink leading-[1.05] tracking-tight text-5xl sm:text-6xl md:text-7xl mb-6 text-balance">
+          Plan your kids&apos; time off, together.
         </h1>
 
         <p className="text-ink-2 text-lg sm:text-xl max-w-xl mx-auto mb-10">
@@ -49,7 +47,15 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mt-28 grid gap-10 sm:grid-cols-3 text-center">
+      <section className="mt-28 grid gap-10 sm:grid-cols-2 lg:grid-cols-4 text-center">
+        <div>
+          <p className="font-sans text-[11px] uppercase tracking-widest text-ink-2 mb-2">
+            Save
+          </p>
+          <p className="font-display font-semibold text-ink text-lg">
+            Catalog the camps you love or want to try.
+          </p>
+        </div>
         <div>
           <p className="font-sans text-[11px] uppercase tracking-widest text-ink-2 mb-2">
             Plan
