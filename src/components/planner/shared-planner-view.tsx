@@ -15,7 +15,7 @@ const STATUS_STYLE: Record<string, string> = {
   registered: "bg-status-registered",
 };
 
-interface KidRow {
+export interface KidRow {
   id: string;
   name: string;
   birth_date: string;
@@ -23,7 +23,7 @@ interface KidRow {
   color: string;
 }
 
-interface EntryRow {
+export interface EntryRow {
   id: string;
   child_id: string;
   status: string;
@@ -48,7 +48,7 @@ interface EntryRow {
   };
 }
 
-interface BlockRow {
+export interface BlockRow {
   id: string;
   type: string;
   title: string;
@@ -68,6 +68,7 @@ interface Props {
   blocks: BlockRow[];
   filters: { kidIds: string[]; includeCost: boolean; includePersonalBlockDetails: boolean };
   colorByActivityId: Record<string, string>;
+  forceViewMode?: "detail" | "simple";
 }
 
 function ageYears(birthDate: string): number {
@@ -86,6 +87,7 @@ export function SharedPlannerView({
   blocks,
   filters,
   colorByActivityId,
+  forceViewMode,
 }: Props) {
   // Apply owner's share filters (kid filter, cost mask, personal-block title mask).
   // Project raw rows into the minimal shape applyShareFilters needs, then reuse the
@@ -117,12 +119,13 @@ export function SharedPlannerView({
   const visibleEntries = entries.filter((e) => filteredIdSets.entryIds.has(e.id));
   const visibleBlocks = blocks.filter((b) => filteredIdSets.blockIds.has(b.id));
 
-  const [viewMode, setViewMode] = useState<"detail" | "simple">("detail");
+  const [viewMode, setViewMode] = useState<"detail" | "simple">(() => forceViewMode ?? "detail");
   const storageKey = `share-view-mode:${token}`;
   useEffect(() => {
+    if (forceViewMode) return;
     const saved = window.localStorage.getItem(storageKey);
     if (saved === "detail" || saved === "simple") setViewMode(saved);
-  }, [storageKey]);
+  }, [storageKey, forceViewMode]);
   function setMode(m: "detail" | "simple") {
     setViewMode(m);
     window.localStorage.setItem(storageKey, m);
@@ -218,22 +221,24 @@ export function SharedPlannerView({
             {visibleKids.length} kid{visibleKids.length === 1 ? "" : "s"}
           </p>
         </div>
-        <div className="inline-flex border border-ink rounded-full p-0.5 text-[11px] font-bold uppercase tracking-widest">
-          <button
-            type="button"
-            onClick={() => setMode("detail")}
-            className={`px-3 py-1.5 rounded-full ${viewMode === "detail" ? "bg-ink text-ink-inverse" : "text-ink-2"}`}
-          >
-            Detailed
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode("simple")}
-            className={`px-3 py-1.5 rounded-full ${viewMode === "simple" ? "bg-ink text-ink-inverse" : "text-ink-2"}`}
-          >
-            Simple
-          </button>
-        </div>
+        {!forceViewMode && (
+          <div className="inline-flex border border-ink rounded-full p-0.5 text-[11px] font-bold uppercase tracking-widest">
+            <button
+              type="button"
+              onClick={() => setMode("detail")}
+              className={`px-3 py-1.5 rounded-full ${viewMode === "detail" ? "bg-ink text-ink-inverse" : "text-ink-2"}`}
+            >
+              Detailed
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("simple")}
+              className={`px-3 py-1.5 rounded-full ${viewMode === "simple" ? "bg-ink text-ink-inverse" : "text-ink-2"}`}
+            >
+              Simple
+            </button>
+          </div>
+        )}
       </header>
 
       {visibleKids.length === 0 ? (

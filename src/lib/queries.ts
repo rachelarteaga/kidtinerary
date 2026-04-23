@@ -370,6 +370,7 @@ export interface PlannerEntryRow {
       verified: boolean;
       categories: string[];
       registration_url: string | null;
+      description: string | null;
       organization: { id: string; name: string } | null;
       price_options: {
         id: string;
@@ -397,7 +398,7 @@ export async function fetchPlannerEntries(
       session:sessions!inner(
         id, starts_at, ends_at, time_slot, hours_start, hours_end, is_sold_out,
         activity:activities!inner(
-          id, name, slug, verified, categories, registration_url,
+          id, name, slug, verified, categories, registration_url, description,
           organization:organizations(id, name),
           price_options(id, label, price_cents, price_unit),
           activity_locations(id, address, location_name)

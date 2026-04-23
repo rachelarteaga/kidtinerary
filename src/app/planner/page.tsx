@@ -46,6 +46,8 @@ export default async function PlannerPage() {
   const userCamps = await fetchUserCamps(user.id);
   const blocks = await fetchPlannerBlocks(user.id);
 
+  const ownerDisplayName = (user.user_metadata?.full_name as string | undefined) ?? null;
+
   return (
     <PlannerClient
       kids={children}
@@ -56,6 +58,7 @@ export default async function PlannerPage() {
       shareCampsDefault={profile?.share_camps_default ?? true}
       planner={planner}
       sharesActiveCount={sharesActiveCount ?? 0}
+      ownerDisplayName={ownerDisplayName}
     />
   );
 }

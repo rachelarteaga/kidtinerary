@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState, useEffect } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
@@ -24,6 +24,7 @@ import { StatusPickerPopover, type StatusPickerAnchor } from "@/components/plann
 import { ScrapeConfirmDrawer } from "@/components/planner/scrape-confirm-drawer";
 import { CampPreviewModal, type PreviewSummary } from "@/components/planner/camp-preview-modal";
 import { SharePlannerModal } from "@/components/planner/share-planner-modal";
+import type { EntryRow as SharedEntryRow } from "@/components/planner/shared-planner-view";
 import { useScrapeJob } from "@/lib/use-scrape-job";
 import { reorderKidColumns, assignCampToWeek, removeKidFromPlanner } from "@/lib/actions";
 import { generateWeeks, getWeekKey, formatWeekRange } from "@/lib/format";
@@ -55,9 +56,10 @@ interface Props {
   shareCampsDefault: boolean;
   planner: PlannerRow;
   sharesActiveCount: number;
+  ownerDisplayName: string | null;
 }
 
-export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, shareCampsDefault, planner, sharesActiveCount }: Props) {
+export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, shareCampsDefault, planner, sharesActiveCount, ownerDisplayName }: Props) {
   const router = useRouter();
 
   const [entryModal, setEntryModal] = useState<{ childId: string | null; weekStart: string | null; tab: "camp" | "block" } | null>(null);
@@ -78,7 +80,6 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
     anchor: StatusPickerAnchor;
   } | null>(null);
   const [viewMode, setViewMode] = useState<"detail" | "simple">("detail");
-  const plannerGridRef = useRef<HTMLDivElement>(null);
   const [shareOpen, setShareOpen] = useState(false);
 
   // Load from localStorage on mount
@@ -187,6 +188,12 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
     const m = new Map<string, string>();
     for (const uc of userCamps) m.set(uc.activity.id, uc.color);
     return m;
+  }, [userCamps]);
+
+  const colorByActivityIdRecord = useMemo(() => {
+    const r: Record<string, string> = {};
+    for (const uc of userCamps) r[uc.activity.id] = uc.color;
+    return r;
   }, [userCamps]);
 
   const weeks: WeekRow[] = weekStarts.map((weekStart) => {
@@ -511,7 +518,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
                 </div>
               </header>
 
-              <div ref={plannerGridRef} className="border-y-[1.5px] border-ink-3 pt-5 pb-4 flex-1 min-h-0 flex flex-col">
+              <div className="border-y-[1.5px] border-ink-3 pt-5 pb-4 flex-1 min-h-0 flex flex-col">
                 <PlannerMatrix
                   children={kids}
                   allUserKids={allUserKids}
@@ -607,13 +614,32 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           onClose={() => setShareOpen(false)}
           plannerId={planner.id}
           plannerName={planner.name}
+          plannerStart={planner.start_date}
+          plannerEnd={planner.end_date}
+          ownerDisplayName={ownerDisplayName}
           kids={kids.map((k, i) => ({
             id: k.id,
             name: k.name,
             avatar_url: k.avatar_url,
             index: i,
           }))}
-          plannerElementRef={plannerGridRef}
+          sharedKids={kids.map((k) => ({
+            id: k.id,
+            name: k.name,
+            birth_date: k.birth_date,
+            avatar_url: k.avatar_url,
+            color: k.color,
+          }))}
+          sharedEntries={entries as unknown as SharedEntryRow[]}
+          sharedBlocks={blocks.map((b) => ({
+            id: b.id,
+            type: b.type,
+            title: b.title,
+            start_date: b.start_date,
+            end_date: b.end_date,
+            kid_ids: b.child_ids,
+          }))}
+          colorByActivityId={colorByActivityIdRecord}
         />
 
         {pendingAssignment && (

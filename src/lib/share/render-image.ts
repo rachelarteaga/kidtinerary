@@ -12,6 +12,8 @@ export function buildShareFilename(plannerName: string): string {
 export async function sharePlannerImage(opts: {
   element: HTMLElement;
   filename: string;
+  shareTitle?: string;
+  shareText?: string;
 }): Promise<{ shared: boolean; error?: string }> {
   let blob: Blob | null;
   try {
@@ -36,7 +38,11 @@ export async function sharePlannerImage(opts: {
   // Prefer the native share sheet when available (iOS Safari, Chrome on Android).
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
-      await navigator.share({ files: [file], title: "My planner" });
+      await navigator.share({
+        files: [file],
+        title: opts.shareTitle ?? "My planner",
+        text: opts.shareText,
+      });
       return { shared: true };
     } catch {
       // Fall through to download on user cancel / unsupported.
