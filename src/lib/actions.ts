@@ -287,55 +287,6 @@ export async function deleteChild(childId: string) {
   return { success: true };
 }
 
-export async function addPlannerEntry(
-  childId: string,
-  sessionId: string,
-  sortOrder: number
-) {
-  const supabase = (await createClient()) as any;
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  // Check for duplicate
-  const { data: existing } = await supabase
-    .from("planner_entries")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("child_id", childId)
-    .eq("session_id", sessionId)
-    .maybeSingle();
-
-  if (existing) {
-    return { error: "This session is already in the planner" };
-  }
-
-  const { data, error } = await supabase
-    .from("planner_entries")
-    .insert({
-      user_id: user.id,
-      child_id: childId,
-      session_id: sessionId,
-      status: "considering",
-      sort_order: sortOrder,
-    })
-    .select("id")
-    .single();
-
-  if (error) {
-    console.error("addPlannerEntry error:", error);
-    return { error: "Failed to add to planner" };
-  }
-
-  revalidatePath("/planner");
-  return { success: true, id: data.id };
-}
-
 export async function updatePlannerEntryStatus(
   entryId: string,
   status: "considering" | "waitlisted" | "registered"
@@ -579,6 +530,7 @@ export async function revokeSharedSchedule(token: string) {
 // Planner Hero Redesign actions
 
 interface SubmitCampContext {
+  plannerId: string;
   childId?: string;
   weekStart?: string; // YYYY-MM-DD Monday
   initialStatus?: "considering" | "waitlisted" | "registered";
@@ -602,14 +554,16 @@ export async function submitCamp(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
-  const { data: defaultPlanner } = await supabase
+  // Caller passes plannerId (the active planner the UI is on). Verify ownership
+  // via RLS by selecting it. If it doesn't resolve, bail.
+  const { data: planner } = await supabase
     .from("planners")
     .select("id")
+    .eq("id", context.plannerId)
     .eq("user_id", user.id)
-    .eq("is_default", true)
     .maybeSingle();
 
-  if (!defaultPlanner) return { error: "No planner found — refresh and retry" };
+  if (!planner) return { error: "No planner found — refresh and retry" };
 
   let activityId: string | null = null;
 
@@ -746,7 +700,7 @@ export async function submitCamp(
       .from("planner_entries")
       .insert({
         user_id: user.id,
-        planner_id: defaultPlanner.id,
+        planner_id: planner.id,
         child_id: context.childId,
         session_id: sessionId,
         status: context.initialStatus ?? "considering",
@@ -971,6 +925,7 @@ export async function updateActivityFields(params: {
 }
 
 export async function assignCampToWeek(
+  plannerId: string,
   userCampId: string,
   childId: string,
   weekStart: string,
@@ -980,14 +935,14 @@ export async function assignCampToWeek(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
-  const { data: defaultPlanner } = await supabase
+  const { data: planner } = await supabase
     .from("planners")
     .select("id")
+    .eq("id", plannerId)
     .eq("user_id", user.id)
-    .eq("is_default", true)
     .maybeSingle();
 
-  if (!defaultPlanner) return { error: "No planner found — refresh and retry" };
+  if (!planner) return { error: "No planner found — refresh and retry" };
 
   const { data: uc } = await supabase
     .from("user_camps")
@@ -1041,7 +996,7 @@ export async function assignCampToWeek(
     .from("planner_entries")
     .insert({
       user_id: user.id,
-      planner_id: defaultPlanner.id,
+      planner_id: planner.id,
       child_id: childId,
       session_id: sessionId,
       status,
@@ -1094,6 +1049,7 @@ export async function removeCampFromShortlist(userCampId: string): Promise<{ err
 }
 
 export async function addPlannerBlock(data: {
+  plannerId: string;
   type: "school" | "travel" | "at_home" | "other";
   title: string;
   emoji?: string | null;
@@ -1109,20 +1065,20 @@ export async function addPlannerBlock(data: {
   if (data.childIds.length === 0) return { error: "Pick at least one kid" };
   if (data.startDate > data.endDate) return { error: "End date must be after start" };
 
-  const { data: defaultPlanner } = await supabase
+  const { data: planner } = await supabase
     .from("planners")
     .select("id")
+    .eq("id", data.plannerId)
     .eq("user_id", user.id)
-    .eq("is_default", true)
     .maybeSingle();
 
-  if (!defaultPlanner) return { error: "No planner found — refresh and retry" };
+  if (!planner) return { error: "No planner found — refresh and retry" };
 
   const { data: block, error } = await supabase
     .from("planner_blocks")
     .insert({
       user_id: user.id,
-      planner_id: defaultPlanner.id,
+      planner_id: planner.id,
       type: data.type,
       title: data.title.trim(),
       emoji: data.emoji ?? null,
@@ -1633,6 +1589,12 @@ export async function updateProfile(input: {
   return {};
 }
 
+/**
+ * Binary per-planner sharing: at most one active share row per (user, planner).
+ * If a row already exists, update it in place (token stays stable while the
+ * owner edits filters). If none exists, insert a fresh row with a new token.
+ * Toggling OFF happens via revokePlannerShareByPlanner.
+ */
 export async function createPlannerShare(input: {
   plannerId: string;
   kidIds: string[];
@@ -1645,8 +1607,32 @@ export async function createPlannerShare(input: {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
-  const token = generateShareToken();
+  const { data: existing } = await supabase
+    .from("shared_schedules")
+    .select("id, token")
+    .eq("user_id", user.id)
+    .eq("planner_id", input.plannerId)
+    .eq("scope", "planner")
+    .maybeSingle();
 
+  if (existing) {
+    const { error } = await supabase
+      .from("shared_schedules")
+      .update({
+        kid_ids: input.kidIds,
+        include_cost: input.includeCost,
+        include_personal_block_details: input.includePersonalBlockDetails,
+      })
+      .eq("id", existing.id)
+      .eq("user_id", user.id);
+    if (error) return { error: error.message };
+    revalidatePath("/account/planners");
+    revalidatePath("/account/sharing");
+    revalidatePath("/planner");
+    return { token: existing.token };
+  }
+
+  const token = generateShareToken();
   const { error } = await supabase.from("shared_schedules").insert({
     user_id: user.id,
     token,
@@ -1658,9 +1644,29 @@ export async function createPlannerShare(input: {
   });
   if (error) return { error: error.message };
 
+  revalidatePath("/account/planners");
   revalidatePath("/account/sharing");
   revalidatePath("/planner");
   return { token };
+}
+
+export async function revokePlannerShareByPlanner(plannerId: string): Promise<{ error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("shared_schedules")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("planner_id", plannerId)
+    .eq("scope", "planner");
+  if (error) return { error: error.message };
+
+  revalidatePath("/account/planners");
+  revalidatePath("/account/sharing");
+  revalidatePath("/planner");
+  return {};
 }
 
 export async function createCampShare(input: {
@@ -1697,7 +1703,227 @@ export async function revokeShare(shareId: string): Promise<{ error?: string }> 
     .eq("user_id", user.id);
   if (error) return { error: error.message };
 
+  revalidatePath("/account/planners");
   revalidatePath("/account/sharing");
+  revalidatePath("/planner");
+  return {};
+}
+
+// ---------------------------------------------------------------------------
+// Planner CRUD (My Planners catalog)
+// ---------------------------------------------------------------------------
+
+function validatePlannerName(name: string): { ok: true; value: string } | { ok: false; error: string } {
+  const trimmed = name.trim();
+  if (trimmed.length === 0) return { ok: false, error: "Name required" };
+  if (trimmed.length > 50) return { ok: false, error: "Name must be 50 characters or fewer" };
+  if (!/^[a-zA-Z0-9 \-']+$/.test(trimmed)) {
+    return { ok: false, error: "Use letters, numbers, spaces, hyphens, or apostrophes" };
+  }
+  return { ok: true, value: trimmed };
+}
+
+/**
+ * Create a new planner. Starts empty — no kids attached. Users add kids
+ * on the planner page via the existing "+ Add kid" flow. The signup
+ * trigger still seeds a "My planner" for brand-new profiles.
+ */
+export async function createPlanner(input: {
+  name: string;
+  startDate: string;
+  endDate: string;
+}): Promise<{ plannerId?: string; error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const nameCheck = validatePlannerName(input.name);
+  if (!nameCheck.ok) return { error: nameCheck.error };
+  if (input.startDate > input.endDate) return { error: "End date must be on or after start date" };
+
+  const { data: planner, error: insertErr } = await supabase
+    .from("planners")
+    .insert({
+      user_id: user.id,
+      name: nameCheck.value,
+      start_date: input.startDate,
+      end_date: input.endDate,
+    })
+    .select("id")
+    .single();
+
+  if (insertErr || !planner) {
+    console.error("createPlanner error:", insertErr);
+    return { error: "Failed to create planner" };
+  }
+
+  revalidatePath("/account/planners");
+  return { plannerId: planner.id };
+}
+
+/**
+ * Duplicate a planner. Copies:
+ *   - the planner row (new id, name + " (copy)")
+ *   - planner_kids junction rows
+ *   - planner_entries (same session/child refs, new planner_id)
+ *   - planner_blocks + planner_block_kids (new block ids)
+ * Does NOT copy shared_schedules — duplicates start un-shared.
+ */
+export async function duplicatePlanner(plannerId: string): Promise<{ plannerId?: string; error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: src, error: srcErr } = await supabase
+    .from("planners")
+    .select("id, name, start_date, end_date")
+    .eq("id", plannerId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (srcErr || !src) return { error: "Planner not found" };
+
+  const copyBaseName = `${src.name} (copy)`;
+  const copyName = copyBaseName.length > 50 ? copyBaseName.slice(0, 50) : copyBaseName;
+
+  const { data: newPlanner, error: insertErr } = await supabase
+    .from("planners")
+    .insert({
+      user_id: user.id,
+      name: copyName,
+      start_date: src.start_date,
+      end_date: src.end_date,
+    })
+    .select("id")
+    .single();
+  if (insertErr || !newPlanner) {
+    console.error("duplicatePlanner insert error:", insertErr);
+    return { error: "Failed to duplicate planner" };
+  }
+
+  // planner_kids
+  const { data: kids } = await supabase
+    .from("planner_kids")
+    .select("child_id, sort_order")
+    .eq("planner_id", plannerId);
+  const kidRows = ((kids ?? []) as { child_id: string; sort_order: number | null }[]).map((k) => ({
+    planner_id: newPlanner.id,
+    child_id: k.child_id,
+    sort_order: k.sort_order ?? 0,
+  }));
+  if (kidRows.length > 0) {
+    await supabase.from("planner_kids").insert(kidRows);
+  }
+
+  // planner_entries — keep same session_id + child_id, new planner_id, same user_id
+  const { data: entries } = await supabase
+    .from("planner_entries")
+    .select(
+      "child_id, session_id, status, sort_order, notes, price_cents, price_unit, extras, session_part, days_of_week"
+    )
+    .eq("planner_id", plannerId)
+    .eq("user_id", user.id);
+
+  const entryRows = ((entries ?? []) as any[]).map((e) => ({
+    user_id: user.id,
+    planner_id: newPlanner.id,
+    child_id: e.child_id,
+    session_id: e.session_id,
+    status: e.status,
+    sort_order: e.sort_order,
+    notes: e.notes,
+    price_cents: e.price_cents,
+    price_unit: e.price_unit,
+    extras: e.extras,
+    session_part: e.session_part,
+    days_of_week: e.days_of_week,
+  }));
+  if (entryRows.length > 0) {
+    const { error: entriesErr } = await supabase.from("planner_entries").insert(entryRows);
+    if (entriesErr) console.error("duplicatePlanner entries error:", entriesErr);
+  }
+
+  // planner_blocks + planner_block_kids — need to map old block_id → new block_id
+  const { data: blocks } = await supabase
+    .from("planner_blocks")
+    .select("id, type, title, emoji, start_date, end_date")
+    .eq("planner_id", plannerId)
+    .eq("user_id", user.id);
+
+  const oldToNewBlockId: Record<string, string> = {};
+  for (const b of ((blocks ?? []) as any[])) {
+    const { data: nb, error: bErr } = await supabase
+      .from("planner_blocks")
+      .insert({
+        user_id: user.id,
+        planner_id: newPlanner.id,
+        type: b.type,
+        title: b.title,
+        emoji: b.emoji,
+        start_date: b.start_date,
+        end_date: b.end_date,
+      })
+      .select("id")
+      .single();
+    if (bErr || !nb) {
+      console.error("duplicatePlanner block insert error:", bErr);
+      continue;
+    }
+    oldToNewBlockId[b.id] = nb.id;
+  }
+
+  const oldBlockIds = Object.keys(oldToNewBlockId);
+  if (oldBlockIds.length > 0) {
+    const { data: blockKids } = await supabase
+      .from("planner_block_kids")
+      .select("block_id, child_id")
+      .in("block_id", oldBlockIds);
+
+    const blockKidRows = ((blockKids ?? []) as { block_id: string; child_id: string }[])
+      .map((bk) => ({
+        block_id: oldToNewBlockId[bk.block_id],
+        child_id: bk.child_id,
+      }))
+      .filter((r) => r.block_id);
+
+    if (blockKidRows.length > 0) {
+      await supabase.from("planner_block_kids").insert(blockKidRows);
+    }
+  }
+
+  revalidatePath("/account/planners");
+  return { plannerId: newPlanner.id };
+}
+
+/**
+ * Delete a planner. Cascades remove planner_entries, planner_blocks,
+ * planner_kids, and shared_schedules (all have ON DELETE CASCADE).
+ * Refuses to delete the user's only planner so they always have at least one.
+ */
+export async function deletePlanner(plannerId: string): Promise<{ error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { count } = await supabase
+    .from("planners")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
+  if ((count ?? 0) <= 1) {
+    return { error: "You need at least one planner. Create another before deleting this one." };
+  }
+
+  const { error } = await supabase
+    .from("planners")
+    .delete()
+    .eq("id", plannerId)
+    .eq("user_id", user.id);
+  if (error) {
+    console.error("deletePlanner error:", error);
+    return { error: "Failed to delete planner" };
+  }
+
+  revalidatePath("/account/planners");
   revalidatePath("/planner");
   return {};
 }

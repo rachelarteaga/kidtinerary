@@ -16,6 +16,7 @@ interface ChildLite {
 interface Props {
   open: boolean;
   onClose: () => void;
+  plannerId: string;
   children: ChildLite[];
   scope: { childId: string | null; weekStart: string | null };
   onSubmitted: () => void;
@@ -36,7 +37,7 @@ function addDays(ymd: string, days: number): string {
   return d.toISOString().split("T")[0];
 }
 
-export function AddBlockModal({ open, onClose, children, scope, onSubmitted, embedded = false }: Props) {
+export function AddBlockModal({ open, onClose, plannerId, children, scope, onSubmitted, embedded = false }: Props) {
   const [step, setStep] = useState<1 | 2>(1);
   const [type, setType] = useState<PlannerBlockType>("travel");
   const [title, setTitle] = useState("");
@@ -66,6 +67,7 @@ export function AddBlockModal({ open, onClose, children, scope, onSubmitted, emb
   function handleSubmit() {
     startTransition(async () => {
       const result = await addPlannerBlock({
+        plannerId,
         type,
         title,
         emoji: null,

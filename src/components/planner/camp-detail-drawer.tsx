@@ -106,10 +106,11 @@ interface Props {
   onClose: () => void;
   entry: DrawerEntry | null;
   kids: Kid[];
+  plannerId: string;
   onChanged: () => void;
 }
 
-export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Props) {
+export function CampDetailDrawer({ open, onClose, entry, kids, plannerId, onChanged }: Props) {
   const [local, setLocal] = useState<DrawerEntry | null>(entry);
   const [isPending, startTransition] = useTransition();
 
@@ -231,6 +232,7 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
     const placed = local.placed;
     startTransition(async () => {
       await assignCampToWeek(
+        plannerId,
         local.userCampId,
         otherKidId,
         placed.weekStart.toISOString().split("T")[0],

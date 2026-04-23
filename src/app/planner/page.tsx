@@ -5,20 +5,37 @@ import {
   fetchPlannerEntries,
   fetchUserCamps,
   fetchPlannerBlocks,
-  fetchDefaultPlanner,
+  fetchPlannerById,
+  fetchUserPlannerIds,
   fetchPlannerKids,
 } from "@/lib/queries";
 import { PlannerClient } from "./client";
 
 export const dynamic = "force-dynamic";
 
-export default async function PlannerPage() {
+interface PageProps {
+  searchParams: Promise<{ id?: string }>;
+}
+
+export default async function PlannerPage({ searchParams }: PageProps) {
   const supabase = (await createClient()) as any;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  const planner = await fetchDefaultPlanner(user.id);
-  if (!planner) redirect("/auth/login");
+  const { id: requestedId } = await searchParams;
+
+  // Requested-id path: load that planner if the user owns it.
+  let planner = requestedId ? await fetchPlannerById(requestedId, user.id) : null;
+
+  // No id (or bad id): smart redirect — open the sole planner when the user
+  // only has one, otherwise send them to the catalog to pick.
+  if (!planner) {
+    const ids = await fetchUserPlannerIds(user.id);
+    if (ids.length === 0) redirect("/account/planners");
+    if (ids.length > 1) redirect("/account/planners");
+    planner = await fetchPlannerById(ids[0], user.id);
+    if (!planner) redirect("/account/planners");
+  }
 
   // Count active shares for this planner
   const { count: sharesActiveCount } = await supabase
@@ -40,11 +57,11 @@ export default async function PlannerPage() {
     .maybeSingle();
 
   const allEntries = (
-    await Promise.all(children.map((c: any) => fetchPlannerEntries(user.id, c.id)))
+    await Promise.all(children.map((c: any) => fetchPlannerEntries(user.id, c.id, planner.id)))
   ).flat();
 
   const userCamps = await fetchUserCamps(user.id);
-  const blocks = await fetchPlannerBlocks(user.id);
+  const blocks = await fetchPlannerBlocks(user.id, planner.id);
 
   const ownerDisplayName = (user.user_metadata?.full_name as string | undefined) ?? null;
 

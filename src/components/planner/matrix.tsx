@@ -96,18 +96,18 @@ export function PlannerMatrix({
   const cols = orderedChildren.length;
   const gridTemplate = `140px ${"1fr ".repeat(cols).trim()} 48px`;
 
-  // Empty-planner state: no kids assigned yet. Show only the header row with Add Kid.
+  // Empty-planner state: no kids assigned yet. Render a single full-width kid
+  // header placeholder that doubles as an "Add a kid" CTA.
   if (orderedChildren.length === 0) {
     return (
-      <div className="space-y-3">
-        <div className="flex items-center justify-end">
-          <AddKidMenu plannerId={plannerId} availableKids={availableKids} />
-        </div>
-        <div className="rounded-lg border border-dashed border-ink-3 bg-surface/30 p-8 text-center">
-          <p className="font-display font-extrabold text-xl text-ink mb-1">No kids on this planner yet</p>
-          <p className="text-ink-2 text-sm">
-            Use the <span className="font-sans">+</span> button above to pick someone from your profile.
-          </p>
+      <div className="flex flex-col md:h-full min-h-0 w-full">
+        <div
+          className="grid gap-2 mb-[14px] flex-shrink-0"
+          style={{ gridTemplateColumns: "140px 1fr 48px" }}
+        >
+          <div />
+          <AddKidMenu plannerId={plannerId} availableKids={availableKids} variant="empty-header" />
+          <div />
         </div>
       </div>
     );

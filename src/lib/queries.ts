@@ -385,7 +385,8 @@ export interface PlannerEntryRow {
 
 export async function fetchPlannerEntries(
   userId: string,
-  childId: string
+  childId: string,
+  plannerId: string,
 ): Promise<PlannerEntryRow[]> {
   const supabase = (await createClient()) as any;
 
@@ -408,6 +409,7 @@ export async function fetchPlannerEntries(
     )
     .eq("user_id", userId)
     .eq("child_id", childId)
+    .eq("planner_id", plannerId)
     .order("sort_order", { ascending: true });
 
   if (error) {
@@ -416,43 +418,6 @@ export async function fetchPlannerEntries(
   }
 
   return (data ?? []) as PlannerEntryRow[];
-}
-
-export interface SharedScheduleRow {
-  token: string;
-  child_id: string;
-  date_from: string;
-  date_to: string;
-  child_name: string;
-  entries: {
-    id: string;
-    status: PlannerEntryStatus;
-    sort_order: number;
-    session: {
-      id: string;
-      starts_at: string;
-      ends_at: string;
-      time_slot: string;
-      hours_start: string | null;
-      hours_end: string | null;
-      is_sold_out: boolean;
-      activity: {
-        id: string;
-        name: string;
-        slug: string;
-        categories: string[];
-        registration_url: string | null;
-        organization: { id: string; name: string } | null;
-        price_options: {
-          id: string;
-          label: string;
-          price_cents: number;
-          price_unit: string;
-        }[];
-        activity_locations: { id: string; address: string; location_name: string | null }[];
-      };
-    };
-  }[];
 }
 
 export type SharedByTokenResult =
@@ -667,69 +632,6 @@ export async function fetchSharedPlannerByToken(token: string): Promise<SharedBy
   };
 }
 
-export async function fetchSharedSchedule(token: string): Promise<SharedScheduleRow | null> {
-  // Uses the anon/public Supabase client — no auth required
-  const supabase = (await createClient()) as any;
-
-  // Fetch the shared schedule record
-  const { data: schedule, error: scheduleError } = await supabase
-    .from("shared_schedules")
-    .select("token, child_id, date_from, date_to")
-    .eq("token", token)
-    .single();
-
-  if (scheduleError || !schedule) {
-    return null;
-  }
-
-  // Fetch the child name
-  const { data: child, error: childError } = await supabase
-    .from("children")
-    .select("name")
-    .eq("id", schedule.child_id)
-    .single();
-
-  if (childError || !child) {
-    return null;
-  }
-
-  // Fetch planner entries for this child within the date range, excluding notes
-  const { data: entries, error: entriesError } = await supabase
-    .from("planner_entries")
-    .select(
-      `
-      id, status, sort_order,
-      session:sessions!inner(
-        id, starts_at, ends_at, time_slot, hours_start, hours_end, is_sold_out,
-        activity:activities!inner(
-          id, name, slug, categories, registration_url,
-          organization:organizations(id, name),
-          price_options(id, label, price_cents, price_unit),
-          activity_locations(id, address, location_name)
-        )
-      )
-    `
-    )
-    .eq("child_id", schedule.child_id)
-    .gte("session.starts_at", schedule.date_from)
-    .lte("session.starts_at", schedule.date_to)
-    .order("sort_order", { ascending: true });
-
-  if (entriesError) {
-    console.error("fetchSharedSchedule entries error:", entriesError);
-    return null;
-  }
-
-  return {
-    token: schedule.token,
-    child_id: schedule.child_id,
-    date_from: schedule.date_from,
-    date_to: schedule.date_to,
-    child_name: child.name,
-    entries: (entries ?? []) as SharedScheduleRow["entries"],
-  };
-}
-
 export async function fetchFavoriteActivitiesWithSessions(userId: string) {
   const supabase = (await createClient()) as any;
 
@@ -851,7 +753,7 @@ export interface PlannerBlockWithKids extends PlannerBlockRow {
   child_ids: string[];
 }
 
-export async function fetchPlannerBlocks(userId: string): Promise<PlannerBlockWithKids[]> {
+export async function fetchPlannerBlocks(userId: string, plannerId: string): Promise<PlannerBlockWithKids[]> {
   const supabase = (await createClient()) as any;
 
   const { data, error } = await supabase
@@ -861,6 +763,7 @@ export async function fetchPlannerBlocks(userId: string): Promise<PlannerBlockWi
       planner_block_kids(child_id)
     `)
     .eq("user_id", userId)
+    .eq("planner_id", plannerId)
     .order("start_date", { ascending: true });
 
   if (error) {
@@ -900,18 +803,148 @@ export async function fetchScrapeJob(jobId: string, userId: string): Promise<Scr
   return data as ScrapeJobRow | null;
 }
 
-export async function fetchDefaultPlanner(userId: string): Promise<PlannerRow | null> {
+/**
+ * Fetch a specific planner by id, enforcing user ownership via RLS.
+ * Returns null if not found or not owned by this user.
+ */
+export async function fetchPlannerById(plannerId: string, userId: string): Promise<PlannerRow | null> {
   const supabase = (await createClient()) as any;
   const { data, error } = await supabase
     .from("planners")
-    .select("id, user_id, name, start_date, end_date, is_default, created_at")
+    .select("id, user_id, name, start_date, end_date, created_at")
+    .eq("id", plannerId)
     .eq("user_id", userId)
-    .eq("is_default", true)
     .maybeSingle();
 
   if (error) {
-    console.error("fetchDefaultPlanner error:", error);
+    console.error("fetchPlannerById error:", error);
     return null;
   }
   return data as PlannerRow | null;
+}
+
+/**
+ * Returns the set of planner ids a user owns, plus the total count. Used by
+ * /planner/page.tsx to decide whether to auto-open the sole planner or
+ * redirect to the catalog.
+ */
+export async function fetchUserPlannerIds(userId: string): Promise<string[]> {
+  const supabase = (await createClient()) as any;
+  const { data, error } = await supabase
+    .from("planners")
+    .select("id")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
+  if (error) {
+    console.error("fetchUserPlannerIds error:", error);
+    return [];
+  }
+  return ((data ?? []) as { id: string }[]).map((r) => r.id);
+}
+
+export interface PlannerSummary {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  kidCount: number;
+  /** Most recent updated_at across the planner row itself, its entries, and its blocks. */
+  lastEditedAt: string;
+  /** Token for the planner's active share, or null when not shared. */
+  shareToken: string | null;
+  /** Row id of the active share, for revoke operations. Null when not shared. */
+  shareId: string | null;
+  shareKidIds: string[];
+  shareIncludeCost: boolean;
+  shareIncludePersonalBlockDetails: boolean;
+}
+
+/**
+ * Catalog data for the My Planners page. One row per planner the user owns,
+ * with kid count, last-edited timestamp, and binary share state.
+ */
+export async function fetchUserPlanners(userId: string): Promise<PlannerSummary[]> {
+  const supabase = (await createClient()) as any;
+
+  const { data: planners, error } = await supabase
+    .from("planners")
+    .select("id, name, start_date, end_date, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
+
+  if (error || !planners) {
+    console.error("fetchUserPlanners planners error:", error);
+    return [];
+  }
+
+  const plannerIds = (planners as { id: string }[]).map((p) => p.id);
+  if (plannerIds.length === 0) return [];
+
+  const [kidsRes, entriesRes, blocksRes, sharesRes] = await Promise.all([
+    supabase.from("planner_kids").select("planner_id, child_id").in("planner_id", plannerIds),
+    supabase.from("planner_entries").select("planner_id, updated_at").in("planner_id", plannerIds),
+    supabase.from("planner_blocks").select("planner_id, created_at").in("planner_id", plannerIds),
+    supabase
+      .from("shared_schedules")
+      .select("id, planner_id, token, kid_ids, include_cost, include_personal_block_details")
+      .eq("user_id", userId)
+      .eq("scope", "planner")
+      .in("planner_id", plannerIds),
+  ]);
+
+  const kidCountByPlanner: Record<string, number> = {};
+  for (const row of (kidsRes.data ?? []) as { planner_id: string }[]) {
+    kidCountByPlanner[row.planner_id] = (kidCountByPlanner[row.planner_id] ?? 0) + 1;
+  }
+
+  const lastEditedByPlanner: Record<string, string> = {};
+  function considerTimestamp(plannerId: string, ts: string | null) {
+    if (!ts) return;
+    const prev = lastEditedByPlanner[plannerId];
+    if (!prev || ts > prev) lastEditedByPlanner[plannerId] = ts;
+  }
+  for (const row of (entriesRes.data ?? []) as { planner_id: string; updated_at: string | null }[]) {
+    considerTimestamp(row.planner_id, row.updated_at);
+  }
+  for (const row of (blocksRes.data ?? []) as { planner_id: string; created_at: string | null }[]) {
+    considerTimestamp(row.planner_id, row.created_at);
+  }
+
+  const shareByPlanner: Record<
+    string,
+    { id: string; token: string; kid_ids: string[]; include_cost: boolean; include_personal_block_details: boolean }
+  > = {};
+  for (const row of (sharesRes.data ?? []) as {
+    id: string;
+    planner_id: string;
+    token: string;
+    kid_ids: string[];
+    include_cost: boolean;
+    include_personal_block_details: boolean;
+  }[]) {
+    shareByPlanner[row.planner_id] = row;
+  }
+
+  return (planners as {
+    id: string;
+    name: string;
+    start_date: string;
+    end_date: string;
+    created_at: string;
+  }[]).map((p) => {
+    const share = shareByPlanner[p.id] ?? null;
+    return {
+      id: p.id,
+      name: p.name,
+      startDate: p.start_date,
+      endDate: p.end_date,
+      kidCount: kidCountByPlanner[p.id] ?? 0,
+      lastEditedAt: lastEditedByPlanner[p.id] ?? p.created_at,
+      shareToken: share?.token ?? null,
+      shareId: share?.id ?? null,
+      shareKidIds: share?.kid_ids ?? [],
+      shareIncludeCost: share?.include_cost ?? false,
+      shareIncludePersonalBlockDetails: share?.include_personal_block_details ?? false,
+    };
+  });
 }

@@ -18,6 +18,7 @@ interface OrgHit {
 interface Props {
   open: boolean;
   onClose: () => void;
+  plannerId: string;
   scope: { childId: string | null; weekStart: string | null };
   shareCampsDefault: boolean;
   onSubmitted: (result: {
@@ -29,7 +30,7 @@ interface Props {
   embedded?: boolean;
 }
 
-export function AddCampModal({ open, onClose, scope, shareCampsDefault, onSubmitted, embedded = false }: Props) {
+export function AddCampModal({ open, onClose, plannerId, scope, shareCampsDefault, onSubmitted, embedded = false }: Props) {
   const [orgName, setOrgName] = useState("");
   const [campName, setCampName] = useState("");
   const [url, setUrl] = useState("");
@@ -87,6 +88,7 @@ export function AddCampModal({ open, onClose, scope, shareCampsDefault, onSubmit
     };
     startTransition(async () => {
       const result = await submitCamp(payload, {
+        plannerId,
         childId: scope.childId ?? undefined,
         weekStart: scope.weekStart ?? undefined,
       });
