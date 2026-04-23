@@ -382,7 +382,7 @@ export function SharedPlannerView({
                                     )}
                                   </span>
                                   {priceLabel && (
-                                    <span className="font-sans text-[10px] font-semibold text-ink-2 flex-shrink-0 mt-0.5">
+                                    <span className="font-sans text-[10px] font-semibold text-ink-2 flex-shrink-0 mt-0.5 py-0.5 border border-transparent leading-none">
                                       {priceLabel}
                                     </span>
                                   )}
