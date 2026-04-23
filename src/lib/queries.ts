@@ -777,6 +777,7 @@ export interface UserCampWithActivity {
     slug: string;
     verified: boolean;
     source: "user" | "curated";
+    source_url: string | null;
     categories: string[];
     description: string | null;
     age_min: number | null;
@@ -806,7 +807,7 @@ export async function fetchUserCamps(userId: string): Promise<UserCampWithActivi
     .select(`
       id, created_at, color,
       activity:activities!inner(
-        id, name, slug, verified, source, categories, description, age_min, age_max, registration_url, organization_id,
+        id, name, slug, verified, source, source_url, categories, description, age_min, age_max, registration_url, organization_id,
         organization:organizations(id, name),
         activity_locations(id, address, location_name),
         price_options(id, label, price_cents, price_unit),

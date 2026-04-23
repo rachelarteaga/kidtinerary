@@ -83,6 +83,7 @@ interface DrawerEntry {
   activityId: string;
   orgId: string | null;
   source: "user" | "curated";
+  sourceUrl: string | null;
   activityName: string;
   activitySlug: string;
   activityUrl: string | null;
@@ -279,7 +280,7 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
 
   return (
     <>
-      <div className="fixed inset-0 bg-ink/25 z-40" onClick={onClose} />
+      <div className="fixed inset-0 bg-ink/25 z-40 cursor-pointer" onClick={onClose} />
       <aside className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-base shadow-2xl z-50 flex flex-col">
         <header className="bg-surface px-5 py-4 border-b border-ink-3 shrink-0">
           <div className="flex items-start justify-between gap-3">
@@ -305,9 +306,9 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
               ) : (
                 <h2
                   onClick={() => startEdit("name")}
-                  className={`font-display font-extrabold text-2xl leading-tight cursor-text ${
-                    local.activityName === "New camp" ? "italic text-ink-2" : "text-ink"
-                  }`}
+                  className={`font-display font-extrabold text-2xl leading-tight ${
+                    isCurated ? "cursor-default" : "cursor-pointer"
+                  } ${local.activityName === "New camp" ? "italic text-ink-2" : "text-ink"}`}
                 >
                   {local.activityName}
                 </h2>
@@ -335,7 +336,9 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
               ) : (
                 <div
                   onClick={() => startEdit("org")}
-                  className="font-sans text-[10px] uppercase tracking-wide text-ink-2 mt-1 cursor-text"
+                  className={`font-sans text-[10px] uppercase tracking-wide text-ink-2 mt-1 ${
+                    isCurated ? "cursor-default" : "cursor-pointer"
+                  }`}
                 >
                   {local.orgName ?? "Add organization"}
                   {local.verified && <span className="text-[#5fc39c]"> · verified ✓</span>}
@@ -572,8 +575,8 @@ export function CampDetailDrawer({ open, onClose, entry, kids, onChanged }: Prop
             </section>
           )}
 
-          {/* 14. Scraped dates/sessions — beta, read-only, show only if data */}
-          {local.scrapedSessions.length > 0 && (
+          {/* 14. Scraped dates/sessions — beta, read-only, show only if data came from scraping */}
+          {local.sourceUrl && local.scrapedSessions.length > 0 && (
             <section>
               <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2 flex items-center">
                 Scraped dates

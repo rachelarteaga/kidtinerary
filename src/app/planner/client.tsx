@@ -338,6 +338,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
         activityName: e.session.activity.name,
         activitySlug: e.session.activity.slug,
         source: uc?.activity.source ?? "user",
+        sourceUrl: uc?.activity.source_url ?? null,
         orgId: uc?.activity.organization_id ?? null,
         activityUrl: uc?.activity.registration_url ?? null,
         activityDescription: uc?.activity.description ?? null,
@@ -381,6 +382,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
         activityName: uc.activity.name,
         activitySlug: uc.activity.slug,
         source: uc.activity.source,
+        sourceUrl: uc.activity.source_url ?? null,
         orgId: uc.activity.organization_id ?? null,
         activityUrl: uc.activity.registration_url ?? null,
         activityDescription: uc.activity.description ?? null,
@@ -646,7 +648,6 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           <StatusPickerPopover
             anchor={pendingAssignment.anchor}
             campName={pendingAssignment.name}
-            campColor={pendingAssignment.color}
             onChoose={handleStatusChoice}
             onCancel={() => setPendingAssignment(null)}
           />

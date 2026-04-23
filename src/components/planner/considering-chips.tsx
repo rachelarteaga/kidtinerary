@@ -31,7 +31,7 @@ export function ConsideringChips({ chips, onChipClick }: Props) {
             {c.activityName}
             {c.isOvernight ? (
               <svg width="11" height="11" viewBox="0 0 24 24" fill="#151515" aria-label="Overnight">
-                <path d="M14 2 A 10 10 0 1 0 22 13 A 8 8 0 0 1 14 2 Z" />
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
               </svg>
             ) : null}
           </button>

@@ -220,7 +220,7 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
 
   return (
     <>
-      <div className="fixed inset-0 bg-ink/25 z-40" onClick={handleClose} />
+      <div className="fixed inset-0 bg-ink/25 z-40 cursor-pointer" onClick={handleClose} />
       <aside className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-base shadow-2xl z-50 overflow-y-auto flex flex-col">
         <header className="bg-surface px-5 py-4 border-b border-ink-3">
           <div className="flex items-start justify-between gap-3">
