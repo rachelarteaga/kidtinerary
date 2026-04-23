@@ -38,9 +38,10 @@ export async function sharePlannerImage(opts: {
   // Prefer the native share sheet when available (iOS Safari, Chrome on Android).
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
+      // Intentionally omit `title`: some share targets (iMessage, etc.)
+      // prepend it above the `text`, which duplicates the planner name.
       await navigator.share({
         files: [file],
-        title: opts.shareTitle ?? "My planner",
         text: opts.shareText,
       });
       return { shared: true };
