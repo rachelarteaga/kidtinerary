@@ -38,10 +38,12 @@ export function SharedCampDetailPanel({ open, onClose, camp }: Props) {
             </p>
           )}
         </div>
-        <div className="px-5 py-3 border-t border-ink-3">
-          <p className="font-sans text-[10px] uppercase tracking-wide text-ink-2 font-semibold">Location</p>
-          <p className="font-sans text-sm mt-1 whitespace-pre-line">{camp.location}</p>
-        </div>
+        {camp.location && camp.location.trim().length > 0 && (
+          <div className="px-5 py-3 border-t border-ink-3">
+            <p className="font-sans text-[10px] uppercase tracking-wide text-ink-2 font-semibold">Location</p>
+            <p className="font-sans text-sm mt-1 whitespace-pre-line">{camp.location}</p>
+          </div>
+        )}
         {camp.url && (
           <div className="px-5 py-3 border-t border-ink-3">
             <p className="font-sans text-[10px] uppercase tracking-wide text-ink-2 font-semibold">Link</p>

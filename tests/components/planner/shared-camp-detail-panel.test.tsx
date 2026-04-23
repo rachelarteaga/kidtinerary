@@ -42,4 +42,9 @@ describe("SharedCampDetailPanel", () => {
     render(<SharedCampDetailPanel open onClose={() => {}} camp={{ ...camp, about: "" }} />);
     expect(screen.queryByText(/^About$/)).toBeNull();
   });
+
+  it("hides the Location section when location is empty", () => {
+    render(<SharedCampDetailPanel open onClose={() => {}} camp={{ ...camp, location: "" }} />);
+    expect(screen.queryByText(/^Location$/)).toBeNull();
+  });
 });
