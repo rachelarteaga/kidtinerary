@@ -25,7 +25,7 @@ export function ConsideringChips({ chips, onChipClick }: Props) {
           <button
             key={c.entryId}
             onClick={() => onChipClick(c.entryId)}
-            className="flex items-center gap-1 rounded-full border border-dashed border-ink-3 bg-surface px-2 py-0.5 text-[11px] text-ink hover:border-ink"
+            className="flex items-center gap-1 rounded-full border border-dashed border-ink-3 bg-surface px-2 py-0.5 text-[11px] text-ink hover:border-ink cursor-pointer"
           >
             <span className="w-1.5 h-1.5 rounded-full" style={{ background: c.color }} />
             {c.activityName}

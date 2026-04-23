@@ -370,7 +370,7 @@ export function SharedPlannerView({
                                   key={e.id}
                                   type="button"
                                   onClick={() => setOpenCampEntryId(e.id)}
-                                  className="w-full flex items-start gap-1.5 text-left text-xs text-ink hover:underline"
+                                  className="w-full flex items-start gap-1.5 text-left text-xs text-ink hover:underline cursor-pointer"
                                 >
                                   <span className="w-2 h-2 mt-1 rounded-full flex-shrink-0" style={{ background: color }} />
                                   <span className="flex-1 min-w-0">

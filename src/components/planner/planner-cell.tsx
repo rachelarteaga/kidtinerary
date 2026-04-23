@@ -102,7 +102,7 @@ export function PlannerCell({
                 <button
                   key={r.entryId}
                   onClick={() => onEntryClick(r.entryId)}
-                  className="w-full flex items-start gap-1.5 text-left text-xs text-ink hover:underline"
+                  className="w-full flex items-start gap-1.5 text-left text-xs text-ink hover:underline cursor-pointer"
                 >
                   <span className="w-2 h-2 mt-1 rounded-full flex-shrink-0" style={{ background: r.color }} />
                   <span className="flex-1 min-w-0">
