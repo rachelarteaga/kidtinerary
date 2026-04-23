@@ -27,14 +27,15 @@ export default async function PlannerPage({ searchParams }: PageProps) {
   // Requested-id path: load that planner if the user owns it.
   let planner = requestedId ? await fetchPlannerById(requestedId, user.id) : null;
 
-  // No id (or bad id): smart redirect — open the sole planner when the user
-  // only has one, otherwise send them to the catalog to pick.
+  // No id (or bad id): smart redirect — drive first-timers straight into the
+  // new-planner flow, open the sole planner for single-planner users, and send
+  // multi-planner users to the catalog to pick.
   if (!planner) {
     const ids = await fetchUserPlannerIds(user.id);
-    if (ids.length === 0) redirect("/account/planners");
+    if (ids.length === 0) redirect("/account/planners?new=1");
     if (ids.length > 1) redirect("/account/planners");
     planner = await fetchPlannerById(ids[0], user.id);
-    if (!planner) redirect("/account/planners");
+    if (!planner) redirect("/account/planners?new=1");
   }
 
   // Count active shares for this planner
