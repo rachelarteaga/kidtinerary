@@ -23,6 +23,8 @@ import { PlannerTitle } from "@/components/planner/planner-title";
 import { StatusPickerPopover, type StatusPickerAnchor } from "@/components/planner/status-picker-popover";
 import { ScrapeConfirmDrawer } from "@/components/planner/scrape-confirm-drawer";
 import { CampPreviewModal, type PreviewSummary } from "@/components/planner/camp-preview-modal";
+import { SharePlannerModal } from "@/components/planner/share-planner-modal";
+import type { EntryRow as SharedEntryRow } from "@/components/planner/shared-planner-view";
 import { useScrapeJob } from "@/lib/use-scrape-job";
 import { reorderKidColumns, assignCampToWeek, removeKidFromPlanner } from "@/lib/actions";
 import { generateWeeks, getWeekKey, formatWeekRange } from "@/lib/format";
@@ -53,9 +55,11 @@ interface Props {
   blocks: PlannerBlockWithKids[];
   shareCampsDefault: boolean;
   planner: PlannerRow;
+  sharesActiveCount: number;
+  ownerDisplayName: string | null;
 }
 
-export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, shareCampsDefault, planner }: Props) {
+export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, shareCampsDefault, planner, sharesActiveCount, ownerDisplayName }: Props) {
   const router = useRouter();
 
   const [entryModal, setEntryModal] = useState<{ childId: string | null; weekStart: string | null; tab: "camp" | "block" } | null>(null);
@@ -76,6 +80,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
     anchor: StatusPickerAnchor;
   } | null>(null);
   const [viewMode, setViewMode] = useState<"detail" | "simple">("detail");
+  const [shareOpen, setShareOpen] = useState(false);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -183,6 +188,12 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
     const m = new Map<string, string>();
     for (const uc of userCamps) m.set(uc.activity.id, uc.color);
     return m;
+  }, [userCamps]);
+
+  const colorByActivityIdRecord = useMemo(() => {
+    const r: Record<string, string> = {};
+    for (const uc of userCamps) r[uc.activity.id] = uc.color;
+    return r;
   }, [userCamps]);
 
   const weeks: WeekRow[] = weekStarts.map((weekStart) => {
@@ -433,7 +444,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
               <header className="bg-surface flex items-start justify-between flex-wrap gap-3 pt-[22px] pb-[18px] flex-shrink-0">
                 <div>
                   <div className="mb-1">
-                    <PlannerTitle plannerId={planner.id} name={planner.name} />
+                    <PlannerTitle plannerId={planner.id} name={planner.name} sharesActiveCount={sharesActiveCount} />
                   </div>
                   <p className="text-ink-2">
                     {kids.length} kid{kids.length === 1 ? "" : "s"} · {weekStarts.length} weeks
@@ -492,6 +503,12 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
                     blocks={rangePickerBlocks}
                     onChanged={() => router.refresh()}
                   />
+                  <button
+                    onClick={() => setShareOpen(true)}
+                    className="font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-surface text-ink hover:bg-base border border-ink"
+                  >
+                    Share
+                  </button>
                   <button
                     onClick={() => setEntryModal({ childId: null, weekStart: null, tab: "camp" })}
                     className="font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-[#333] border border-ink"
@@ -591,6 +608,38 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           inputUrl={scrapeDrawer?.url ?? ""}
           scopeLabel={scrapeDrawer?.scopeLabel ?? null}
           onClose={() => setScrapeDrawer(null)}
+        />
+        <SharePlannerModal
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          plannerId={planner.id}
+          plannerName={planner.name}
+          plannerStart={planner.start_date}
+          plannerEnd={planner.end_date}
+          ownerDisplayName={ownerDisplayName}
+          kids={kids.map((k, i) => ({
+            id: k.id,
+            name: k.name,
+            avatar_url: k.avatar_url,
+            index: i,
+          }))}
+          sharedKids={kids.map((k) => ({
+            id: k.id,
+            name: k.name,
+            birth_date: k.birth_date,
+            avatar_url: k.avatar_url,
+            color: k.color,
+          }))}
+          sharedEntries={entries as unknown as SharedEntryRow[]}
+          sharedBlocks={blocks.map((b) => ({
+            id: b.id,
+            type: b.type,
+            title: b.title,
+            start_date: b.start_date,
+            end_date: b.end_date,
+            kid_ids: b.child_ids,
+          }))}
+          colorByActivityId={colorByActivityIdRecord}
         />
 
         {pendingAssignment && (

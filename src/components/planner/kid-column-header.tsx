@@ -19,9 +19,10 @@ interface Props {
   index: number;
   ageYears: number;
   onRemove?: () => void;
+  readOnly?: boolean;
 }
 
-export function KidColumnHeader({ child, index, ageYears, onRemove }: Props) {
+export function KidColumnHeader({ child, index, ageYears, onRemove, readOnly = false }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: child.id,
     data: { type: "kid-column" },
@@ -71,6 +72,21 @@ export function KidColumnHeader({ child, index, ageYears, onRemove }: Props) {
   function handleCloseEditor() {
     if (imageUrl) URL.revokeObjectURL(imageUrl);
     setImageUrl(null);
+  }
+
+  // Read-only fast path: render a stripped-down, non-interactive header.
+  if (readOnly) {
+    return (
+      <div className="bg-surface border border-ink rounded-lg px-2.5 py-2 flex items-center gap-2">
+        <div className="flex-shrink-0">
+          <KidAvatar name={child.name} index={index} avatarUrl={child.avatar_url} size={32} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-display font-extrabold text-base text-ink truncate leading-tight">{child.name}</div>
+          <div className="text-[11px] font-medium text-ink-2">{ageYears} yrs</div>
+        </div>
+      </div>
+    );
   }
 
   return (

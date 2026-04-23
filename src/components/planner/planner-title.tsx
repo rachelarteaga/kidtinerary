@@ -3,13 +3,15 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updatePlannerName } from "@/lib/actions";
+import { SharedIndicatorPill } from "./shared-indicator-pill";
 
 interface Props {
   plannerId: string;
   name: string;
+  sharesActiveCount: number;
 }
 
-export function PlannerTitle({ plannerId, name }: Props) {
+export function PlannerTitle({ plannerId, name, sharesActiveCount }: Props) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(name);
   const [error, setError] = useState<string | null>(null);
@@ -74,18 +76,21 @@ export function PlannerTitle({ plannerId, name }: Props) {
   }
 
   return (
-    <button
-      onClick={() => setEditing(true)}
-      className="font-display font-extrabold text-4xl text-ink tracking-tight hover:underline decoration-ink-3 decoration-2 underline-offset-4 inline-flex items-center gap-2 group"
-      aria-label="Edit planner name"
-    >
-      <span>{name}</span>
-      <span
-        aria-hidden="true"
-        className="text-base text-ink-3 opacity-0 group-hover:opacity-100 transition-opacity"
+    <div className="inline-flex items-center gap-3">
+      <button
+        onClick={() => setEditing(true)}
+        className="font-display font-extrabold text-4xl text-ink tracking-tight hover:underline decoration-ink-3 decoration-2 underline-offset-4 inline-flex items-center gap-2 group"
+        aria-label="Edit planner name"
       >
-        ✎
-      </span>
-    </button>
+        <span>{name}</span>
+        <span
+          aria-hidden="true"
+          className="text-base text-ink-3 opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          ✎
+        </span>
+      </button>
+      <SharedIndicatorPill count={sharesActiveCount} />
+    </div>
   );
 }

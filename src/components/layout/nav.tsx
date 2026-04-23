@@ -23,7 +23,9 @@ export function Nav() {
   useEffect(() => {
     if (shouldHide) return;
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
+
+    async function loadUser() {
+      const { data } = await supabase.auth.getUser();
       const u = data.user;
       if (!u) {
         setUser(null);
@@ -33,7 +35,22 @@ export function Nav() {
         (u.user_metadata?.full_name as string | undefined) ??
         (u.email ? u.email.split("@")[0] : "You");
       setUser({ name, email: u.email ?? "" });
+    }
+
+    loadUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (
+        event === "USER_UPDATED" ||
+        event === "SIGNED_IN" ||
+        event === "SIGNED_OUT" ||
+        event === "TOKEN_REFRESHED"
+      ) {
+        loadUser();
+      }
     });
+
+    return () => subscription.unsubscribe();
   }, [shouldHide]);
 
   if (shouldHide) return null;

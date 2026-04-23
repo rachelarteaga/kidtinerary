@@ -1,0 +1,63 @@
+import { toBlob } from "html-to-image";
+
+export function buildShareFilename(plannerName: string): string {
+  const slug = plannerName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  return `${slug}-planner-${date}.png`;
+}
+
+export async function sharePlannerImage(opts: {
+  element: HTMLElement;
+  filename: string;
+  shareTitle?: string;
+  shareText?: string;
+}): Promise<{ shared: boolean; error?: string }> {
+  let blob: Blob | null;
+  try {
+    // skipFonts avoids the CSSOM cross-origin error that html-to-image
+    // hits when next/font injects Google Fonts stylesheets.
+    // backgroundColor gives the snapshot a solid white backdrop; without
+    // it the semi-transparent personal-block fills composite against
+    // whatever the image viewer uses (often dark) and look wrong.
+    blob = await toBlob(opts.element, {
+      cacheBust: true,
+      pixelRatio: 2,
+      skipFonts: true,
+      backgroundColor: "#ffffff",
+    });
+  } catch (e: unknown) {
+    return { shared: false, error: (e as Error).message };
+  }
+  if (!blob) return { shared: false, error: "Could not render image." };
+
+  const file = new File([blob], opts.filename, { type: "image/png" });
+
+  // Prefer the native share sheet when available (iOS Safari, Chrome on Android).
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      // Intentionally omit `title`: some share targets (iMessage, etc.)
+      // prepend it above the `text`, which duplicates the planner name.
+      await navigator.share({
+        files: [file],
+        text: opts.shareText,
+      });
+      return { shared: true };
+    } catch {
+      // Fall through to download on user cancel / unsupported.
+    }
+  }
+
+  // Desktop / unsupported fallback: trigger a download.
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = opts.filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  return { shared: true };
+}

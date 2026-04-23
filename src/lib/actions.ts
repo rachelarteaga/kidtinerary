@@ -9,6 +9,9 @@ import {
   validateSubmitCampInput,
   type SubmitCampRawInput,
 } from "@/lib/submit-camp-validation";
+import { geocodeAddress } from "@/lib/geocode";
+import { validateProfileInput } from "@/lib/actions-profile-validation";
+import { generateShareToken } from "@/lib/share-token";
 
 /**
  * Find-or-create a placeholder activity_location for an activity.
@@ -1583,4 +1586,114 @@ export async function updatePlannerRangeWithCleanup(
   if (error) return { error: "Failed to update planner range" };
   revalidatePath("/planner");
   return { removedEntries: outOfRangeEntryIds.length, removedBlocks: outOfRangeBlockIds.length };
+}
+
+export async function updateProfile(input: {
+  fullName: string;
+  address: string;
+  phone: string;
+}): Promise<{ error?: string }> {
+  const validation = validateProfileInput(input);
+  if (validation.error) return { error: validation.error };
+
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  // 1. Name → auth.users.user_metadata
+  const { error: authErr } = await supabase.auth.updateUser({
+    data: { full_name: input.fullName.trim() },
+  });
+  if (authErr) return { error: authErr.message };
+
+  // 2. Address → profiles.address (geocoded formatted form when available).
+  //    Location (PostGIS point) is not set here — matches onboarding pattern.
+  const addr = input.address.trim();
+  let storedAddress: string | null = addr || null;
+  if (addr) {
+    const geo = await geocodeAddress(addr);
+    if (geo) storedAddress = geo.formatted_address;
+  }
+
+  const { error: profErr } = await supabase
+    .from("profiles")
+    .update({
+      address: storedAddress,
+      phone: input.phone.trim() || null,
+      display_name: input.fullName.trim(),
+    })
+    .eq("id", user.id);
+  if (profErr) return { error: profErr.message };
+
+  revalidatePath("/account/profile");
+  return {};
+}
+
+export async function createPlannerShare(input: {
+  plannerId: string;
+  kidIds: string[];
+  includeCost: boolean;
+  includePersonalBlockDetails: boolean;
+}): Promise<{ token?: string; error?: string }> {
+  if (input.kidIds.length === 0) return { error: "Select at least one kid." };
+
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const token = generateShareToken();
+
+  const { error } = await supabase.from("shared_schedules").insert({
+    user_id: user.id,
+    token,
+    scope: "planner",
+    planner_id: input.plannerId,
+    kid_ids: input.kidIds,
+    include_cost: input.includeCost,
+    include_personal_block_details: input.includePersonalBlockDetails,
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath("/account/sharing");
+  revalidatePath("/planner");
+  return { token };
+}
+
+export async function createCampShare(input: {
+  campId: string;
+  recommenderNote: string | null;
+}): Promise<{ token?: string; error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const token = generateShareToken();
+  const { error } = await supabase.from("shared_schedules").insert({
+    user_id: user.id,
+    token,
+    scope: "camp",
+    camp_id: input.campId,
+    recommender_note: input.recommenderNote,
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath("/account/sharing");
+  return { token };
+}
+
+export async function revokeShare(shareId: string): Promise<{ error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("shared_schedules")
+    .delete()
+    .eq("id", shareId)
+    .eq("user_id", user.id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/account/sharing");
+  revalidatePath("/planner");
+  return {};
 }

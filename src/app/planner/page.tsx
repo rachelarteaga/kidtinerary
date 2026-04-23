@@ -20,6 +20,13 @@ export default async function PlannerPage() {
   const planner = await fetchDefaultPlanner(user.id);
   if (!planner) redirect("/auth/login");
 
+  // Count active shares for this planner
+  const { count: sharesActiveCount } = await supabase
+    .from("shared_schedules")
+    .select("id", { count: "exact", head: true })
+    .eq("planner_id", planner.id)
+    .eq("user_id", user.id);
+
   // Kids on THIS planner (may be empty — user can add via the header).
   const children = await fetchPlannerKids(planner.id, user.id);
 
@@ -39,6 +46,8 @@ export default async function PlannerPage() {
   const userCamps = await fetchUserCamps(user.id);
   const blocks = await fetchPlannerBlocks(user.id);
 
+  const ownerDisplayName = (user.user_metadata?.full_name as string | undefined) ?? null;
+
   return (
     <PlannerClient
       kids={children}
@@ -48,6 +57,8 @@ export default async function PlannerPage() {
       blocks={blocks}
       shareCampsDefault={profile?.share_camps_default ?? true}
       planner={planner}
+      sharesActiveCount={sharesActiveCount ?? 0}
+      ownerDisplayName={ownerDisplayName}
     />
   );
 }

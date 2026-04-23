@@ -11,6 +11,7 @@ interface Child {
   name: string;
   birth_date: string;
   interests: string[];
+  avatar_url: string | null;
 }
 
 interface KidsPageClientProps {
@@ -55,8 +56,8 @@ export function KidsPageClient({ initialChildren }: KidsPageClientProps) {
 
       {initialChildren.length > 0 ? (
         <div className="space-y-4">
-          {initialChildren.map((child: any) => (
-            <ChildCard key={child.id} child={child} onEdit={handleEdit} />
+          {initialChildren.map((child: any, index: number) => (
+            <ChildCard key={child.id} child={child} index={index} onEdit={handleEdit} />
           ))}
         </div>
       ) : (

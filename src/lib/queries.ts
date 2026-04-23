@@ -370,6 +370,7 @@ export interface PlannerEntryRow {
       verified: boolean;
       categories: string[];
       registration_url: string | null;
+      description: string | null;
       organization: { id: string; name: string } | null;
       price_options: {
         id: string;
@@ -397,7 +398,7 @@ export async function fetchPlannerEntries(
       session:sessions!inner(
         id, starts_at, ends_at, time_slot, hours_start, hours_end, is_sold_out,
         activity:activities!inner(
-          id, name, slug, verified, categories, registration_url,
+          id, name, slug, verified, categories, registration_url, description,
           organization:organizations(id, name),
           price_options(id, label, price_cents, price_unit),
           activity_locations(id, address, location_name)
@@ -452,6 +453,218 @@ export interface SharedScheduleRow {
       };
     };
   }[];
+}
+
+export type SharedByTokenResult =
+  | {
+      type: "planner";
+      token: string;
+      plannerId: string;
+      plannerName: string;
+      plannerStart: string; // YYYY-MM-DD
+      plannerEnd: string; // YYYY-MM-DD
+      ownerDisplayName: string | null;
+      kidIds: string[];
+      includeCost: boolean;
+      includePersonalBlockDetails: boolean;
+      colorByActivityId: Record<string, string>;
+      kids: {
+        id: string;
+        name: string;
+        birth_date: string;
+        avatar_url: string | null;
+        color: string;
+      }[];
+      entries: {
+        id: string;
+        child_id: string;
+        status: string;
+        sort_order: number;
+        notes: string | null;
+        price_cents: number | null;
+        price_unit: string | null;
+        session_part: string | null;
+        days_of_week: string[] | null;
+        session: {
+          id: string;
+          starts_at: string;
+          ends_at: string;
+          time_slot: string;
+          hours_start: string | null;
+          hours_end: string | null;
+          is_sold_out: boolean;
+          activity: {
+            id: string;
+            name: string;
+            slug: string;
+            categories: string[];
+            registration_url: string | null;
+            description: string | null;
+            organization: { id: string; name: string } | null;
+            activity_locations: { id: string; address: string; location_name: string | null }[];
+          };
+        };
+      }[];
+      blocks: {
+        id: string;
+        type: string;
+        title: string;
+        start_date: string;
+        end_date: string;
+        kid_ids: string[];
+      }[];
+    }
+  | {
+      type: "camp";
+      token: string;
+      campId: string;
+      recommenderNote: string | null;
+    }
+  | { type: "notfound" };
+
+export async function fetchSharedPlannerByToken(token: string): Promise<SharedByTokenResult> {
+  const supabase = (await createClient()) as any;
+
+  const { data: share, error: shareErr } = await supabase
+    .from("shared_schedules")
+    .select(
+      "token, scope, user_id, planner_id, camp_id, kid_ids, include_cost, include_personal_block_details, recommender_note"
+    )
+    .eq("token", token)
+    .single();
+
+  if (shareErr || !share) return { type: "notfound" };
+
+  if (share.scope === "camp") {
+    if (!share.camp_id) return { type: "notfound" };
+    return {
+      type: "camp",
+      token,
+      campId: share.camp_id,
+      recommenderNote: share.recommender_note ?? null,
+    };
+  }
+
+  // Planner scope
+  if (!share.planner_id) return { type: "notfound" };
+
+  const { data: planner, error: plannerErr } = await supabase
+    .from("planners")
+    .select("id, name, start_date, end_date")
+    .eq("id", share.planner_id)
+    .single();
+  if (plannerErr || !planner) return { type: "notfound" };
+
+  // Public resolver for the owner's display name — returns the scalar value
+  // directly in `data`. If the RPC hasn't been applied to the DB yet (or any
+  // other failure), fall through to `null` so the header gracefully omits
+  // "· X's planner".
+  const { data: nameRow } = await supabase.rpc("get_profile_display_name", {
+    target_user_id: share.user_id,
+  });
+  const ownerDisplayName: string | null =
+    typeof nameRow === "string" && nameRow.trim().length > 0 ? nameRow : null;
+
+  const kidIds: string[] = Array.isArray(share.kid_ids) ? share.kid_ids : [];
+
+  // Fetch kids through planner_kids so we inherit the owner's column order
+  // (drag-reorder updates planner_kids.sort_order, NOT children.sort_order).
+  const { data: plannerKidRows } = await supabase
+    .from("planner_kids")
+    .select(`
+      sort_order,
+      child:children!inner(id, name, birth_date, avatar_url, color)
+    `)
+    .eq("planner_id", share.planner_id)
+    .in("child_id", kidIds.length > 0 ? kidIds : ["00000000-0000-0000-0000-000000000000"])
+    .order("sort_order", { ascending: true });
+
+  const kids = (plannerKidRows ?? [])
+    .map((r: any) => r.child)
+    .filter((c: any) => c && c.id);
+
+  const { data: entries } = await supabase
+    .from("planner_entries")
+    .select(
+      `
+      id, child_id, status, sort_order, notes, price_cents, price_unit,
+      session_part, days_of_week,
+      session:sessions!inner(
+        id, starts_at, ends_at, time_slot, hours_start, hours_end, is_sold_out,
+        activity:activities!inner(
+          id, name, slug, categories, registration_url, description,
+          organization:organizations(id, name),
+          activity_locations(id, address, location_name)
+        )
+      )
+    `
+    )
+    .eq("planner_id", share.planner_id)
+    .in("child_id", kidIds.length > 0 ? kidIds : ["00000000-0000-0000-0000-000000000000"])
+    .order("sort_order", { ascending: true });
+
+  const { data: blockRows } = await supabase
+    .from("planner_blocks")
+    .select(
+      `
+      id, type, title, start_date, end_date,
+      block_kids:planner_block_kids(child_id)
+    `
+    )
+    .eq("planner_id", share.planner_id);
+
+  const blocks = (blockRows ?? [])
+    .map((b: any) => ({
+      id: b.id,
+      type: b.type,
+      title: b.title ?? "",
+      start_date: b.start_date,
+      end_date: b.end_date,
+      kid_ids: (b.block_kids ?? []).map((bk: any) => bk.child_id),
+    }))
+    .filter((b: { kid_ids: string[] }) => b.kid_ids.some((id: string) => kidIds.includes(id)));
+
+  // Collect owner's camp colors for activities present in the entries
+  const activityIds = Array.from(
+    new Set((entries ?? []).map((e: any) => e.session.activity.id))
+  );
+
+  const { data: userCamps } = await supabase
+    .from("user_camps")
+    .select("activity_id, color")
+    .eq("user_id", share.user_id)
+    .in("activity_id", activityIds.length > 0 ? activityIds : ["00000000-0000-0000-0000-000000000000"]);
+
+  const colorByActivityId: Record<string, string> = {};
+  for (const uc of (userCamps ?? []) as { activity_id: string; color: string }[]) {
+    colorByActivityId[uc.activity_id] = uc.color;
+  }
+
+  // kids is already ordered by planner_kids.sort_order from the query above.
+  const sortedKids = kids;
+
+  return {
+    type: "planner",
+    token,
+    plannerId: planner.id,
+    plannerName: planner.name,
+    plannerStart: planner.start_date,
+    plannerEnd: planner.end_date,
+    ownerDisplayName,
+    kidIds,
+    includeCost: !!share.include_cost,
+    includePersonalBlockDetails: !!share.include_personal_block_details,
+    colorByActivityId,
+    kids: sortedKids.map((k: any) => ({
+      id: k.id,
+      name: k.name,
+      birth_date: k.birth_date,
+      avatar_url: k.avatar_url,
+      color: k.color,
+    })),
+    entries: (entries ?? []) as any,
+    blocks,
+  };
 }
 
 export async function fetchSharedSchedule(token: string): Promise<SharedScheduleRow | null> {

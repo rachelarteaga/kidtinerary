@@ -1,35 +1,54 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { ActiveSharesClient } from "./client";
 
 export const metadata = {
   title: "Share preferences — Kidtinerary",
 };
 
-export default function SharingPreferencesPage() {
-  return (
-    <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="font-display font-extrabold text-4xl text-ink tracking-tight mb-2">
-        Share preferences
-      </h1>
-      <p className="text-ink-2 mb-8">
-        Control who can see the camps you&apos;ve added and the planners you share.
-      </p>
+export const dynamic = "force-dynamic";
 
-      <div className="rounded-lg border border-ink-3 bg-surface p-6">
-        <p className="font-sans text-sm text-ink-2 leading-relaxed">
-          Share preferences are coming soon. For now, each shared planner gets its own
-          public link from the <strong className="text-ink">Share</strong> button on
-          the planner page. Anyone with the link can view — nobody else.
-        </p>
-      </div>
+export default async function SharingPreferencesPage() {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/auth/login");
 
-      <div className="mt-8">
-        <Link
-          href="/planner"
-          className="font-sans font-bold text-[11px] uppercase tracking-widest text-ink hover:underline"
-        >
-          ← Back to planner
-        </Link>
-      </div>
-    </main>
+  const { data: shares } = await supabase
+    .from("shared_schedules")
+    .select(
+      "id, token, scope, planner_id, kid_ids, include_cost, include_personal_block_details, created_at"
+    )
+    .eq("user_id", user.id)
+    .eq("scope", "planner")
+    .order("created_at", { ascending: false });
+
+  const plannerIds = Array.from(
+    new Set((shares ?? []).map((s: any) => s.planner_id).filter(Boolean))
   );
+
+  // Hydrate planner names so the list is readable.
+  const plannerNameById: Record<string, string> = {};
+  if (plannerIds.length > 0) {
+    const { data: planners } = await supabase
+      .from("planners")
+      .select("id, name")
+      .in("id", plannerIds);
+    for (const p of (planners ?? []) as { id: string; name: string }[]) {
+      plannerNameById[p.id] = p.name;
+    }
+  }
+
+  const enriched = ((shares ?? []) as any[])
+    .filter((s) => s.planner_id && plannerNameById[s.planner_id])
+    .map((s) => ({
+      id: s.id,
+      token: s.token,
+      plannerName: plannerNameById[s.planner_id] ?? "Untitled planner",
+      kidCount: Array.isArray(s.kid_ids) ? s.kid_ids.length : 0,
+      includeCost: !!s.include_cost,
+      includePersonalBlockDetails: !!s.include_personal_block_details,
+      createdAt: s.created_at,
+    }));
+
+  return <ActiveSharesClient shares={enriched} />;
 }

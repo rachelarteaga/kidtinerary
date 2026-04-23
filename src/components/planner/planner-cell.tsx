@@ -72,56 +72,7 @@ export function PlannerCell({
   }
 
   let content: React.ReactNode;
-  if (viewMode === "simple") {
-    if (!hasContent) {
-      content = (
-        <button
-          onClick={() => onAddClick(childId, weekStart)}
-          className="w-full h-full rounded-lg border border-dashed border-ink-3 bg-transparent py-1.5 text-[11px] text-ink-2 hover:text-ink hover:border-ink font-sans uppercase tracking-wide font-bold"
-        >
-          + Add
-        </button>
-      );
-    } else if (timelineEntries.length === 0) {
-      content = (
-        <div className="rounded-lg border border-ink-3 bg-white px-2 py-1.5 h-full flex items-center">
-          <div className="font-sans text-[11px] uppercase tracking-wide text-ink-3 font-semibold italic truncate">
-            {consideringChips.length} considering
-          </div>
-        </div>
-      );
-    } else {
-      const first = legendRows[0];
-      const extraCount = legendRows.length - 1;
-      const s = STATUS_STYLE[first.status];
-      const showOrg = shouldShowOrg(first.orgName, first.activityName);
-      content = (
-        <button
-          onClick={() => onEntryClick(first.entryId)}
-          className="w-full h-full rounded-lg border border-ink-3 bg-surface px-2 py-1.5 flex items-start gap-1.5 text-xs text-ink hover:underline text-left"
-        >
-          <span className="w-2 h-2 mt-1 rounded-full flex-shrink-0" style={{ background: first.color }} />
-          <span className="flex-1 min-w-0">
-            <span className="flex items-center gap-1">
-              <span className="truncate">{first.activityName}</span>
-              {first.isOvernight ? (
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="#151515" className="flex-shrink-0" aria-label="Overnight">
-                  <path d="M14 2 A 10 10 0 1 0 22 13 A 8 8 0 0 1 14 2 Z" />
-                </svg>
-              ) : null}
-              {extraCount > 0 && <span className="text-ink-2 font-sans text-[10px] font-semibold ml-1">+{extraCount}</span>}
-            </span>
-            {showOrg && (
-              <span className="block truncate font-sans text-[10px] text-ink-2 leading-tight">{first.orgName}</span>
-            )}
-          </span>
-          <span className={`font-sans font-semibold text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full border border-ink flex-shrink-0 mt-0.5 ${s.bg} ${s.text}`}>
-            {first.status}
-          </span>
-        </button>
-      );
-    }
-  } else if (!hasContent) {
+  if (!hasContent) {
     content = (
       <button
         onClick={() => onAddClick(childId, weekStart)}
@@ -133,15 +84,17 @@ export function PlannerCell({
   } else {
     content = (
       <div className="rounded-lg border border-ink-3 bg-surface p-2 h-full">
-        <CellTimelineGrid
-          entries={timelineEntries}
-          weekStart={weekStartDate}
-          plannerStart={plannerStart}
-          plannerEnd={plannerEnd}
-          onSquareClick={handleSquareClick}
-        />
+        {viewMode === "detail" && (
+          <CellTimelineGrid
+            entries={timelineEntries}
+            weekStart={weekStartDate}
+            plannerStart={plannerStart}
+            plannerEnd={plannerEnd}
+            onSquareClick={handleSquareClick}
+          />
+        )}
         {legendRows.length > 0 && (
-          <div className="mt-1.5 space-y-1">
+          <div className={viewMode === "detail" ? "mt-1.5 space-y-1" : "space-y-1"}>
             {legendRows.map((r) => {
               const s = STATUS_STYLE[r.status];
               const showOrg = shouldShowOrg(r.orgName, r.activityName);
@@ -149,7 +102,7 @@ export function PlannerCell({
                 <button
                   key={r.entryId}
                   onClick={() => onEntryClick(r.entryId)}
-                  className="w-full flex items-start gap-1.5 text-left text-xs text-ink hover:underline"
+                  className="w-full flex items-start gap-1.5 text-left text-xs text-ink hover:underline cursor-pointer"
                 >
                   <span className="w-2 h-2 mt-1 rounded-full flex-shrink-0" style={{ background: r.color }} />
                   <span className="flex-1 min-w-0">
@@ -166,7 +119,7 @@ export function PlannerCell({
                     )}
                   </span>
                   {r.priceWeeklyCents != null ? (
-                    <span className="font-sans text-[10px] font-semibold text-ink-2 flex-shrink-0 mt-0.5">
+                    <span className="font-sans text-[10px] font-semibold text-ink-2 flex-shrink-0 mt-0.5 py-0.5 border border-transparent leading-none">
                       ${Math.round(r.priceWeeklyCents / 100)}
                     </span>
                   ) : null}
