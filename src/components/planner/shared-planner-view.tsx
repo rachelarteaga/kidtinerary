@@ -4,9 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { KidColumnHeader } from "./kid-column-header";
 import { SharedCampDetailPanel } from "./shared-camp-detail-panel";
 import { CellTimelineGrid, type TimelineEntry } from "./cell-timeline-grid";
+import { BlockIcon } from "./block-icon";
+import { ConsideringChips, type ConsideringChip } from "./considering-chips";
 import { applyShareFilters } from "@/lib/share/apply-filters";
 import { generateWeeks, getWeekKey, formatWeekLabelCompact } from "@/lib/format";
-import type { DayOfWeek, PlannerEntryStatus, SessionPart } from "@/lib/supabase/types";
+import type { DayOfWeek, PlannerBlockType, PlannerEntryStatus, SessionPart } from "@/lib/supabase/types";
 
 // Status pill colors match globals.css tokens
 const STATUS_STYLE: Record<string, string> = {
@@ -304,21 +306,36 @@ export function SharedPlannerView({
                       return (
                         <div
                           key={`${row.weekKey}-${kid.id}`}
-                          className="rounded-lg border border-ink-3 p-3 min-h-[60px] flex items-center justify-center text-center"
+                          className="rounded-lg border border-ink-3 p-3 min-h-[60px] flex items-start gap-3"
                           style={{
                             backgroundImage: "radial-gradient(rgba(21,21,21,0.09) 0.7px, transparent 0.7px)",
                             backgroundSize: "5px 5px",
                             backgroundColor: "rgba(21,21,21,0.04)",
                           }}
                         >
-                          <span className="font-sans text-xs font-semibold text-ink leading-tight">
-                            {block.title}
+                          <span className="shrink-0 leading-none">
+                            <BlockIcon type={block.type as PlannerBlockType} />
                           </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-sans font-bold text-sm text-ink truncate">
+                              {block.title}
+                            </div>
+                          </div>
                         </div>
                       );
                     }
 
                     const timelineEntries = buildTimelineEntries(cellEntries);
+
+                    const legendEntries = cellEntries.filter((e) => e.status !== "considering");
+                    const consideringChips: ConsideringChip[] = cellEntries
+                      .filter((e) => e.status === "considering")
+                      .map((e) => ({
+                        entryId: e.id,
+                        activityName: e.session.activity.name,
+                        color: colorByActivityId[e.session.activity.id] ?? "#f4b76f",
+                        isOvernight: e.session_part === "overnight",
+                      }));
 
                     return (
                       <div
@@ -335,46 +352,52 @@ export function SharedPlannerView({
                             />
                           </div>
                         )}
-                        <div className="space-y-1">
-                        {cellEntries.map((e) => {
-                          const activityId = e.session.activity.id;
-                          const color = colorByActivityId[activityId] ?? "#f4b76f";
-                          const orgName = e.session.activity.organization?.name ?? null;
-                          const showOrg = !!orgName && orgName !== e.session.activity.name && viewMode === "detail";
-                          const priceLabel =
-                            filters.includeCost && e.price_cents != null
-                              ? `$${Math.round(e.price_cents / 100)}`
-                              : null;
-                          return (
-                            <button
-                              key={e.id}
-                              type="button"
-                              onClick={() => setOpenCampEntryId(e.id)}
-                              className="w-full flex items-start gap-1.5 text-left text-xs text-ink hover:underline"
-                            >
-                              <span className="w-2 h-2 mt-1 rounded-full flex-shrink-0" style={{ background: color }} />
-                              <span className="flex-1 min-w-0">
-                                <span className="truncate block">{e.session.activity.name}</span>
-                                {showOrg && (
-                                  <span className="block truncate font-sans text-[10px] text-ink-2 leading-tight">
-                                    {orgName}
+                        {legendEntries.length > 0 && (
+                          <div className="space-y-1">
+                            {legendEntries.map((e) => {
+                              const activityId = e.session.activity.id;
+                              const color = colorByActivityId[activityId] ?? "#f4b76f";
+                              const orgName = e.session.activity.organization?.name ?? null;
+                              const showOrg = !!orgName && orgName !== e.session.activity.name && viewMode === "detail";
+                              const priceLabel =
+                                filters.includeCost && e.price_cents != null
+                                  ? `$${Math.round(e.price_cents / 100)}`
+                                  : null;
+                              return (
+                                <button
+                                  key={e.id}
+                                  type="button"
+                                  onClick={() => setOpenCampEntryId(e.id)}
+                                  className="w-full flex items-start gap-1.5 text-left text-xs text-ink hover:underline"
+                                >
+                                  <span className="w-2 h-2 mt-1 rounded-full flex-shrink-0" style={{ background: color }} />
+                                  <span className="flex-1 min-w-0">
+                                    <span className="truncate block">{e.session.activity.name}</span>
+                                    {showOrg && (
+                                      <span className="block truncate font-sans text-[10px] text-ink-2 leading-tight">
+                                        {orgName}
+                                      </span>
+                                    )}
                                   </span>
-                                )}
-                              </span>
-                              {priceLabel && (
-                                <span className="font-sans text-[10px] font-semibold text-ink-2 flex-shrink-0 mt-0.5">
-                                  {priceLabel}
-                                </span>
-                              )}
-                              <span
-                                className={`font-sans font-semibold text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full border border-ink flex-shrink-0 mt-0.5 ${STATUS_STYLE[e.status] ?? ""}`}
-                              >
-                                {e.status}
-                              </span>
-                            </button>
-                          );
-                        })}
-                        </div>
+                                  {priceLabel && (
+                                    <span className="font-sans text-[10px] font-semibold text-ink-2 flex-shrink-0 mt-0.5">
+                                      {priceLabel}
+                                    </span>
+                                  )}
+                                  <span
+                                    className={`font-sans font-semibold text-[9px] uppercase tracking-wide px-1.5 py-0.5 rounded-full border border-ink flex-shrink-0 mt-0.5 ${STATUS_STYLE[e.status] ?? ""}`}
+                                  >
+                                    {e.status}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                        <ConsideringChips
+                          chips={consideringChips}
+                          onChipClick={(entryId) => setOpenCampEntryId(entryId)}
+                        />
                       </div>
                     );
                   })}
