@@ -224,18 +224,22 @@ export function SharedPlannerView({
           </p>
         </div>
         {!forceViewMode && (
-          <div className="inline-flex border border-ink rounded-full p-0.5 text-[11px] font-bold uppercase tracking-widest">
+          <div className="inline-flex rounded-full border border-ink bg-surface overflow-hidden">
             <button
               type="button"
               onClick={() => setMode("detail")}
-              className={`px-3 py-1.5 rounded-full ${viewMode === "detail" ? "bg-ink text-ink-inverse" : "text-ink-2"}`}
+              className={`font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 transition-colors ${
+                viewMode === "detail" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
+              }`}
             >
-              Detailed
+              Detail
             </button>
             <button
               type="button"
               onClick={() => setMode("simple")}
-              className={`px-3 py-1.5 rounded-full ${viewMode === "simple" ? "bg-ink text-ink-inverse" : "text-ink-2"}`}
+              className={`font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 transition-colors ${
+                viewMode === "simple" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
+              }`}
             >
               Simple
             </button>
