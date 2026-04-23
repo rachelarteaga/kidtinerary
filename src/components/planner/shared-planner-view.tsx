@@ -117,7 +117,9 @@ export function SharedPlannerView({
 
   const visibleKids = kids.filter((k) => filteredIdSets.kidIds.has(k.id));
   const visibleEntries = entries.filter((e) => filteredIdSets.entryIds.has(e.id));
-  const visibleBlocks = blocks.filter((b) => filteredIdSets.blockIds.has(b.id));
+  const visibleBlocks = blocks
+    .filter((b) => filteredIdSets.blockIds.has(b.id))
+    .map((b) => ({ ...b, title: filters.includePersonalBlockDetails ? b.title : "" }));
 
   const [viewMode, setViewMode] = useState<"detail" | "simple">(() => forceViewMode ?? "detail");
   const storageKey = `share-view-mode:${token}`;
@@ -273,46 +275,40 @@ export function SharedPlannerView({
                     const block = row.blockByKid[kid.id];
                     const cellEntries = row.cellsByKid[kid.id]?.entries ?? [];
 
-                    if (block) {
-                      // Personal block — title already masked to "" by applyShareFilters when opted out
-                      const label = block.title?.trim() ? block.title : "NOTHING SCHEDULED";
-                      const isMasked = !block.title?.trim();
+                    const hasUnmaskedBlockTitle = !!(block && block.title?.trim());
+                    const cellIsEmpty = !block && cellEntries.length === 0;
+
+                    if (cellIsEmpty || (block && !hasUnmaskedBlockTitle)) {
                       return (
                         <div
                           key={`${row.weekKey}-${kid.id}`}
-                          className="rounded-lg border border-ink-3 p-3 min-h-[60px] flex items-center justify-center"
+                          className="rounded-lg border border-ink-3 p-3 min-h-[60px] flex items-center justify-center text-center"
                           style={{
                             backgroundImage: "radial-gradient(rgba(21,21,21,0.09) 0.7px, transparent 0.7px)",
                             backgroundSize: "5px 5px",
                             backgroundColor: "rgba(21,21,21,0.04)",
                           }}
                         >
-                          <span
-                            className={
-                              isMasked
-                                ? "font-sans text-[11px] uppercase tracking-[0.08em] text-ink-2"
-                                : "font-sans text-xs font-semibold text-ink"
-                            }
-                          >
-                            {label}
+                          <span className="font-sans text-[11px] uppercase tracking-[0.08em] text-ink-2 leading-tight">
+                            NOTHING SCHEDULED
                           </span>
                         </div>
                       );
                     }
 
-                    if (cellEntries.length === 0) {
+                    if (block && hasUnmaskedBlockTitle) {
                       return (
                         <div
                           key={`${row.weekKey}-${kid.id}`}
-                          className="rounded-lg border border-ink-3 p-3 min-h-[60px] flex items-center justify-center"
+                          className="rounded-lg border border-ink-3 p-3 min-h-[60px] flex items-center justify-center text-center"
                           style={{
                             backgroundImage: "radial-gradient(rgba(21,21,21,0.09) 0.7px, transparent 0.7px)",
                             backgroundSize: "5px 5px",
                             backgroundColor: "rgba(21,21,21,0.04)",
                           }}
                         >
-                          <span className="font-sans text-[11px] uppercase tracking-[0.08em] text-ink-2">
-                            NOTHING SCHEDULED
+                          <span className="font-sans text-xs font-semibold text-ink leading-tight">
+                            {block.title}
                           </span>
                         </div>
                       );
