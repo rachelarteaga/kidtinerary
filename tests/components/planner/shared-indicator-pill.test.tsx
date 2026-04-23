@@ -1,21 +1,35 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { SharedIndicatorPill } from "@/components/planner/shared-indicator-pill";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { SharePill } from "@/components/planner/shared-indicator-pill";
 
-describe("SharedIndicatorPill", () => {
-  it("renders nothing when count is 0", () => {
-    const { container } = render(<SharedIndicatorPill count={0} />);
-    expect(container.firstChild).toBeNull();
+describe("SharePill", () => {
+  it("renders 'Share' label when not shared", () => {
+    render(<SharePill shared={false} onClick={() => {}} />);
+    expect(screen.getByText("Share")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /share planner/i })).toBeInTheDocument();
   });
 
-  it("renders 'Shared' when count is 1", () => {
-    render(<SharedIndicatorPill count={1} />);
+  it("renders 'Shared' label + shared aria when shared", () => {
+    render(<SharePill shared={true} onClick={() => {}} />);
     expect(screen.getByText("Shared")).toBeInTheDocument();
-    expect(screen.getByRole("link")).toHaveAttribute("href", "/account/sharing");
+    expect(
+      screen.getByRole("button", { name: /currently shared/i }),
+    ).toBeInTheDocument();
   });
 
-  it("pluralizes aria label correctly when count > 1", () => {
-    render(<SharedIndicatorPill count={3} />);
-    expect(screen.getByLabelText(/3 active links/i)).toBeInTheDocument();
+  it("fires onClick in both states", () => {
+    const off = vi.fn();
+    const on = vi.fn();
+    const { rerender } = render(<SharePill shared={false} onClick={off} />);
+    fireEvent.click(screen.getByRole("button"));
+    expect(off).toHaveBeenCalledTimes(1);
+    rerender(<SharePill shared={true} onClick={on} />);
+    fireEvent.click(screen.getByRole("button"));
+    expect(on).toHaveBeenCalledTimes(1);
+  });
+
+  it("is not a link (button only)", () => {
+    render(<SharePill shared={true} onClick={() => {}} />);
+    expect(screen.queryByRole("link")).toBeNull();
   });
 });

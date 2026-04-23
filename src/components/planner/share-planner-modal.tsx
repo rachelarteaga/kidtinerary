@@ -59,6 +59,9 @@ interface Props {
   sharedEntries: SharedEntryRow[];
   sharedBlocks: SharedBlockRow[];
   colorByActivityId: Record<string, string>;
+  isShared: boolean;
+  isUnsharing: boolean;
+  onStopSharing: () => void;
 }
 
 export function SharePlannerModal({
@@ -74,6 +77,9 @@ export function SharePlannerModal({
   sharedEntries,
   sharedBlocks,
   colorByActivityId,
+  isShared,
+  isUnsharing,
+  onStopSharing,
 }: Props) {
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(kids.map((k) => k.id))
@@ -149,9 +155,23 @@ export function SharePlannerModal({
           onClick={(e) => e.stopPropagation()}
         >
           <header className="px-6 py-4 border-b border-ink-3">
-            <h2 className="font-display font-extrabold text-lg">
-              Share &quot;{plannerName}&quot;
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="font-display font-extrabold text-lg">
+                Share &quot;{plannerName}&quot;
+              </h2>
+              {isShared && (
+                <span
+                  aria-label="Planner is currently shared"
+                  className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-[#eef9f0] text-[#147a30]"
+                >
+                  <span className="relative inline-flex w-1.5 h-1.5 items-center justify-center" aria-hidden>
+                    <span className="absolute inset-0 rounded-full bg-[#2cb14a] animate-ping opacity-75" />
+                    <span className="relative inline-block w-1.5 h-1.5 rounded-full bg-[#2cb14a]" />
+                  </span>
+                  Live
+                </span>
+              )}
+            </div>
             <p className="font-sans text-xs text-ink-2 mt-1">
               Send an image snapshot or a live link.
             </p>
@@ -235,12 +255,27 @@ export function SharePlannerModal({
                 className="w-full px-4 py-2 rounded-lg bg-ink text-white font-sans font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2"
               >
                 <LinkIcon />
-                Share a live link
+                {isShared ? "Copy live link" : "Share a live link"}
               </button>
               <p className="text-xs text-ink-2 mt-1">
                 Read-only for recipient. Revocable anytime.
               </p>
             </div>
+            {isShared && (
+              <div className="pt-2 border-t border-ink-3">
+                <button
+                  type="button"
+                  onClick={onStopSharing}
+                  disabled={isUnsharing || isPending}
+                  className="w-full font-sans font-semibold text-[11px] uppercase tracking-widest px-4 py-2 text-[#c96164] hover:text-[#9e3f42] disabled:opacity-50"
+                >
+                  {isUnsharing ? "Stopping…" : "Stop sharing"}
+                </button>
+                <p className="text-xs text-ink-2 mt-1 text-center">
+                  Revokes the current link. You can start a new one any time.
+                </p>
+              </div>
+            )}
           </footer>
         </div>
       </div>

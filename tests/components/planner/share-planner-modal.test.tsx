@@ -27,6 +27,9 @@ const baseProps = {
   sharedBlocks: [],
   colorByActivityId: {},
   onClose: () => {},
+  isShared: false,
+  isUnsharing: false,
+  onStopSharing: () => {},
 };
 
 describe("SharePlannerModal", () => {
@@ -48,5 +51,24 @@ describe("SharePlannerModal", () => {
     fireEvent.click(screen.getByLabelText(/jonah/i));
     const linkBtn = screen.getByRole("button", { name: /share a live link/i });
     expect(linkBtn).toBeDisabled();
+  });
+
+  it("hides Stop sharing when not shared", () => {
+    render(<SharePlannerModal {...baseProps} />);
+    expect(screen.queryByRole("button", { name: /stop sharing/i })).toBeNull();
+  });
+
+  it("shows Stop sharing + live badge when shared", () => {
+    const onStopSharing = vi.fn();
+    render(<SharePlannerModal {...baseProps} isShared onStopSharing={onStopSharing} />);
+    expect(screen.getByLabelText(/currently shared/i)).toBeInTheDocument();
+    const stopBtn = screen.getByRole("button", { name: /stop sharing/i });
+    fireEvent.click(stopBtn);
+    expect(onStopSharing).toHaveBeenCalled();
+  });
+
+  it("relabels the link button when already shared", () => {
+    render(<SharePlannerModal {...baseProps} isShared />);
+    expect(screen.getByRole("button", { name: /copy live link/i })).toBeInTheDocument();
   });
 });
