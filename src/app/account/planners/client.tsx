@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
 import type { PlannerSummary } from "@/lib/queries";
 import {
@@ -52,6 +52,7 @@ function formatLastEdited(iso: string): string {
 
 export function MyPlannersClient({ initialPlanners, allKids }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [planners, setPlanners] = useState(initialPlanners);
   // Keep local state in sync with server data whenever router.refresh() delivers
@@ -64,7 +65,15 @@ export function MyPlannersClient({ initialPlanners, allKids }: Props) {
   const [, startTransition] = useTransition();
   const [shareDrawer, setShareDrawer] = useState<PlannerSummary | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<PlannerSummary | null>(null);
-  const [newPlannerOpen, setNewPlannerOpen] = useState(false);
+  // Auto-open the new-planner modal when arrived via `?new=1` (first-time users
+  // bounced here by the /planner smart redirect). Strip the query param so a
+  // refresh doesn't re-trigger the modal after they cancel out.
+  const [newPlannerOpen, setNewPlannerOpen] = useState(() => searchParams.get("new") === "1");
+  useEffect(() => {
+    if (searchParams.get("new") === "1") {
+      router.replace("/account/planners");
+    }
+  }, [searchParams, router]);
 
   function copyLink(token: string) {
     const url = `${window.location.origin}/schedule/${token}`;
