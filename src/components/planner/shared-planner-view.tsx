@@ -284,18 +284,20 @@ export function SharedPlannerView({
                     const hasUnmaskedBlockTitle = !!(block && block.title?.trim());
                     const cellIsEmpty = !block && cellEntries.length === 0;
 
+                    const compact = viewMode === "simple";
+
                     if (cellIsEmpty || (block && !hasUnmaskedBlockTitle)) {
                       return (
                         <div
                           key={`${row.weekKey}-${kid.id}`}
-                          className="rounded-lg border border-ink-3 p-3 min-h-[60px] flex items-center justify-center text-center"
+                          className={`rounded-lg border border-ink-3 flex items-center justify-center text-center ${compact ? "px-2 py-1.5" : "p-3 min-h-[60px]"}`}
                           style={{
                             backgroundImage: "radial-gradient(rgba(21,21,21,0.09) 0.7px, transparent 0.7px)",
                             backgroundSize: "5px 5px",
                             backgroundColor: "rgba(21,21,21,0.04)",
                           }}
                         >
-                          <span className="font-sans text-[11px] uppercase tracking-[0.08em] text-ink-2 leading-tight">
+                          <span className={`font-sans uppercase tracking-[0.08em] text-ink-2 leading-tight ${compact ? "text-[10px]" : "text-[11px]"}`}>
                             NOTHING SCHEDULED
                           </span>
                         </div>
@@ -306,7 +308,7 @@ export function SharedPlannerView({
                       return (
                         <div
                           key={`${row.weekKey}-${kid.id}`}
-                          className="rounded-lg border border-ink-3 p-3 min-h-[60px] flex items-start gap-3"
+                          className={`rounded-lg border border-ink-3 flex items-center ${compact ? "gap-2 px-2 py-1.5" : "gap-3 p-3 min-h-[60px]"}`}
                           style={{
                             backgroundImage: "radial-gradient(rgba(21,21,21,0.09) 0.7px, transparent 0.7px)",
                             backgroundSize: "5px 5px",
@@ -314,10 +316,10 @@ export function SharedPlannerView({
                           }}
                         >
                           <span className="shrink-0 leading-none">
-                            <BlockIcon type={block.type as PlannerBlockType} />
+                            <BlockIcon type={block.type as PlannerBlockType} size={compact ? 14 : 20} />
                           </span>
                           <div className="flex-1 min-w-0">
-                            <div className="font-sans font-bold text-sm text-ink truncate">
+                            <div className={`font-sans font-bold text-ink truncate ${compact ? "text-xs" : "text-sm"}`}>
                               {block.title}
                             </div>
                           </div>
