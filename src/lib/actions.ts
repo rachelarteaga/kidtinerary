@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { paletteColorForCampIndex } from "@/lib/camp-palette";
+import { nextAvailablePaletteColor } from "@/lib/camp-palette";
 import type { SessionPart, DayOfWeek, ExtraItem, PriceUnit } from "@/lib/supabase/types";
 import { normalizeDays } from "@/lib/schedule";
 import {
@@ -673,12 +673,16 @@ export async function submitCamp(
     activityId = stub.id;
   }
 
-  const { count } = await supabase
+  const { data: existingCamps } = await supabase
     .from("user_camps")
-    .select("id", { count: "exact", head: true })
+    .select("color")
     .eq("user_id", user.id);
 
-  const color = paletteColorForCampIndex(count ?? 0);
+  const usedColors = ((existingCamps ?? []) as { color: string | null }[])
+    .map((r) => r.color)
+    .filter((c): c is string => typeof c === "string" && c.length > 0);
+
+  const color = nextAvailablePaletteColor(usedColors);
 
   const { error: ucUpsertErr } = await supabase
     .from("user_camps")

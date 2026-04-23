@@ -24,3 +24,19 @@ export const CAMP_PALETTE = [
 export function paletteColorForCampIndex(index: number): string {
   return CAMP_PALETTE[index % CAMP_PALETTE.length];
 }
+
+/**
+ * Pick the first palette color not already in `usedColors`. If every palette
+ * color is in use, fall back to cycling by count (so the 21st camp starts
+ * reusing colors). Using this instead of indexing by count prevents duplicate
+ * colors after deletes (where count drops but the previously-freed color
+ * index is still assigned to another camp) and legacy-palette collisions
+ * (camps assigned under the old 4-color palette).
+ */
+export function nextAvailablePaletteColor(usedColors: readonly string[]): string {
+  const used = new Set(usedColors.map((c) => c.toLowerCase()));
+  for (const c of CAMP_PALETTE) {
+    if (!used.has(c.toLowerCase())) return c;
+  }
+  return paletteColorForCampIndex(usedColors.length);
+}
