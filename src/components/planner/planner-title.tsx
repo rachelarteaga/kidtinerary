@@ -3,15 +3,16 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updatePlannerName } from "@/lib/actions";
-import { SharedIndicatorPill } from "./shared-indicator-pill";
+import { SharePill } from "./shared-indicator-pill";
 
 interface Props {
   plannerId: string;
   name: string;
   sharesActiveCount: number;
+  onShareClick: () => void;
 }
 
-export function PlannerTitle({ plannerId, name, sharesActiveCount }: Props) {
+export function PlannerTitle({ plannerId, name, sharesActiveCount, onShareClick }: Props) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(name);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +91,7 @@ export function PlannerTitle({ plannerId, name, sharesActiveCount }: Props) {
           ✎
         </span>
       </button>
-      <SharedIndicatorPill count={sharesActiveCount} />
+      <SharePill shared={sharesActiveCount > 0} onClick={onShareClick} />
     </div>
   );
 }

@@ -26,7 +26,14 @@ import { CampPreviewModal, type PreviewSummary } from "@/components/planner/camp
 import { SharePlannerModal } from "@/components/planner/share-planner-modal";
 import type { EntryRow as SharedEntryRow } from "@/components/planner/shared-planner-view";
 import { useScrapeJob } from "@/lib/use-scrape-job";
-import { reorderKidColumns, assignCampToWeek, removeKidFromPlanner } from "@/lib/actions";
+import { useToast } from "@/components/ui/toast";
+import {
+  reorderKidColumns,
+  assignCampToWeek,
+  removeKidFromPlanner,
+  revokePlannerShareByPlanner,
+  deletePlanner,
+} from "@/lib/actions";
 import { generateWeeks, getWeekKey, formatWeekRange } from "@/lib/format";
 import { extrasTotalCents } from "@/lib/extras-calc";
 import type { PlannerEntryRow, UserCampWithActivity, PlannerBlockWithKids } from "@/lib/queries";
@@ -61,6 +68,11 @@ interface Props {
 
 export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, shareCampsDefault, planner, sharesActiveCount, ownerDisplayName }: Props) {
   const router = useRouter();
+  const { toast } = useToast();
+  const isShared = sharesActiveCount > 0;
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isUnsharing, setIsUnsharing] = useState(false);
 
   const [entryModal, setEntryModal] = useState<{ childId: string | null; weekStart: string | null; tab: "camp" | "block" } | null>(null);
   const [drawerEntryId, setDrawerEntryId] = useState<string | null>(null);
@@ -167,6 +179,30 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
     },
     [pendingAssignment, planner.id, router]
   );
+
+  const handleStopSharing = useCallback(async () => {
+    setIsUnsharing(true);
+    const result = await revokePlannerShareByPlanner(planner.id);
+    setIsUnsharing(false);
+    if (result.error) {
+      toast(result.error, "error");
+      return;
+    }
+    toast("Sharing stopped.", "success");
+    router.refresh();
+  }, [planner.id, router, toast]);
+
+  const handleDelete = useCallback(async () => {
+    setIsDeleting(true);
+    const result = await deletePlanner(planner.id);
+    if (result.error) {
+      setIsDeleting(false);
+      toast(result.error, "error");
+      return;
+    }
+    toast("Planner deleted.", "success");
+    router.push("/planner");
+  }, [planner.id, router, toast]);
 
   const handleRemoveKid = useCallback(
     async (childId: string) => {
@@ -446,7 +482,12 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
               <header className="bg-surface flex items-start justify-between flex-wrap gap-3 pt-[22px] pb-[18px] flex-shrink-0">
                 <div>
                   <div className="mb-1">
-                    <PlannerTitle plannerId={planner.id} name={planner.name} sharesActiveCount={sharesActiveCount} />
+                    <PlannerTitle
+                      plannerId={planner.id}
+                      name={planner.name}
+                      sharesActiveCount={sharesActiveCount}
+                      onShareClick={() => setShareOpen(true)}
+                    />
                   </div>
                   <p className="text-ink-2">
                     {kids.length} kid{kids.length === 1 ? "" : "s"} · {weekStarts.length} weeks
@@ -454,7 +495,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
                       <>
                         {" · "}
                         <span className="relative inline-block group align-baseline">
-                          <span className="text-ink font-semibold cursor-help border-b border-dotted border-ink">
+                          <span className="text-ink font-semibold border-b border-dotted border-ink">
                             ${Math.round(committedCents / 100).toLocaleString()} spent
                           </span>
                           <span
@@ -477,6 +518,15 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
                       </>
                     )}
                   </p>
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setDeleteConfirmOpen(true)}
+                      className="font-sans text-xs text-ink-3 hover:text-[#c96164] cursor-pointer"
+                    >
+                      Delete planner
+                    </button>
+                  </div>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   <div className="inline-flex rounded-full border border-ink bg-surface overflow-hidden">
@@ -505,12 +555,6 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
                     blocks={rangePickerBlocks}
                     onChanged={() => router.refresh()}
                   />
-                  <button
-                    onClick={() => setShareOpen(true)}
-                    className="font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-surface text-ink hover:bg-base border border-ink"
-                  >
-                    Share
-                  </button>
                   <button
                     onClick={() => setEntryModal({ childId: null, weekStart: null, tab: "camp" })}
                     className="font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-[#333] border border-ink"
@@ -621,6 +665,12 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           plannerStart={planner.start_date}
           plannerEnd={planner.end_date}
           ownerDisplayName={ownerDisplayName}
+          isShared={isShared}
+          isUnsharing={isUnsharing}
+          onStopSharing={async () => {
+            await handleStopSharing();
+            setShareOpen(false);
+          }}
           kids={kids.map((k, i) => ({
             id: k.id,
             name: k.name,
@@ -646,6 +696,15 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           colorByActivityId={colorByActivityIdRecord}
         />
 
+        {deleteConfirmOpen && (
+          <DeletePlannerConfirm
+            plannerName={planner.name}
+            isDeleting={isDeleting}
+            onCancel={() => setDeleteConfirmOpen(false)}
+            onConfirm={handleDelete}
+          />
+        )}
+
         {pendingAssignment && (
           <StatusPickerPopover
             anchor={pendingAssignment.anchor}
@@ -670,5 +729,57 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
         ) : null}
       </DragOverlay>
     </DndContext>
+  );
+}
+
+function DeletePlannerConfirm({
+  plannerName,
+  isDeleting,
+  onCancel,
+  onConfirm,
+}: {
+  plannerName: string;
+  isDeleting: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
+      onClick={onCancel}
+    >
+      <div
+        className="bg-surface rounded-2xl max-w-sm w-full border border-ink-3 p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="font-display font-extrabold text-xl text-ink mb-2">
+          Delete &quot;{plannerName}&quot;?
+        </h3>
+        <p className="font-sans text-sm text-ink-2 leading-relaxed mb-4">
+          This removes the planner and every camp placement, block, kid assignment, and
+          share link on it. This cannot be undone.
+        </p>
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isDeleting}
+            className="font-sans font-semibold text-[11px] uppercase tracking-widest px-3 py-1.5 text-ink-2 hover:text-ink disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-1.5 rounded-full bg-[#ef8c8f] text-ink border border-ink hover:brightness-95 disabled:opacity-50"
+          >
+            {isDeleting ? "Deleting…" : "Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

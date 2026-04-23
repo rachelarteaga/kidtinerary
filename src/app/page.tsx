@@ -4,20 +4,14 @@ export default function Home() {
   return (
     <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
       <section className="text-center">
-        <p className="font-sans text-[11px] uppercase tracking-widest text-ink-2 mb-6">
-          For parents in the Triangle
-        </p>
-
-        <h1 className="font-display font-extrabold text-ink leading-[1.05] tracking-tight text-5xl sm:text-6xl md:text-7xl mb-6">
-          Camps and activities
-          <br />
-          your kids will love.
+        <h1 className="font-display font-extrabold text-ink leading-[1.05] tracking-tight text-5xl sm:text-6xl md:text-7xl mb-6 text-balance">
+          Plan your kids&apos; time off, together.
         </h1>
 
         <p className="text-ink-2 text-lg sm:text-xl max-w-xl mx-auto mb-10">
-          Kidtinerary helps you discover local camps, classes, and extracurriculars
-          for kids ages 3–12 — then plan the whole year on one schedule so no
-          registration deadline slips by.
+          Lay out every camp, class, and off-school week on one timeline —
+          then share it live with co-parents, sitters, and the friends
+          coordinating alongside you.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
@@ -53,13 +47,13 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mt-28 grid gap-10 sm:grid-cols-3 text-center">
+      <section className="mt-28 grid gap-10 sm:grid-cols-2 lg:grid-cols-4 text-center">
         <div>
           <p className="font-sans text-[11px] uppercase tracking-widest text-ink-2 mb-2">
-            Discover
+            Save
           </p>
           <p className="font-display font-semibold text-ink text-lg">
-            A verified directory of camps and classes near you.
+            Catalog the camps you love or want to try.
           </p>
         </div>
         <div>
@@ -67,15 +61,23 @@ export default function Home() {
             Plan
           </p>
           <p className="font-display font-semibold text-ink text-lg">
-            See every kid&apos;s summer on one timeline — catch conflicts early.
+            Every kid&apos;s camps, classes, and off-weeks on one timeline.
           </p>
         </div>
         <div>
           <p className="font-sans text-[11px] uppercase tracking-widest text-ink-2 mb-2">
-            Register
+            Share
           </p>
           <p className="font-display font-semibold text-ink text-lg">
-            Track deadlines and status so nothing slips through the cracks.
+            Send a live link to co-parents, sitters, and grandparents.
+          </p>
+        </div>
+        <div>
+          <p className="font-sans text-[11px] uppercase tracking-widest text-ink-2 mb-2">
+            Coordinate
+          </p>
+          <p className="font-display font-semibold text-ink text-lg">
+            Line up weeks with the friends planning the same summer.
           </p>
         </div>
       </section>
