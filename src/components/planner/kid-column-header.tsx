@@ -112,7 +112,7 @@ export function KidColumnHeader({ child, index, ageYears, onRemove, readOnly = f
           aria-label={`Change avatar for ${child.name}`}
         >
           <KidAvatar name={child.name} index={index} avatarUrl={child.avatar_url} size={32} />
-          <span className="absolute inset-0 rounded-full bg-ink/55 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[9px] uppercase tracking-wide font-sans transition-opacity">
+          <span className="absolute inset-0 rounded-full bg-ink/55 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center text-white text-[9px] uppercase tracking-wide font-sans transition-opacity">
             Edit
           </span>
         </button>

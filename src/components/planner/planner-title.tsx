@@ -86,7 +86,7 @@ export function PlannerTitle({ plannerId, name, sharesActiveCount, onShareClick 
         <span>{name}</span>
         <span
           aria-hidden="true"
-          className="text-base text-ink-3 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="text-base text-ink-3 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
         >
           ✎
         </span>
