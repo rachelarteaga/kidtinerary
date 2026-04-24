@@ -3,19 +3,32 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { ActivityPickerSection } from "@/components/planner/activity-picker-section";
 import type { UserCampWithActivity } from "@/lib/queries";
 
-function makeActivity(overrides: Partial<UserCampWithActivity> = {}): UserCampWithActivity {
+type ActivityOverrides = {
+  id?: string;
+  color?: string;
+  plannerEntryCount?: number;
+  activity?: {
+    id?: string;
+    name?: string;
+    verified?: boolean;
+    organization?: { id: string; name: string } | null;
+  };
+};
+
+function makeActivity(overrides: ActivityOverrides = {}): UserCampWithActivity {
   return {
     id: "uc-1",
     color: "#f4b76f",
     plannerEntryCount: 0,
+    ...overrides,
     activity: {
       id: "act-1",
       name: "Camp Kanata",
       verified: false,
       organization: { id: "org-1", name: "YMCA of the Triangle" },
+      ...(overrides.activity ?? {}),
     },
-    ...overrides,
-  } as UserCampWithActivity;
+  } as unknown as UserCampWithActivity;
 }
 
 describe("ActivityPickerSection", () => {
