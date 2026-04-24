@@ -36,7 +36,7 @@ import {
 } from "@/lib/actions";
 import { generateWeeks, getWeekKey, formatWeekRange } from "@/lib/format";
 import { extrasTotalCents } from "@/lib/extras-calc";
-import type { PlannerEntryRow, UserCampWithActivity, PlannerBlockWithKids } from "@/lib/queries";
+import type { PlannerEntryRow, UserActivityWithDetails, PlannerBlockWithKids } from "@/lib/queries";
 import type { PlannerEntryStatus, PlannerRow } from "@/lib/supabase/types";
 
 // Module-level constants so the references stay stable across renders.
@@ -58,7 +58,7 @@ interface Props {
   kids: Kid[];
   allUserKids: Kid[];
   entries: PlannerEntryRow[];
-  userActivities: UserCampWithActivity[];
+  userActivities: UserActivityWithDetails[];
   blocks: PlannerBlockWithKids[];
   shareCampsDefault: boolean;
   planner: PlannerRow;
@@ -203,8 +203,8 @@ export function PlannerClient({ kids, allUserKids, entries, userActivities, bloc
   // Mobile tap-to-place: the bottom sheet hands us an activity, then the user
   // taps a cell. We synthesize the same pendingAssignment shape drag-drop
   // produces, and the existing status-picker popover takes over.
-  const handleActivityPlacementTap = useCallback((camp: UserCampWithActivity) => {
-    setPlacementActivity({ userCampId: camp.id, name: camp.activity.name, color: camp.color });
+  const handleActivityPlacementTap = useCallback((activity: UserActivityWithDetails) => {
+    setPlacementActivity({ userCampId: activity.id, name: activity.activity.name, color: activity.color });
     setMobileCampsOpen(false);
   }, []);
 

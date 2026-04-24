@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import type { UserCampWithActivity } from "@/lib/queries";
+import type { UserActivityWithDetails } from "@/lib/queries";
 
 const CATEGORY_LABELS: Record<string, string> = {
   sports: "Sports",
@@ -24,7 +24,7 @@ export interface PreviewSummary {
 }
 
 interface Props {
-  camp: UserCampWithActivity | null;
+  camp: UserActivityWithDetails | null;
   summary: PreviewSummary | null;
   onClose: () => void;
   onEdit: () => void;

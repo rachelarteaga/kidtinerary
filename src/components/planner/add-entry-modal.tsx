@@ -4,7 +4,7 @@ import { useState } from "react";
 import { AddActivityModal } from "./add-activity-modal";
 import { AddBlockModal } from "./add-block-modal";
 import { ActivityPickerSection } from "./activity-picker-section";
-import type { UserCampWithActivity } from "@/lib/queries";
+import type { UserActivityWithDetails } from "@/lib/queries";
 
 interface ChildLite {
   id: string;
@@ -20,7 +20,7 @@ interface Props {
   scope: { childId: string | null; weekStart: string | null };
   shareCampsDefault: boolean;
   kids: ChildLite[];
-  userActivities: UserCampWithActivity[];
+  userActivities: UserActivityWithDetails[];
   initialTab?: "activity" | "block";
   onActivitySubmitted: (result: {
     jobId?: string;

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ActivityPickerSection } from "@/components/planner/activity-picker-section";
-import type { UserCampWithActivity } from "@/lib/queries";
+import type { UserActivityWithDetails } from "@/lib/queries";
 
 type ActivityOverrides = {
   id?: string;
@@ -15,7 +15,7 @@ type ActivityOverrides = {
   };
 };
 
-function makeActivity(overrides: ActivityOverrides = {}): UserCampWithActivity {
+function makeActivity(overrides: ActivityOverrides = {}): UserActivityWithDetails {
   return {
     id: "uc-1",
     color: "#f4b76f",
@@ -28,7 +28,7 @@ function makeActivity(overrides: ActivityOverrides = {}): UserCampWithActivity {
       organization: { id: "org-1", name: "YMCA of the Triangle" },
       ...(overrides.activity ?? {}),
     },
-  } as unknown as UserCampWithActivity;
+  } as unknown as UserActivityWithDetails;
 }
 
 describe("ActivityPickerSection", () => {

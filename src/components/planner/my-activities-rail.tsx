@@ -3,18 +3,18 @@
 import { useEffect, useState, useTransition, useMemo } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { removeActivityFromShortlist } from "@/lib/actions";
-import type { UserCampWithActivity } from "@/lib/queries";
+import type { UserActivityWithDetails } from "@/lib/queries";
 
 interface Props {
-  activities: UserCampWithActivity[];
+  activities: UserActivityWithDetails[];
   /** Desktop-only behavior: open the quickview drawer for an activity. Ignored on
    * mobile where `onActivityPlacementTap` drives the tap-to-place flow instead. */
-  onChipClick: (camp: UserCampWithActivity) => void;
+  onChipClick: (activity: UserActivityWithDetails) => void;
   onAddClick: () => void;
   onChanged?: () => void;
   /** Mobile tap-to-place: invoked when an activity in the bottom sheet is tapped.
    * Parent handles entering placement mode and closing the sheet. */
-  onActivityPlacementTap?: (camp: UserCampWithActivity) => void;
+  onActivityPlacementTap?: (activity: UserActivityWithDetails) => void;
   /** Whether the mobile sheet is open (controlled by parent so it can close on
    * successful placement / from the banner). */
   mobileOpen?: boolean;
@@ -247,7 +247,7 @@ function DraggableActivityItem({
   onClick,
   onRemoveClick,
 }: {
-  activity: UserCampWithActivity;
+  activity: UserActivityWithDetails;
   onClick: () => void;
   onRemoveClick: () => void;
 }) {
@@ -323,7 +323,7 @@ function TapToPlaceActivityItem({
   onTap,
   onRemoveClick,
 }: {
-  activity: UserCampWithActivity;
+  activity: UserActivityWithDetails;
   onTap: () => void;
   onRemoveClick: () => void;
 }) {

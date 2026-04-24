@@ -1,9 +1,9 @@
 "use client";
 
-import type { UserCampWithActivity } from "@/lib/queries";
+import type { UserActivityWithDetails } from "@/lib/queries";
 
 interface Props {
-  activities: UserCampWithActivity[];
+  activities: UserActivityWithDetails[];
   onPick: (userCampId: string) => void;
 }
 
