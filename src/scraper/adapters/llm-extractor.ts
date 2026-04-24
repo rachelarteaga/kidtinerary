@@ -25,7 +25,7 @@ export interface LLMScrapedActivity extends ScrapedActivity {
 // ---------------------------------------------------------------------------
 
 export function buildDiscoveryPrompt(sourceUrl: string, content: string): string {
-  return `You are a data extraction assistant for KidPlan, a children's activity discovery platform.
+  return `You are a data extraction assistant for Kidtinerary, a children's activity discovery platform.
 
 This page is from an AGGREGATOR site that lists many different camps, classes, and activities.
 
@@ -65,7 +65,7 @@ ${content.slice(0, 80_000)}
 // ---------------------------------------------------------------------------
 
 export function buildDetailPrompt(sourceUrl: string, content: string): string {
-  return `You are a data extraction assistant for KidPlan, a children's activity discovery platform.
+  return `You are a data extraction assistant for Kidtinerary, a children's activity discovery platform.
 
 This page is from the ACTUAL WEBSITE of a camp or activity provider. Extract complete, accurate details.
 Source URL: ${sourceUrl}
@@ -288,7 +288,7 @@ export function createLLMAdapter(sourceUrl: string) {
       let html: string;
       try {
         const res = await globalThis.fetch(sourceUrl, {
-          headers: { "User-Agent": "KidPlan-Scraper/1.0 (+https://kidplan.app)" },
+          headers: { "User-Agent": "Kidtinerary-Scraper/1.0 (+https://kidtinerary.app)" },
           signal: AbortSignal.timeout(30_000),
         });
         if (!res.ok) {
@@ -322,7 +322,7 @@ export function createDiscoveryAdapter(sourceUrl: string) {
       let html: string;
       try {
         const res = await globalThis.fetch(sourceUrl, {
-          headers: { "User-Agent": "KidPlan-Scraper/1.0 (+https://kidplan.app)" },
+          headers: { "User-Agent": "Kidtinerary-Scraper/1.0 (+https://kidtinerary.app)" },
           signal: AbortSignal.timeout(30_000),
         });
         if (!res.ok) {

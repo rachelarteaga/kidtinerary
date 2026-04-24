@@ -37,7 +37,7 @@ function layout(body: string): string {
         <!-- Header -->
         <tr>
           <td style="background:${BRAND_COLORS.bark};padding:20px 32px;">
-            <span style="font-family:Georgia,serif;font-size:22px;color:${BRAND_COLORS.cream};letter-spacing:-0.5px;">KidPlan</span>
+            <span style="font-family:Georgia,serif;font-size:22px;color:${BRAND_COLORS.cream};letter-spacing:-0.5px;">Kidtinerary</span>
           </td>
         </tr>
         <!-- Body -->
@@ -50,8 +50,8 @@ function layout(body: string): string {
         <tr>
           <td style="padding:16px 32px;border-top:1px solid ${BRAND_COLORS.driftwood};background:${BRAND_COLORS.cream};">
             <p style="margin:0;font-size:11px;color:#888;font-family:monospace;text-transform:uppercase;letter-spacing:0.08em;">
-              You're receiving this because you have notifications turned on in KidPlan.
-              <a href="https://kidplan.com/settings" style="color:${BRAND_COLORS.sunset};text-decoration:none;">Manage preferences</a>
+              You're receiving this because you have notifications turned on in Kidtinerary.
+              <a href="https://kidtinerary.com/settings" style="color:${BRAND_COLORS.sunset};text-decoration:none;">Manage preferences</a>
             </p>
           </td>
         </tr>
@@ -171,7 +171,7 @@ export function weeklyDigestHtml(p: WeeklyDigestParams): string {
     .map(
       (m) => `
       <li style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid ${BRAND_COLORS.driftwood};">
-        <a href="https://kidplan.com/activity/${m.slug}" style="font-size:16px;font-weight:600;color:${BRAND_COLORS.bark};text-decoration:none;">${m.name}</a>
+        <a href="https://kidtinerary.com/activity/${m.slug}" style="font-size:16px;font-weight:600;color:${BRAND_COLORS.bark};text-decoration:none;">${m.name}</a>
         <span style="display:block;font-size:12px;font-family:monospace;text-transform:uppercase;letter-spacing:0.05em;color:#888;margin-top:2px;">
           ${m.categories.join(", ")}${m.ageMin != null && m.ageMax != null ? ` · Ages ${m.ageMin}–${m.ageMax}` : ""}
         </span>
@@ -208,7 +208,7 @@ export function weeklyDigestHtml(p: WeeklyDigestParams): string {
   if (!matchSection && !gapSection) {
     const body = `
       <p style="font-size:16px;color:${BRAND_COLORS.bark};">Nothing new this week for ${p.childName}. Check back soon!</p>
-      ${ctaButton("Explore Activities", "https://kidplan.com/explore")}
+      ${ctaButton("Open your Catalog", "https://kidtinerary.com/catalog")}
     `;
     return layout(body);
   }
@@ -219,7 +219,7 @@ export function weeklyDigestHtml(p: WeeklyDigestParams): string {
     </h1>
     ${matchSection}
     ${gapSection}
-    ${ctaButton("Explore Activities", "https://kidplan.com/explore")}
+    ${ctaButton("Open your Catalog", "https://kidtinerary.com/catalog")}
   `;
   return layout(body);
 }
@@ -240,7 +240,7 @@ export function coverageGapHtml(p: CoverageGapParams): string {
       ${p.childName}'s schedule has some gaps. Now's a great time to lock in plans:
     </p>
     <ul style="list-style:none;padding:0;margin:0 0 24px;">${items}</ul>
-    ${ctaButton("Open Planner", "https://kidplan.com/planner")}
+    ${ctaButton("Open Planner", "https://kidtinerary.com/planner")}
   `;
   return layout(body);
 }
@@ -259,7 +259,7 @@ export async function sendEmail({
 }) {
   const client = getClient();
   return client.emails.send({
-    from: "KidPlan <hello@kidplan.com>",
+    from: "Kidtinerary <hello@kidtinerary.com>",
     to,
     subject,
     html,

@@ -5,55 +5,40 @@ export default function Home() {
     <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
       <section className="text-center">
         <h1 className="font-display font-extrabold text-ink leading-[1.05] tracking-tight text-5xl sm:text-6xl md:text-7xl mb-6 text-balance">
-          Plan your kids&apos; time off, together.
+          Every activity your kid does, in one place.
         </h1>
 
         <p className="text-ink-2 text-lg sm:text-xl max-w-xl mx-auto mb-10">
-          Lay out every camp, class, and off-school week on one timeline —
-          then share it live with co-parents, sitters, and the friends
-          coordinating alongside you.
+          A personal catalog of every camp, class, lesson, and sport —
+          past, present, and considering. With a text when it&apos;s time
+          to sign up, pay, or show up.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
           <Link
-            href="/planner"
+            href="/catalog"
             className="inline-flex items-center justify-center rounded-full bg-ink text-ink-inverse border border-ink font-sans text-xs uppercase tracking-widest font-bold px-7 py-3 transition-all hover:bg-[#333]"
+          >
+            Start your Catalog
+          </Link>
+
+          <Link
+            href="/planner"
+            className="inline-flex items-center justify-center rounded-full bg-transparent text-ink border border-ink font-sans text-xs uppercase tracking-widest font-bold px-7 py-3 transition-all hover:bg-ink hover:text-ink-inverse"
           >
             Build a planner
           </Link>
-
-          <span className="relative inline-block">
-            <button
-              type="button"
-              disabled
-              aria-disabled="true"
-              title="Coming soon"
-              className="inline-flex items-center justify-center rounded-full bg-disabled text-disabled-accent border border-disabled-accent font-sans text-xs uppercase tracking-widest font-bold px-7 py-3 cursor-not-allowed"
-            >
-              Explore camps
-            </button>
-            <span
-              className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[calc(100%+6px)] px-1.5 py-0.5 rounded-[3px] border font-sans text-[8px] font-extrabold uppercase tracking-wider whitespace-nowrap"
-              style={{
-                color: "rgba(21,21,21,0.55)",
-                borderColor: "rgba(21,21,21,0.35)",
-                background: "rgba(255,255,255,0.6)",
-                letterSpacing: "0.1em",
-              }}
-            >
-              Coming soon!
-            </span>
-          </span>
         </div>
       </section>
 
       <section className="mt-28 grid gap-10 sm:grid-cols-2 lg:grid-cols-4 text-center">
         <div>
           <p className="font-sans text-[11px] uppercase tracking-widest text-ink-2 mb-2">
-            Save
+            Capture
           </p>
           <p className="font-display font-semibold text-ink text-lg">
-            Catalog the camps you love or want to try.
+            Paste a link, forward an email, or type it in — any activity
+            lands in your Catalog in seconds. Kept year over year.
           </p>
         </div>
         <div>
@@ -61,7 +46,17 @@ export default function Home() {
             Plan
           </p>
           <p className="font-display font-semibold text-ink text-lg">
-            Every kid&apos;s camps, classes, and off-weeks on one timeline.
+            Arrange every kid&apos;s camps, classes, and lessons on one
+            timeline — from one summer to the full school year.
+          </p>
+        </div>
+        <div>
+          <p className="font-sans text-[11px] uppercase tracking-widest text-ink-2 mb-2">
+            Remind
+          </p>
+          <p className="font-display font-semibold text-ink text-lg">
+            SMS reminders when registration opens, payment is due, or the
+            first day approaches. Never miss a window.
           </p>
         </div>
         <div>
@@ -69,15 +64,8 @@ export default function Home() {
             Share
           </p>
           <p className="font-display font-semibold text-ink text-lg">
-            Send a live link to co-parents, sitters, and grandparents.
-          </p>
-        </div>
-        <div>
-          <p className="font-sans text-[11px] uppercase tracking-widest text-ink-2 mb-2">
-            Coordinate
-          </p>
-          <p className="font-display font-semibold text-ink text-lg">
-            Line up weeks with the friends planning the same summer.
+            Text any activity to a friend with one tap. They save it with
+            one more.
           </p>
         </div>
       </section>

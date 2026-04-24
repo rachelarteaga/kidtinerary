@@ -135,7 +135,7 @@ export async function GET(req: NextRequest) {
       try {
         await sendEmail({
           to: email,
-          subject: `This week's KidPlan update for ${child.name}`,
+          subject: `This week's Kidtinerary update for ${child.name}`,
           html: weeklyDigestHtml({
             childName: child.name,
             newMatches: newMatches.map((a: any) => ({

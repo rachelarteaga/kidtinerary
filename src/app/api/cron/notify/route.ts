@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
   for (const reminder of due) {
     if (!reminder.user_email) continue;
 
-    const activityUrl = `https://kidplan.com/activity/${reminder.activity_slug}`;
+    const activityUrl = `https://kidtinerary.com/activity/${reminder.activity_slug}`;
     const subjectMap: Record<string, string> = {
       registration_opens: `Registration opens soon — ${reminder.activity_name}`,
       registration_closes: `Registration closes soon — ${reminder.activity_name}`,
