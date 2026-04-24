@@ -100,9 +100,10 @@ function AddEntryModalInner({
               <button
                 type="button"
                 onClick={() => setView("new")}
-                className="w-full mt-2 rounded-lg border border-dashed border-ink-3 text-ink-2 hover:border-ink hover:text-ink transition-colors font-sans text-[11px] uppercase tracking-widest py-3"
+                className="w-full mt-3 rounded-lg bg-ink text-ink-inverse hover:bg-[#333] transition-colors font-sans font-bold text-sm py-3 px-4 flex items-center justify-center gap-2 cursor-pointer"
               >
-                Don&apos;t see it? + Add a new activity →
+                <span>Don&apos;t see it? Add a new activity</span>
+                <span aria-hidden className="text-base leading-none">→</span>
               </button>
             </>
           ) : (
