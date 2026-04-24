@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { ScrapeJobStatus, ScrapeConfidence } from "@/lib/supabase/types";
-import { updateActivityFields, removeCampFromShortlist } from "@/lib/actions";
+import { updateActivityFields, removeActivityFromShortlist } from "@/lib/actions";
 import { CATEGORIES } from "@/lib/constants";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -433,7 +433,7 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
               }
               if (!confirm("Delete this camp from your shortlist? This can't be undone.")) return;
               setDeleting(true);
-              const r = await removeCampFromShortlist(userCampId);
+              const r = await removeActivityFromShortlist(userCampId);
               setDeleting(false);
               if (r.error) {
                 alert(r.error);

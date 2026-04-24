@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition, useMemo } from "react";
 import { useDraggable } from "@dnd-kit/core";
-import { removeCampFromShortlist } from "@/lib/actions";
+import { removeActivityFromShortlist } from "@/lib/actions";
 import type { UserCampWithActivity } from "@/lib/queries";
 
 interface Props {
@@ -40,7 +40,7 @@ export function MyActivitiesRail({
   function confirmRemove() {
     if (!pendingRemove) return;
     startTransition(async () => {
-      const result = await removeCampFromShortlist(pendingRemove.userCampId);
+      const result = await removeActivityFromShortlist(pendingRemove.userCampId);
       if (result.error) {
         alert(result.error);
         return;

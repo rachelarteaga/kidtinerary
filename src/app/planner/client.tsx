@@ -29,7 +29,7 @@ import { useScrapeJob } from "@/lib/use-scrape-job";
 import { useToast } from "@/components/ui/toast";
 import {
   reorderKidColumns,
-  assignCampToWeek,
+  assignActivityToWeek,
   removeKidFromPlanner,
   revokePlannerShareByPlanner,
   deletePlanner,
@@ -175,7 +175,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
       if (!pendingAssignment) return;
       const { userCampId, childId, weekStart, fromPlacement } = pendingAssignment;
       setPendingAssignment(null);
-      const result = await assignCampToWeek(planner.id, userCampId, childId, weekStart, status);
+      const result = await assignActivityToWeek(planner.id, userCampId, childId, weekStart, status);
       if (result.error) {
         alert(result.error);
         return;
@@ -214,7 +214,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
       const weekStart = entryModal?.weekStart;
       if (!childId || !weekStart) return;
       setEntryModal(null);
-      const result = await assignCampToWeek(planner.id, userCampId, childId, weekStart);
+      const result = await assignActivityToWeek(planner.id, userCampId, childId, weekStart);
       if (result.error) {
         alert(result.error);
         return;

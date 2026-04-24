@@ -536,7 +536,7 @@ interface SubmitCampContext {
   initialStatus?: "considering" | "waitlisted" | "registered";
 }
 
-export async function submitCamp(
+export async function submitActivity(
   raw: SubmitCampRawInput,
   context: SubmitCampContext,
 ): Promise<{
@@ -924,7 +924,7 @@ export async function updateActivityFields(params: {
   return { orgId: resolvedOrgId };
 }
 
-export async function assignCampToWeek(
+export async function assignActivityToWeek(
   plannerId: string,
   userCampId: string,
   childId: string,
@@ -1013,7 +1013,7 @@ export async function assignCampToWeek(
   return { entryId: entry.id };
 }
 
-export async function removeCampFromShortlist(userCampId: string): Promise<{ error?: string }> {
+export async function removeActivityFromShortlist(userCampId: string): Promise<{ error?: string }> {
   const supabase = (await createClient()) as any;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };

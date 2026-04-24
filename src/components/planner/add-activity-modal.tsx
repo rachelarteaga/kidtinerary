@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { submitCamp } from "@/lib/actions";
+import { submitActivity } from "@/lib/actions";
 
 interface ActivityHit {
   id: string;
@@ -90,7 +90,7 @@ export function AddActivityModal({ open, onClose, plannerId, scope, shareCampsDe
       shared: consent,
     };
     startTransition(async () => {
-      const result = await submitCamp(payload, {
+      const result = await submitActivity(payload, {
         plannerId,
         childId: scope.childId ?? undefined,
         weekStart: scope.weekStart ?? undefined,

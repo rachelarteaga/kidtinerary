@@ -12,9 +12,9 @@ import {
   updateEntryNotes,
   updatePlannerEntryStatus,
   removePlannerEntry,
-  assignCampToWeek,
+  assignActivityToWeek,
   updateActivityFields,
-  removeCampFromShortlist,
+  removeActivityFromShortlist,
 } from "@/lib/actions";
 import { extrasTotalCents } from "@/lib/extras-calc";
 import { formatWeekRange } from "@/lib/format";
@@ -231,7 +231,7 @@ export function CampDetailDrawer({ open, onClose, entry, kids, plannerId, onChan
     if (!local || !local.placed) return;
     const placed = local.placed;
     startTransition(async () => {
-      await assignCampToWeek(
+      await assignActivityToWeek(
         plannerId,
         local.userCampId,
         otherKidId,
@@ -256,7 +256,7 @@ export function CampDetailDrawer({ open, onClose, entry, kids, plannerId, onChan
       if (!confirm("Delete this camp from your shortlist? This can't be undone.")) return;
       const userCampId = local.userCampId;
       startTransition(async () => {
-        const r = await removeCampFromShortlist(userCampId);
+        const r = await removeActivityFromShortlist(userCampId);
         if (r.error) {
           alert(r.error);
           return;
