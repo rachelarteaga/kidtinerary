@@ -36,15 +36,15 @@ export function KidsPageClient({ initialChildren }: KidsPageClientProps) {
 
   return (
     <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-8">
         <div>
-          <h1 className="font-display font-extrabold text-4xl mb-2">My Kids</h1>
-          <p className="text-ink-2 text-lg">
+          <h1 className="font-display font-extrabold text-3xl sm:text-4xl mb-2">My Kids</h1>
+          <p className="text-ink-2 text-base sm:text-lg">
             Manage your kids&apos; profiles and interests.
           </p>
         </div>
         {!showForm && (
-          <Button onClick={() => setShowForm(true)}>Add Kid</Button>
+          <Button className="w-full sm:w-auto" onClick={() => setShowForm(true)}>Add Kid</Button>
         )}
       </div>
 
