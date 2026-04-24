@@ -158,3 +158,45 @@ Intended as separate commits to keep the diff reviewable. Exact grep lists defer
 ## Open questions
 
 None at design-approval time. Any ambiguity on a specific copy or identifier location gets resolved in the implementation plan's grep-sweep step against the rule in Part 2.
+
+---
+
+## Rename audit — 2026-04-24
+
+Final grep for `camp[s]?` across `src/` after B1–B7. Every remaining hit falls into one of the allowed "keep" categories:
+
+### DB enum / routing (stays)
+- `src/lib/actions.ts:1684` — `scope: "camp"` share-scope enum value
+- `src/lib/queries.ts:483,503,506` — share-scope enum value / discriminated-union literal
+- `src/app/schedule/[token]/page.tsx:19-20` — matches on `result.type === "camp"` and redirects to `/camps/{id}` path (URL scheme is a larger rename out of scope)
+
+### Descriptive / marketing copy (stays per spec rule)
+- `src/app/layout.tsx:22,24` — meta title + description, "summer camps" as example category
+- `src/app/page.tsx:12,49` — landing page marketing copy
+- `src/app/catalog/page.tsx:8` — catalog landing descriptive text
+- `src/components/account/edit-profile-form.tsx:76` — "Used to find nearby camps." hint text below home-address field
+
+### Scraper / infrastructure (stays — internal to pipeline, prompts, DOM selectors, URLs)
+- `src/app/globals.css:21-25` — `--color-camp-*` design tokens (compiled CSS refs)
+- `src/lib/camp-palette.ts` — whole module: rail palette generator (file name + internal comments)
+- `src/lib/actions.ts:5,11` — imports from `camp-palette` and `submit-camp-validation` infra modules
+- `src/lib/queries.ts:592` — internal code comment
+- `src/lib/ics.ts:40` — internal code comment
+- `src/scraper/**` — all entries (URL templates, DOM selectors, LLM prompt text, stopword lists, search query strings, internal comments). LLM prompt text must not change or the extractor breaks.
+
+### Component-local plain-data `camp` prop (stays per spec)
+- `src/components/planner/shared-activity-detail-panel.tsx` — the `camp` prop on `SharedActivityDetailPanel` takes a plain `{ org, name, location, url, about, weeklyCostCents? }` shape. Not a `UserActivity`-adjacent structure. Component name renamed (B7); prop name intentionally left for shared-view stability.
+- `src/components/planner/shared-planner-view.tsx:363` — passes `camp={openCamp}` matching the above prop
+- `src/components/planner/shared-planner-view.tsx:177` — internal dev comment
+
+### Placeholder example text (stays)
+- `src/components/planner/add-activity-modal.tsx:202` — `placeholder="Camp Kanata"` is an example camp name in the form hint, not UI chrome
+
+### Comments that reference the old mental model (stays)
+- `src/components/planner/scrape-confirm-drawer.tsx:284` — `{/* 1. Camp name */}` internal dev comment adjacent to `<Field label="Activity name">` (the label itself was updated in B6)
+
+### Out-of-scope duplicate files (ignored)
+- `src/app/catalog/page 2.tsx`, `src/components/catalog/activity-list 2.tsx` — `" 2"`-suffixed duplicates from a merge-adjacent event, pre-existing before this work; not part of this refactor
+
+### Out-of-scope adjacent modules (deferred)
+- `src/components/catalog/activity-list.tsx:4` — imports `CampCard` from `@/components/activity/camp-card`. The catalog module uses a `CampCard` component outside the planner scope; renaming it belongs to a follow-up catalog-layer refactor.
