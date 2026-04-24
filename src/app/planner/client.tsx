@@ -58,7 +58,7 @@ interface Props {
   kids: Kid[];
   allUserKids: Kid[];
   entries: PlannerEntryRow[];
-  userCamps: UserCampWithActivity[];
+  userActivities: UserCampWithActivity[];
   blocks: PlannerBlockWithKids[];
   shareCampsDefault: boolean;
   planner: PlannerRow;
@@ -66,7 +66,7 @@ interface Props {
   ownerDisplayName: string | null;
 }
 
-export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, shareCampsDefault, planner, sharesActiveCount, ownerDisplayName }: Props) {
+export function PlannerClient({ kids, allUserKids, entries, userActivities, blocks, shareCampsDefault, planner, sharesActiveCount, ownerDisplayName }: Props) {
   const router = useRouter();
   const { toast } = useToast();
   const isShared = sharesActiveCount > 0;
@@ -74,19 +74,19 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUnsharing, setIsUnsharing] = useState(false);
 
-  const [entryModal, setEntryModal] = useState<{ childId: string | null; weekStart: string | null; tab: "camp" | "block" } | null>(null);
+  const [entryModal, setEntryModal] = useState<{ childId: string | null; weekStart: string | null; tab: "activity" | "block" } | null>(null);
   const [drawerEntryId, setDrawerEntryId] = useState<string | null>(null);
   const [shortlistCampId, setShortlistCampId] = useState<string | null>(null);
   const [drawerBlockId, setDrawerBlockId] = useState<string | null>(null);
-  const [quickViewCampId, setQuickViewCampId] = useState<string | null>(null);
+  const [quickViewActivityId, setQuickViewActivityId] = useState<string | null>(null);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [scrapeDrawer, setScrapeDrawer] = useState<{ jobId: string; userCampId: string | null; url: string; scopeLabel: string | null } | null>(null);
-  const [draggingCamp, setDraggingCamp] = useState<{ name: string; color: string } | null>(null);
-  const [placementCamp, setPlacementCamp] = useState<{ userCampId: string; name: string; color: string } | null>(null);
+  const [draggingActivity, setDraggingActivity] = useState<{ name: string; color: string } | null>(null);
+  const [placementActivity, setPlacementActivity] = useState<{ userCampId: string; name: string; color: string } | null>(null);
   const [mobileCampsOpen, setMobileCampsOpen] = useState(false);
   // Cells render their drop-zone overlay when either a desktop drag is in
   // flight or a mobile tap-to-place is armed.
-  const isDraggingCamp = draggingCamp !== null || placementCamp !== null;
+  const isDraggingActivity = draggingActivity !== null || placementActivity !== null;
   const [pendingAssignment, setPendingAssignment] = useState<{
     userCampId: string;
     name: string;
@@ -129,22 +129,22 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const data = event.active.data.current;
-    if (data?.type === "camp") {
-      setDraggingCamp({ name: String(data.name ?? ""), color: String(data.color ?? "#f4b76f") });
+    if (data?.type === "activity") {
+      setDraggingActivity({ name: String(data.name ?? ""), color: String(data.color ?? "#f4b76f") });
     }
   }, []);
 
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
-      const dragged = draggingCamp;
-      setDraggingCamp(null);
+      const dragged = draggingActivity;
+      setDraggingActivity(null);
       const { active, over } = event;
       if (!over) return;
 
       const activeData = active.data.current as { type?: string; userCampId?: string; name?: string; color?: string } | undefined;
       const overData = over.data.current as { type?: string; childId?: string; weekStart?: string } | undefined;
 
-      if (activeData?.type === "camp" && overData?.type === "cell-drop" && overData.childId && overData.weekStart) {
+      if (activeData?.type === "activity" && overData?.type === "cell-drop" && overData.childId && overData.weekStart) {
         const r = over.rect;
         setPendingAssignment({
           userCampId: activeData.userCampId!,
@@ -167,7 +167,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
         await reorderKidColumns(planner.id, next);
       }
     },
-    [draggingCamp, orderedIds, planner.id]
+    [draggingActivity, orderedIds, planner.id]
   );
 
   const handleStatusChoice = useCallback(
@@ -200,11 +200,11 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
     [pendingAssignment, planner.id, router]
   );
 
-  // Mobile tap-to-place: the bottom sheet hands us a camp, then the user taps
-  // a cell. We synthesize the same pendingAssignment shape drag-drop produces,
-  // and the existing status-picker popover takes over.
-  const handleCampPlacementTap = useCallback((camp: UserCampWithActivity) => {
-    setPlacementCamp({ userCampId: camp.id, name: camp.activity.name, color: camp.color });
+  // Mobile tap-to-place: the bottom sheet hands us an activity, then the user
+  // taps a cell. We synthesize the same pendingAssignment shape drag-drop
+  // produces, and the existing status-picker popover takes over.
+  const handleActivityPlacementTap = useCallback((camp: UserCampWithActivity) => {
+    setPlacementActivity({ userCampId: camp.id, name: camp.activity.name, color: camp.color });
     setMobileCampsOpen(false);
   }, []);
 
@@ -226,13 +226,13 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
 
   const handlePlacementCellTap = useCallback(
     (childId: string, weekStart: string) => {
-      if (!placementCamp) return;
+      if (!placementActivity) return;
       const el = document.querySelector(`[data-cell-id="${childId}-${weekStart}"]`) as HTMLElement | null;
       const r = el?.getBoundingClientRect();
       setPendingAssignment({
-        userCampId: placementCamp.userCampId,
-        name: placementCamp.name,
-        color: placementCamp.color,
+        userCampId: placementActivity.userCampId,
+        name: placementActivity.name,
+        color: placementActivity.color,
         childId,
         weekStart,
         anchor: r
@@ -240,9 +240,9 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           : { top: 0, left: 0, width: 0, height: 0 },
         fromPlacement: true,
       });
-      setPlacementCamp(null);
+      setPlacementActivity(null);
     },
-    [placementCamp]
+    [placementActivity]
   );
 
   const handleStopSharing = useCallback(async () => {
@@ -287,15 +287,15 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
 
   const colorByActivityId = useMemo(() => {
     const m = new Map<string, string>();
-    for (const uc of userCamps) m.set(uc.activity.id, uc.color);
+    for (const uc of userActivities) m.set(uc.activity.id, uc.color);
     return m;
-  }, [userCamps]);
+  }, [userActivities]);
 
   const colorByActivityIdRecord = useMemo(() => {
     const r: Record<string, string> = {};
-    for (const uc of userCamps) r[uc.activity.id] = uc.color;
+    for (const uc of userActivities) r[uc.activity.id] = uc.color;
     return r;
-  }, [userCamps]);
+  }, [userActivities]);
 
   const weeks: WeekRow[] = weekStarts.map((weekStart) => {
     const weekKey = getWeekKey(weekStart);
@@ -394,14 +394,14 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
     return m;
   }, [entries, kids]);
 
-  const previewCamp = useMemo(
-    () => (quickViewCampId ? userCamps.find((c) => c.id === quickViewCampId) ?? null : null),
-    [quickViewCampId, userCamps],
+  const previewActivity = useMemo(
+    () => (quickViewActivityId ? userActivities.find((c) => c.id === quickViewActivityId) ?? null : null),
+    [quickViewActivityId, userActivities],
   );
 
   const previewSummary = useMemo<PreviewSummary | null>(() => {
-    if (!previewCamp) return null;
-    const activityId = previewCamp.activity.id;
+    if (!previewActivity) return null;
+    const activityId = previewActivity.activity.id;
     const matching = entries.filter((e) => e.session.activity.id === activityId);
     const counts = { considering: 0, waitlisted: 0, registered: 0 };
     let totalRegisteredPerWeekCents = 0;
@@ -423,7 +423,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           ? Math.round(totalRegisteredPerWeekCents / registeredWithPriceCount)
           : null,
     };
-  }, [previewCamp, entries]);
+  }, [previewActivity, entries]);
 
   const drawerEntry = useMemo(() => {
     // Two entry points: clicked a placed entry in a cell (drawerEntryId),
@@ -431,7 +431,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
     if (drawerEntryId) {
       const e = entries.find((x) => x.id === drawerEntryId);
       if (!e) return null;
-      const uc = userCamps.find((u) => u.activity.id === e.session.activity.id);
+      const uc = userActivities.find((u) => u.activity.id === e.session.activity.id);
       const primaryLoc = uc?.activity.activity_locations?.[0] ?? null;
       return {
         userCampId: uc?.id ?? "",
@@ -474,7 +474,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
       };
     }
     if (shortlistCampId) {
-      const uc = userCamps.find((u) => u.id === shortlistCampId);
+      const uc = userActivities.find((u) => u.id === shortlistCampId);
       if (!uc) return null;
       const primaryLoc = uc.activity.activity_locations?.[0] ?? null;
       return {
@@ -500,7 +500,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
       };
     }
     return null;
-  }, [drawerEntryId, shortlistCampId, entries, userCamps]);
+  }, [drawerEntryId, shortlistCampId, entries, userActivities]);
 
   const drawerBlock = useMemo(() => {
     if (!drawerBlockId) return null;
@@ -534,7 +534,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
       onDragEnd={handleDragEnd}
     >
       <main className="md:h-[calc(100dvh-73px)] flex flex-col md:overflow-hidden">
-        {placementCamp && (
+        {placementActivity && (
           <div
             role="status"
             aria-live="polite"
@@ -543,7 +543,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
             <div className="min-w-0 flex items-center gap-2">
               <span
                 className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                style={{ background: placementCamp.color }}
+                style={{ background: placementActivity.color }}
                 aria-hidden
               />
               <div className="min-w-0">
@@ -551,13 +551,13 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
                   Tap a week to place
                 </p>
                 <p className="font-display font-extrabold text-sm truncate mt-0.5">
-                  {placementCamp.name}
+                  {placementActivity.name}
                 </p>
               </div>
             </div>
             <button
               type="button"
-              onClick={() => setPlacementCamp(null)}
+              onClick={() => setPlacementActivity(null)}
               className="flex-shrink-0 font-sans font-bold text-[11px] uppercase tracking-widest px-3 min-h-[40px] rounded-full border border-white/40 hover:bg-white/10"
             >
               Cancel
@@ -566,11 +566,11 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
         )}
         <div className="flex flex-col md:flex-row flex-1 min-h-0">
           <MyActivitiesRail
-            activities={userCamps}
-            onChipClick={(c) => setQuickViewCampId(c.id)}
-            onAddClick={() => setEntryModal({ childId: null, weekStart: null, tab: "camp" })}
+            activities={userActivities}
+            onChipClick={(c) => setQuickViewActivityId(c.id)}
+            onAddClick={() => setEntryModal({ childId: null, weekStart: null, tab: "activity" })}
             onChanged={() => router.refresh()}
-            onActivityPlacementTap={handleCampPlacementTap}
+            onActivityPlacementTap={handleActivityPlacementTap}
             mobileOpen={mobileCampsOpen}
             onMobileOpenChange={setMobileCampsOpen}
           />
@@ -654,7 +654,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
                     onChanged={() => router.refresh()}
                   />
                   <button
-                    onClick={() => setEntryModal({ childId: null, weekStart: null, tab: "camp" })}
+                    onClick={() => setEntryModal({ childId: null, weekStart: null, tab: "activity" })}
                     className="hidden sm:inline-flex font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-[#333] border border-ink items-center justify-center"
                   >
                     + Add
@@ -672,9 +672,9 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
                   plannerStart={plannerStart}
                   plannerEnd={plannerEnd}
                   viewMode={viewMode}
-                  isDraggingCamp={isDraggingCamp}
-                  onPlacementTap={placementCamp ? handlePlacementCellTap : undefined}
-                  onAddCampClick={(childId, weekStart) => setEntryModal({ childId, weekStart, tab: "camp" })}
+                  isDraggingActivity={isDraggingActivity}
+                  onPlacementTap={placementActivity ? handlePlacementCellTap : undefined}
+                  onAddActivityClick={(childId, weekStart) => setEntryModal({ childId, weekStart, tab: "activity" })}
                   onAddBlockClick={(childId, weekStart) => setEntryModal({ childId, weekStart, tab: "block" })}
                   onEntryClick={(entryId) => setDrawerEntryId(entryId)}
                   onBlockClick={(blockId) => setDrawerBlockId(blockId)}
@@ -692,10 +692,10 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           scope={entryModal ?? { childId: null, weekStart: null }}
           shareCampsDefault={shareCampsDefault}
           kids={kids}
-          userCamps={userCamps}
-          initialTab={entryModal?.tab ?? "camp"}
+          userActivities={userActivities}
+          initialTab={entryModal?.tab ?? "activity"}
           onActivityPick={handleActivityPickFromModal}
-          onCampSubmitted={(result) => {
+          onActivitySubmitted={(result) => {
             if (result.url && result.jobId) {
               // URL flow: open the scrape-confirm drawer and let it poll. Skip
               // setting activeJobId so we don't double-poll.
@@ -735,12 +735,12 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           onChanged={() => router.refresh()}
         />
         <CampPreviewModal
-          camp={previewCamp}
+          camp={previewActivity}
           summary={previewSummary}
-          onClose={() => setQuickViewCampId(null)}
+          onClose={() => setQuickViewActivityId(null)}
           onEdit={() => {
-            if (previewCamp) setShortlistCampId(previewCamp.id);
-            setQuickViewCampId(null);
+            if (previewActivity) setShortlistCampId(previewActivity.id);
+            setQuickViewActivityId(null);
           }}
         />
         <BlockDetailDrawer
@@ -817,11 +817,11 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
       </main>
 
       <DragOverlay dropAnimation={null}>
-        {draggingCamp ? (
-          <div className="rounded-lg border border-ink bg-surface shadow-[3px_3px_0_0_rgba(0,0,0,0.15)] p-2.5 w-56 rotate-2 pointer-events-none" style={{ borderColor: draggingCamp.color }}>
+        {draggingActivity ? (
+          <div className="rounded-lg border border-ink bg-surface shadow-[3px_3px_0_0_rgba(0,0,0,0.15)] p-2.5 w-56 rotate-2 pointer-events-none" style={{ borderColor: draggingActivity.color }}>
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full" style={{ background: draggingCamp.color }} />
-              <div className="font-medium text-sm text-ink truncate">{draggingCamp.name}</div>
+              <span className="w-2 h-2 rounded-full" style={{ background: draggingActivity.color }} />
+              <div className="font-medium text-sm text-ink truncate">{draggingActivity.name}</div>
             </div>
             <div className="mt-1 font-sans font-bold text-[9px] uppercase tracking-widest text-ink-2">
               Drop on a week ↓

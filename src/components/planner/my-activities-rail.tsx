@@ -253,7 +253,7 @@ function DraggableActivityItem({
 }) {
   const data = useMemo(
     () => ({
-      type: "camp" as const,
+      type: "activity" as const,
       userCampId: activity.id,
       activityId: activity.activity.id,
       name: activity.activity.name,

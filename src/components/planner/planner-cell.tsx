@@ -39,7 +39,7 @@ interface Props {
   plannerStart: Date;
   plannerEnd: Date;
   viewMode: "detail" | "simple";
-  isDraggingCamp: boolean;
+  isDraggingActivity: boolean;
   /** When provided, cell overlay becomes tappable and calls this (mobile
    * tap-to-place flow). Behaves identically to a drop otherwise. */
   onPlacementTap?: (childId: string, weekStart: string) => void;
@@ -57,7 +57,7 @@ export function PlannerCell({
   plannerStart,
   plannerEnd,
   viewMode,
-  isDraggingCamp,
+  isDraggingActivity,
   onPlacementTap,
   timelineEntries,
   legendRows,
@@ -142,8 +142,8 @@ export function PlannerCell({
 
   return (
     <div className="relative h-full" data-cell-id={`${childId}-${weekStart}`}>
-      <div className={`h-full ${isDraggingCamp ? "opacity-40 pointer-events-none" : ""}`}>{content}</div>
-      {isDraggingCamp && (
+      <div className={`h-full ${isDraggingActivity ? "opacity-40 pointer-events-none" : ""}`}>{content}</div>
+      {isDraggingActivity && (
         <div className="absolute inset-0">
           <CellDropZones
             childId={childId}

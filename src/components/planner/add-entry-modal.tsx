@@ -20,9 +20,9 @@ interface Props {
   scope: { childId: string | null; weekStart: string | null };
   shareCampsDefault: boolean;
   kids: ChildLite[];
-  userCamps: UserCampWithActivity[];
-  initialTab?: "camp" | "block";
-  onCampSubmitted: (result: {
+  userActivities: UserCampWithActivity[];
+  initialTab?: "activity" | "block";
+  onActivitySubmitted: (result: {
     jobId?: string;
     userCampId?: string;
     plannerEntryId?: string | null;
@@ -34,7 +34,7 @@ interface Props {
 
 export function AddEntryModal(props: Props) {
   if (!props.open) return null;
-  return <AddEntryModalInner key={`${props.initialTab ?? "camp"}`} {...props} />;
+  return <AddEntryModalInner key={`${props.initialTab ?? "activity"}`} {...props} />;
 }
 
 function AddEntryModalInner({
@@ -43,17 +43,17 @@ function AddEntryModalInner({
   scope,
   shareCampsDefault,
   kids,
-  userCamps,
-  initialTab = "camp",
-  onCampSubmitted,
+  userActivities,
+  initialTab = "activity",
+  onActivitySubmitted,
   onBlockSubmitted,
   onActivityPick,
 }: Props) {
-  const [tab, setTab] = useState<"camp" | "block">(initialTab);
+  const [tab, setTab] = useState<"activity" | "block">(initialTab);
 
   const cellScoped = scope.childId !== null && scope.weekStart !== null;
-  const picker = cellScoped && tab === "camp" ? (
-    <ActivityPickerSection activities={userCamps} onPick={onActivityPick} />
+  const picker = cellScoped && tab === "activity" ? (
+    <ActivityPickerSection activities={userActivities} onPick={onActivityPick} />
   ) : null;
 
   return (
@@ -63,9 +63,9 @@ function AddEntryModalInner({
         <div className="flex items-center justify-between mb-4">
           <div className="inline-flex rounded-full border border-ink-3 bg-surface overflow-hidden">
             <button
-              onClick={() => setTab("camp")}
+              onClick={() => setTab("activity")}
               className={`font-sans text-[11px] uppercase tracking-widest px-3 py-1.5 transition-colors ${
-                tab === "camp" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
+                tab === "activity" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
               }`}
             >
               Activity
@@ -82,7 +82,7 @@ function AddEntryModalInner({
           <button onClick={onClose} aria-label="Close" className="text-ink-2 hover:text-ink text-lg">✕</button>
         </div>
 
-        {tab === "camp" ? (
+        {tab === "activity" ? (
           <AddActivityModal
             open={true}
             embedded={true}
@@ -90,7 +90,7 @@ function AddEntryModalInner({
             plannerId={plannerId}
             scope={scope}
             shareCampsDefault={shareCampsDefault}
-            onSubmitted={onCampSubmitted}
+            onSubmitted={onActivitySubmitted}
             embeddedPicker={picker}
           />
         ) : (
