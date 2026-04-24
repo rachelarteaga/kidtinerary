@@ -14,7 +14,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { PlannerMatrix, type WeekRow } from "@/components/planner/matrix";
-import { MyCampsRail } from "@/components/planner/my-camps-rail";
+import { MyActivitiesRail } from "@/components/planner/my-activities-rail";
 import { AddEntryModal } from "@/components/planner/add-entry-modal";
 import { CampDetailDrawer } from "@/components/planner/camp-detail-drawer";
 import { BlockDetailDrawer } from "@/components/planner/block-detail-drawer";
@@ -565,12 +565,12 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           </div>
         )}
         <div className="flex flex-col md:flex-row flex-1 min-h-0">
-          <MyCampsRail
-            camps={userCamps}
+          <MyActivitiesRail
+            activities={userCamps}
             onChipClick={(c) => setQuickViewCampId(c.id)}
             onAddClick={() => setEntryModal({ childId: null, weekStart: null, tab: "camp" })}
             onChanged={() => router.refresh()}
-            onCampPlacementTap={handleCampPlacementTap}
+            onActivityPlacementTap={handleCampPlacementTap}
             mobileOpen={mobileCampsOpen}
             onMobileOpenChange={setMobileCampsOpen}
           />
