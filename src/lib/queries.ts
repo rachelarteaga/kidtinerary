@@ -717,7 +717,7 @@ export interface PlannerSummary {
   startDate: string;
   endDate: string;
   kidCount: number;
-  /** Most recent updated_at across the planner row itself, its entries, and its blocks. */
+  /** Mirror of planners.updated_at — touched by triggers on any child-table write. */
   lastEditedAt: string;
   /** Token for the planner's active share, or null when not shared. */
   shareToken: string | null;
@@ -737,7 +737,7 @@ export async function fetchUserPlanners(userId: string): Promise<PlannerSummary[
 
   const { data: planners, error } = await supabase
     .from("planners")
-    .select("id, name, start_date, end_date, created_at")
+    .select("id, name, start_date, end_date, created_at, updated_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
 
@@ -749,10 +749,8 @@ export async function fetchUserPlanners(userId: string): Promise<PlannerSummary[
   const plannerIds = (planners as { id: string }[]).map((p) => p.id);
   if (plannerIds.length === 0) return [];
 
-  const [kidsRes, entriesRes, blocksRes, sharesRes] = await Promise.all([
+  const [kidsRes, sharesRes] = await Promise.all([
     supabase.from("planner_kids").select("planner_id, child_id").in("planner_id", plannerIds),
-    supabase.from("planner_entries").select("planner_id, updated_at").in("planner_id", plannerIds),
-    supabase.from("planner_blocks").select("planner_id, created_at").in("planner_id", plannerIds),
     supabase
       .from("shared_schedules")
       .select("id, planner_id, token, kid_ids, include_cost, include_personal_block_details")
@@ -764,19 +762,6 @@ export async function fetchUserPlanners(userId: string): Promise<PlannerSummary[
   const kidCountByPlanner: Record<string, number> = {};
   for (const row of (kidsRes.data ?? []) as { planner_id: string }[]) {
     kidCountByPlanner[row.planner_id] = (kidCountByPlanner[row.planner_id] ?? 0) + 1;
-  }
-
-  const lastEditedByPlanner: Record<string, string> = {};
-  function considerTimestamp(plannerId: string, ts: string | null) {
-    if (!ts) return;
-    const prev = lastEditedByPlanner[plannerId];
-    if (!prev || ts > prev) lastEditedByPlanner[plannerId] = ts;
-  }
-  for (const row of (entriesRes.data ?? []) as { planner_id: string; updated_at: string | null }[]) {
-    considerTimestamp(row.planner_id, row.updated_at);
-  }
-  for (const row of (blocksRes.data ?? []) as { planner_id: string; created_at: string | null }[]) {
-    considerTimestamp(row.planner_id, row.created_at);
   }
 
   const shareByPlanner: Record<
@@ -800,6 +785,7 @@ export async function fetchUserPlanners(userId: string): Promise<PlannerSummary[
     start_date: string;
     end_date: string;
     created_at: string;
+    updated_at: string;
   }[]).map((p) => {
     const share = shareByPlanner[p.id] ?? null;
     return {
@@ -808,7 +794,7 @@ export async function fetchUserPlanners(userId: string): Promise<PlannerSummary[
       startDate: p.start_date,
       endDate: p.end_date,
       kidCount: kidCountByPlanner[p.id] ?? 0,
-      lastEditedAt: lastEditedByPlanner[p.id] ?? p.created_at,
+      lastEditedAt: p.updated_at,
       shareToken: share?.token ?? null,
       shareId: share?.id ?? null,
       shareKidIds: share?.kid_ids ?? [],
