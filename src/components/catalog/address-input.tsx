@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
+import { AnchoredPopover } from "@/components/ui/anchored-popover";
 
 interface Suggestion {
   formatted_address: string;
@@ -29,9 +30,8 @@ export function AddressInput({
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Debounced geocode-as-you-type
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
@@ -73,17 +73,6 @@ export function AddressInput({
     };
   }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Close dropdown on click outside
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   function handleSelect() {
     if (!suggestion) return;
     onChange(suggestion.formatted_address);
@@ -102,11 +91,9 @@ export function AddressInput({
   }
 
   return (
-    <div ref={containerRef} className="relative">
-      {/* Pin icon */}
+    <div className="relative">
       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none z-10">
         {loading ? (
-          // Small spinner
           <svg
             className="w-4 h-4 animate-spin"
             xmlns="http://www.w3.org/2000/svg"
@@ -145,6 +132,7 @@ export function AddressInput({
       </span>
 
       <input
+        ref={inputRef}
         type="text"
         value={value}
         onChange={(e) => {
@@ -157,21 +145,27 @@ export function AddressInput({
         className={`w-full pl-9 pr-3 py-2 rounded-lg border border-ink-3 bg-surface/50 text-ink placeholder:text-ink-3 text-sm focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink/30 font-sans ${className}`}
       />
 
-      {/* Suggestion dropdown */}
-      {open && suggestion && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-surface border border-ink rounded-lg shadow-md overflow-hidden">
+      <AnchoredPopover
+        anchorRef={inputRef}
+        open={open && !!suggestion}
+        onClose={() => setOpen(false)}
+        align="stretch"
+        offset={4}
+        className="bg-surface border border-ink rounded-lg shadow-md overflow-hidden"
+      >
+        {suggestion && (
           <button
             type="button"
             onMouseDown={(e) => {
-              e.preventDefault(); // prevent blur from firing before click
+              e.preventDefault();
               handleSelect();
             }}
             className="w-full text-left px-3 py-2.5 font-sans text-xs text-ink hover:bg-ink/5 transition-colors"
           >
             {suggestion.formatted_address}
           </button>
-        </div>
-      )}
+        )}
+      </AnchoredPopover>
     </div>
   );
 }
