@@ -186,8 +186,13 @@ Final grep for `camp[s]?` across `src/` after B1–B7. Every remaining hit falls
 
 ### Component-local plain-data `camp` prop (stays per spec)
 - `src/components/planner/shared-activity-detail-panel.tsx` — the `camp` prop on `SharedActivityDetailPanel` takes a plain `{ org, name, location, url, about, weeklyCostCents? }` shape. Not a `UserActivity`-adjacent structure. Component name renamed (B7); prop name intentionally left for shared-view stability.
-- `src/components/planner/shared-planner-view.tsx:363` — passes `camp={openCamp}` matching the above prop
+- `src/components/planner/shared-planner-view.tsx:363` — passes `camp={openActivity}` matching the above prop
 - `src/components/planner/shared-planner-view.tsx:177` — internal dev comment
+
+### Validation-module boundary (stays)
+- `src/lib/submit-camp-validation.ts` — `SubmitCampRawInput` type and its `campName` field define the input shape to the scrape-adjacent validation module, which is intentionally kept. The `campName` key in the payload built by `AddActivityModal.handleSubmit` (line 88) and the `input.campName` reference in `actions.ts:576,598` ride this boundary.
+- `src/lib/queries.ts:fetchUserCamps` and its call site in `src/app/planner/page.tsx` — function name mirrors the DB table `user_camps`, analogous to the `userCampId` field naming pattern. DB-boundary keep.
+- `shareCampsDefault` prop threaded through `client.tsx`, `add-entry-modal.tsx`, and `add-activity-modal.tsx` — mirrors the DB column `share_camps_default` on the user profile. DB-boundary keep.
 
 ### Placeholder example text (stays)
 - `src/components/planner/add-activity-modal.tsx:202` — `placeholder="Camp Kanata"` is an example camp name in the form hint, not UI chrome
