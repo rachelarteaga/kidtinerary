@@ -142,7 +142,7 @@ export function MyPlannersClient({ initialPlanners, allKids }: Props) {
   return (
     <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="flex items-start justify-between gap-4 mb-2">
-        <h1 className="font-display font-extrabold text-4xl text-ink tracking-tight">My planners</h1>
+        <h1 className="font-display font-extrabold text-3xl sm:text-4xl text-ink tracking-tight">My planners</h1>
         <button
           type="button"
           onClick={() => setNewPlannerOpen(true)}
@@ -297,8 +297,8 @@ function PlannerRow({
         </div>
       </div>
 
-      <div className="mt-3 pt-3 border-t border-ink-3 flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2 flex-wrap">
+      <div className="mt-3 pt-3 border-t border-ink-3 flex items-center justify-between gap-2 sm:flex-wrap">
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
           {isShared ? (
             <>
               <ShareStatusBadge />
@@ -312,14 +312,14 @@ function PlannerRow({
               <button
                 type="button"
                 onClick={onEditSettings}
-                className="font-sans font-semibold text-[11px] uppercase tracking-widest text-ink-2 hover:text-ink"
+                className="hidden sm:inline font-sans font-semibold text-[11px] uppercase tracking-widest text-ink-2 hover:text-ink"
               >
                 Edit settings
               </button>
               <button
                 type="button"
                 onClick={onToggleOff}
-                className="font-sans font-semibold text-[11px] uppercase tracking-widest text-[#c96164] hover:text-[#9e3f42]"
+                className="hidden sm:inline font-sans font-semibold text-[11px] uppercase tracking-widest text-[#c96164] hover:text-[#9e3f42]"
               >
                 Stop sharing
               </button>
@@ -335,7 +335,7 @@ function PlannerRow({
             </button>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Link
             href={`/planner?id=${planner.id}`}
             className="font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-1.5 rounded-full border border-ink hover:bg-base"
@@ -345,19 +345,115 @@ function PlannerRow({
           <button
             type="button"
             onClick={onDuplicate}
-            className="font-sans font-semibold text-[11px] uppercase tracking-widest text-ink-2 hover:text-ink"
+            className="hidden sm:inline font-sans font-semibold text-[11px] uppercase tracking-widest text-ink-2 hover:text-ink"
           >
             Duplicate
           </button>
           <button
             type="button"
             onClick={onDelete}
-            className="font-sans font-semibold text-[11px] uppercase tracking-widest text-[#ef8c8f] hover:text-[#e87073]"
+            className="hidden sm:inline font-sans font-semibold text-[11px] uppercase tracking-widest text-[#ef8c8f] hover:text-[#e87073]"
+          >
+            Delete
+          </button>
+          <PlannerRowOverflowMenu
+            isShared={isShared}
+            onEditSettings={onEditSettings}
+            onStopSharing={onToggleOff}
+            onDuplicate={onDuplicate}
+            onDelete={onDelete}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PlannerRowOverflowMenu({
+  isShared,
+  onEditSettings,
+  onStopSharing,
+  onDuplicate,
+  onDelete,
+}: {
+  isShared: boolean;
+  onEditSettings: () => void;
+  onStopSharing: () => void;
+  onDuplicate: () => void;
+  onDelete: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    function handler(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-planner-overflow]")) setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div className="relative sm:hidden" data-planner-overflow>
+      <button
+        type="button"
+        aria-label="More actions"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-ink text-ink hover:bg-base"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+          <circle cx="5" cy="12" r="2" />
+          <circle cx="12" cy="12" r="2" />
+          <circle cx="19" cy="12" r="2" />
+        </svg>
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full mt-2 z-20 min-w-[180px] bg-surface border border-ink-3 rounded-xl shadow-[3px_3px_0_0_rgba(0,0,0,0.15)] overflow-hidden"
+        >
+          {isShared && (
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => { setOpen(false); onEditSettings(); }}
+                className="block w-full text-left min-h-[44px] px-4 py-2 font-sans text-[13px] font-medium text-ink hover:bg-base"
+              >
+                Edit share settings
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => { setOpen(false); onStopSharing(); }}
+                className="block w-full text-left min-h-[44px] px-4 py-2 font-sans text-[13px] font-medium text-[#c96164] hover:bg-[#fdebec]"
+              >
+                Stop sharing
+              </button>
+              <hr className="border-t border-disabled mx-2" />
+            </>
+          )}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => { setOpen(false); onDuplicate(); }}
+            className="block w-full text-left min-h-[44px] px-4 py-2 font-sans text-[13px] font-medium text-ink hover:bg-base"
+          >
+            Duplicate
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => { setOpen(false); onDelete(); }}
+            className="block w-full text-left min-h-[44px] px-4 py-2 font-sans text-[13px] font-medium text-[#ef8c8f] hover:bg-[#fdebec]"
           >
             Delete
           </button>
         </div>
-      </div>
+      )}
     </div>
   );
 }

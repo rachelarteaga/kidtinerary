@@ -37,7 +37,7 @@ export default function RootLayout({
       <body className="bg-surface text-ink font-sans antialiased">
         <ToastProvider>
           <Nav />
-          <div className="pb-16 sm:pb-0">{children}</div>
+          {children}
         </ToastProvider>
       </body>
     </html>

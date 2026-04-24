@@ -82,7 +82,11 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [scrapeDrawer, setScrapeDrawer] = useState<{ jobId: string; userCampId: string | null; url: string; scopeLabel: string | null } | null>(null);
   const [draggingCamp, setDraggingCamp] = useState<{ name: string; color: string } | null>(null);
-  const isDraggingCamp = draggingCamp !== null;
+  const [placementCamp, setPlacementCamp] = useState<{ userCampId: string; name: string; color: string } | null>(null);
+  const [mobileCampsOpen, setMobileCampsOpen] = useState(false);
+  // Cells render their drop-zone overlay when either a desktop drag is in
+  // flight or a mobile tap-to-place is armed.
+  const isDraggingCamp = draggingCamp !== null || placementCamp !== null;
   const [pendingAssignment, setPendingAssignment] = useState<{
     userCampId: string;
     name: string;
@@ -90,6 +94,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
     childId: string;
     weekStart: string;
     anchor: StatusPickerAnchor;
+    fromPlacement?: boolean;
   } | null>(null);
   const [viewMode, setViewMode] = useState<"detail" | "simple">("detail");
   const [shareOpen, setShareOpen] = useState(false);
@@ -168,7 +173,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
   const handleStatusChoice = useCallback(
     async (status: PlannerEntryStatus) => {
       if (!pendingAssignment) return;
-      const { userCampId, childId, weekStart } = pendingAssignment;
+      const { userCampId, childId, weekStart, fromPlacement } = pendingAssignment;
       setPendingAssignment(null);
       const result = await assignCampToWeek(planner.id, userCampId, childId, weekStart, status);
       if (result.error) {
@@ -176,8 +181,52 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
         return;
       }
       router.refresh();
+      // Mobile tap-to-place only: scroll the placed cell into view + flash it
+      // so the user sees where it landed. On desktop drops, the drop target
+      // is already exactly where the user released — scrolling would be
+      // disruptive.
+      if (fromPlacement) {
+        requestAnimationFrame(() => {
+          const el = document.querySelector(`[data-cell-id="${childId}-${weekStart}"]`) as HTMLElement | null;
+          if (!el) return;
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.classList.add("ring-2", "ring-hero-light", "ring-offset-2", "rounded-lg");
+          window.setTimeout(() => {
+            el.classList.remove("ring-2", "ring-hero-light", "ring-offset-2", "rounded-lg");
+          }, 1100);
+        });
+      }
     },
     [pendingAssignment, planner.id, router]
+  );
+
+  // Mobile tap-to-place: the bottom sheet hands us a camp, then the user taps
+  // a cell. We synthesize the same pendingAssignment shape drag-drop produces,
+  // and the existing status-picker popover takes over.
+  const handleCampPlacementTap = useCallback((camp: UserCampWithActivity) => {
+    setPlacementCamp({ userCampId: camp.id, name: camp.activity.name, color: camp.color });
+    setMobileCampsOpen(false);
+  }, []);
+
+  const handlePlacementCellTap = useCallback(
+    (childId: string, weekStart: string) => {
+      if (!placementCamp) return;
+      const el = document.querySelector(`[data-cell-id="${childId}-${weekStart}"]`) as HTMLElement | null;
+      const r = el?.getBoundingClientRect();
+      setPendingAssignment({
+        userCampId: placementCamp.userCampId,
+        name: placementCamp.name,
+        color: placementCamp.color,
+        childId,
+        weekStart,
+        anchor: r
+          ? { top: r.top, left: r.left, width: r.width, height: r.height }
+          : { top: 0, left: 0, width: 0, height: 0 },
+        fromPlacement: true,
+      });
+      setPlacementCamp(null);
+    },
+    [placementCamp]
   );
 
   const handleStopSharing = useCallback(async () => {
@@ -469,18 +518,51 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
       onDragEnd={handleDragEnd}
     >
       <main className="md:h-[calc(100dvh-73px)] flex flex-col md:overflow-hidden">
+        {placementCamp && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="md:hidden sticky top-[73px] z-20 flex items-center justify-between gap-3 px-4 py-3 bg-ink text-ink-inverse"
+          >
+            <div className="min-w-0 flex items-center gap-2">
+              <span
+                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                style={{ background: placementCamp.color }}
+                aria-hidden
+              />
+              <div className="min-w-0">
+                <p className="font-sans text-[10px] uppercase tracking-widest opacity-75 leading-none">
+                  Tap a week to place
+                </p>
+                <p className="font-display font-extrabold text-sm truncate mt-0.5">
+                  {placementCamp.name}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPlacementCamp(null)}
+              className="flex-shrink-0 font-sans font-bold text-[11px] uppercase tracking-widest px-3 min-h-[40px] rounded-full border border-white/40 hover:bg-white/10"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
         <div className="flex flex-col md:flex-row flex-1 min-h-0">
           <MyCampsRail
             camps={userCamps}
             onChipClick={(c) => setQuickViewCampId(c.id)}
             onAddClick={() => setEntryModal({ childId: null, weekStart: null, tab: "camp" })}
             onChanged={() => router.refresh()}
+            onCampPlacementTap={handleCampPlacementTap}
+            mobileOpen={mobileCampsOpen}
+            onMobileOpenChange={setMobileCampsOpen}
           />
 
           <div className="flex-1 min-w-0 flex flex-col md:h-full md:overflow-hidden">
             <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 flex flex-col flex-1 min-h-0">
-              <header className="bg-surface flex items-start justify-between flex-wrap gap-3 pt-[22px] pb-[18px] flex-shrink-0">
-                <div>
+              <header className="bg-surface flex flex-col sm:flex-row sm:items-start sm:justify-between sm:flex-wrap gap-3 pt-[22px] pb-[18px] flex-shrink-0">
+                <div className="min-w-0">
                   <div className="mb-1">
                     <PlannerTitle
                       plannerId={planner.id}
@@ -557,7 +639,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
                   />
                   <button
                     onClick={() => setEntryModal({ childId: null, weekStart: null, tab: "camp" })}
-                    className="font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-[#333] border border-ink"
+                    className="hidden sm:inline-flex font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-[#333] border border-ink items-center justify-center"
                   >
                     + Add
                   </button>
@@ -575,6 +657,7 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
                   plannerEnd={plannerEnd}
                   viewMode={viewMode}
                   isDraggingCamp={isDraggingCamp}
+                  onPlacementTap={placementCamp ? handlePlacementCellTap : undefined}
                   onAddCampClick={(childId, weekStart) => setEntryModal({ childId, weekStart, tab: "camp" })}
                   onAddBlockClick={(childId, weekStart) => setEntryModal({ childId, weekStart, tab: "block" })}
                   onEntryClick={(entryId) => setDrawerEntryId(entryId)}

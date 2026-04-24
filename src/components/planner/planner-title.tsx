@@ -69,7 +69,7 @@ export function PlannerTitle({ plannerId, name, sharesActiveCount, onShareClick 
           }}
           maxLength={50}
           disabled={isPending}
-          className="font-display font-extrabold text-4xl text-ink bg-transparent border-b-2 border-ink-3 focus:border-ink outline-none min-w-[200px] tracking-tight"
+          className="font-display font-extrabold text-[26px] sm:text-4xl text-ink bg-transparent border-b-2 border-ink-3 focus:border-ink outline-none min-w-[200px] tracking-tight"
         />
         {error && <p className="text-sm text-[#ef8c8f] mt-1">{error}</p>}
       </div>
@@ -80,7 +80,7 @@ export function PlannerTitle({ plannerId, name, sharesActiveCount, onShareClick 
     <div className="inline-flex items-center gap-3">
       <button
         onClick={() => setEditing(true)}
-        className="font-display font-extrabold text-4xl text-ink tracking-tight hover:underline decoration-ink-3 decoration-2 underline-offset-4 inline-flex items-center gap-2 group"
+        className="font-display font-extrabold text-[26px] sm:text-4xl text-ink tracking-tight text-left hover:underline decoration-ink-3 decoration-2 underline-offset-4 inline-flex items-center gap-2 group"
         aria-label="Edit planner name"
       >
         <span>{name}</span>
