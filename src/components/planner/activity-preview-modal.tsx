@@ -24,7 +24,7 @@ export interface PreviewSummary {
 }
 
 interface Props {
-  camp: UserActivityWithDetails | null;
+  activity: UserActivityWithDetails | null;
   summary: PreviewSummary | null;
   onClose: () => void;
   onEdit: () => void;
@@ -39,19 +39,19 @@ function formatPlacements(counts: PreviewSummary["counts"]): string | null {
   return parts.join(" · ");
 }
 
-export function CampPreviewModal({ camp, summary, onClose, onEdit }: Props) {
+export function ActivityPreviewModal({ activity, summary, onClose, onEdit }: Props) {
   useEffect(() => {
-    if (!camp) return;
+    if (!activity) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [camp, onClose]);
+  }, [activity, onClose]);
 
-  if (!camp) return null;
+  if (!activity) return null;
 
-  const a = camp.activity;
+  const a = activity.activity;
   const primaryLocation = a.activity_locations?.[0];
   const locationText = primaryLocation
     ? primaryLocation.location_name
@@ -79,7 +79,7 @@ export function CampPreviewModal({ camp, summary, onClose, onEdit }: Props) {
               <div className="flex items-center gap-2 mb-1.5">
                 <span
                   className="w-3 h-3 rounded-full border border-ink flex-shrink-0"
-                  style={{ background: camp.color }}
+                  style={{ background: activity.color }}
                   aria-hidden
                 />
                 <h2 className="font-display font-extrabold text-2xl text-ink leading-tight tracking-tight">

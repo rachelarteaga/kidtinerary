@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { KidAvatar } from "./kid-avatar";
 import { KidColumnHeader } from "./kid-column-header";
-import { SharedCampDetailPanel } from "./shared-camp-detail-panel";
+import { SharedActivityDetailPanel } from "./shared-activity-detail-panel";
 import { CellTimelineGrid, type TimelineEntry } from "./cell-timeline-grid";
 import { BlockIcon } from "./block-icon";
 import { ConsideringChips, type ConsideringChip } from "./considering-chips";
@@ -357,7 +357,7 @@ export function SharedPlannerView({
         </div>
       )}
 
-      <SharedCampDetailPanel
+      <SharedActivityDetailPanel
         open={openCampEntryId !== null && openCamp !== null}
         onClose={() => setOpenCampEntryId(null)}
         camp={openCamp ?? { org: "", name: "", location: "", url: null, about: "" }}

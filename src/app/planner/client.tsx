@@ -16,13 +16,13 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { PlannerMatrix, type WeekRow } from "@/components/planner/matrix";
 import { MyActivitiesRail } from "@/components/planner/my-activities-rail";
 import { AddEntryModal } from "@/components/planner/add-entry-modal";
-import { CampDetailDrawer } from "@/components/planner/camp-detail-drawer";
+import { ActivityDetailDrawer } from "@/components/planner/activity-detail-drawer";
 import { BlockDetailDrawer } from "@/components/planner/block-detail-drawer";
 import { PlannerRangePicker } from "@/components/planner/planner-range-picker";
 import { PlannerTitle } from "@/components/planner/planner-title";
 import { StatusPickerPopover, type StatusPickerAnchor } from "@/components/planner/status-picker-popover";
 import { ScrapeConfirmDrawer } from "@/components/planner/scrape-confirm-drawer";
-import { CampPreviewModal, type PreviewSummary } from "@/components/planner/camp-preview-modal";
+import { ActivityPreviewModal, type PreviewSummary } from "@/components/planner/activity-preview-modal";
 import { SharePlannerModal } from "@/components/planner/share-planner-modal";
 import type { EntryRow as SharedEntryRow } from "@/components/planner/shared-planner-view";
 import { useScrapeJob } from "@/lib/use-scrape-job";
@@ -723,7 +723,7 @@ export function PlannerClient({ kids, allUserKids, entries, userActivities, bloc
           }}
         />
 
-        <CampDetailDrawer
+        <ActivityDetailDrawer
           open={drawerEntryId !== null || shortlistCampId !== null}
           onClose={() => {
             setDrawerEntryId(null);
@@ -734,8 +734,8 @@ export function PlannerClient({ kids, allUserKids, entries, userActivities, bloc
           plannerId={planner.id}
           onChanged={() => router.refresh()}
         />
-        <CampPreviewModal
-          camp={previewActivity}
+        <ActivityPreviewModal
+          activity={previewActivity}
           summary={previewSummary}
           onClose={() => setQuickViewActivityId(null)}
           onEdit={() => {

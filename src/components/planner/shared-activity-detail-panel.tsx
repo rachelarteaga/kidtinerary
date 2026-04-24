@@ -13,7 +13,7 @@ interface Props {
   };
 }
 
-export function SharedCampDetailPanel({ open, onClose, camp }: Props) {
+export function SharedActivityDetailPanel({ open, onClose, camp }: Props) {
   if (!open) return null;
   return (
     <div

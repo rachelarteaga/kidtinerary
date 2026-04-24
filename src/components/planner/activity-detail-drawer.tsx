@@ -110,7 +110,7 @@ interface Props {
   onChanged: () => void;
 }
 
-export function CampDetailDrawer({ open, onClose, entry, kids, plannerId, onChanged }: Props) {
+export function ActivityDetailDrawer({ open, onClose, entry, kids, plannerId, onChanged }: Props) {
   const [local, setLocal] = useState<DrawerEntry | null>(entry);
   const [isPending, startTransition] = useTransition();
 
