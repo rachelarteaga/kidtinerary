@@ -65,7 +65,7 @@ export function StatusPickerPopover({ anchor, activityName, onChoose, onCancel }
         type="button"
         onClick={onCancel}
         aria-label="Cancel status selection"
-        className="absolute top-1 right-1 w-5 h-5 flex items-center justify-center rounded-full text-ink-2 hover:text-ink hover:bg-ink/5 focus:outline-none cursor-pointer"
+        className="absolute top-0.5 right-0.5 w-8 h-8 flex items-center justify-center rounded-full text-ink-2 hover:text-ink hover:bg-ink/5 focus:outline-none cursor-pointer"
       >
         <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden>
           <path d="M1 1 L9 9 M9 1 L1 9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />

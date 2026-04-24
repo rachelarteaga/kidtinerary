@@ -145,7 +145,8 @@ export function MyActivitiesRail({
             type="button"
             onClick={() => onMobileOpenChange?.(true)}
             aria-label="Open My Activities"
-            className="fixed bottom-5 left-1/2 -translate-x-1/2 z-30 inline-flex items-center gap-2 min-h-[48px] px-5 rounded-full bg-ink text-ink-inverse font-sans font-bold text-[12px] uppercase tracking-widest shadow-[0_4px_14px_rgba(0,0,0,0.18)]"
+            className="fixed left-1/2 -translate-x-1/2 z-30 inline-flex items-center gap-2 min-h-[48px] px-5 rounded-full bg-ink text-ink-inverse font-sans font-bold text-[12px] uppercase tracking-widest shadow-[0_4px_14px_rgba(0,0,0,0.18)]"
+            style={{ bottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden>
               <line x1="4" y1="6" x2="20" y2="6" />
@@ -310,7 +311,7 @@ function DraggableActivityItem({
           e.preventDefault();
           onRemoveClick();
         }}
-        className="absolute top-1.5 right-1.5 w-5 h-5 flex items-center justify-center rounded-full text-ink-3 hover:text-[#ef8c8f] hover:bg-[#fdebec] opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+        className="absolute top-0.5 right-0.5 w-8 h-8 flex items-center justify-center rounded-full text-ink-3 hover:text-[#ef8c8f] hover:bg-[#fdebec] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-sm"
       >
         ✕
       </button>

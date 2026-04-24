@@ -97,6 +97,7 @@ export function PlannerClient({ kids, allUserKids, entries, userActivities, bloc
     fromPlacement?: boolean;
   } | null>(null);
   const [viewMode, setViewMode] = useState<"detail" | "simple">("detail");
+  const [spentBreakdownOpen, setSpentBreakdownOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
 
   // Load from localStorage on mount
@@ -592,30 +593,31 @@ export function PlannerClient({ kids, allUserKids, entries, userActivities, bloc
                     {committedCents > 0 && (
                       <>
                         {" · "}
-                        <span className="relative inline-block group align-baseline">
-                          <span className="text-ink font-semibold border-b border-dotted border-ink">
-                            ${Math.round(committedCents / 100).toLocaleString()} spent
-                          </span>
-                          <span
-                            className="pointer-events-none absolute left-full top-0 ml-2 whitespace-nowrap text-ink-2 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200"
-                            aria-hidden
-                          >
-                            —{" "}
-                            {kids.map((kid, i) => {
-                              const cents = spentByKid.get(kid.id) ?? 0;
-                              return (
-                                <span key={kid.id}>
-                                  {i > 0 ? " · " : ""}
-                                  <span className="text-ink font-semibold">{kid.name}</span>{" "}
-                                  ${Math.round(cents / 100).toLocaleString()}
-                                </span>
-                              );
-                            })}
-                          </span>
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSpentBreakdownOpen((v) => !v)}
+                          aria-expanded={spentBreakdownOpen}
+                          className="text-ink font-semibold border-b border-dotted border-ink align-baseline cursor-pointer"
+                        >
+                          ${Math.round(committedCents / 100).toLocaleString()} spent
+                        </button>
                       </>
                     )}
                   </p>
+                  {committedCents > 0 && spentBreakdownOpen && (
+                    <p className="text-ink-2 text-sm mt-1 leading-relaxed">
+                      {kids.map((kid, i) => {
+                        const cents = spentByKid.get(kid.id) ?? 0;
+                        return (
+                          <span key={kid.id}>
+                            {i > 0 ? " · " : ""}
+                            <span className="text-ink font-semibold">{kid.name}</span>{" "}
+                            ${Math.round(cents / 100).toLocaleString()}
+                          </span>
+                        );
+                      })}
+                    </p>
+                  )}
                   <div className="mt-2">
                     <button
                       type="button"

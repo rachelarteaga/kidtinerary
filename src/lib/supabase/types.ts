@@ -31,6 +31,7 @@ export interface PlannerBlockRow {
   start_date: string;
   end_date: string;
   created_at: string;
+  updated_at: string;
   planner_id: string;
 }
 
@@ -65,6 +66,7 @@ export interface PlannerRow {
   start_date: string;
   end_date: string;
   created_at: string;
+  updated_at: string;
 }
 
 export interface ExtraItem {

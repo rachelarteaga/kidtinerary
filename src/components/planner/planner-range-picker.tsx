@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { updatePlannerRangeWithCleanup } from "@/lib/actions";
+import { AnchoredPopover } from "@/components/ui/anchored-popover";
 
 interface EntryDateLike {
   startsAt: string;
@@ -40,22 +41,13 @@ export function PlannerRangePicker({
   const [localStart, setLocalStart] = useState(startDate);
   const [localEnd, setLocalEnd] = useState(endDate);
   const [confirming, setConfirming] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     setLocalStart(startDate);
     setLocalEnd(endDate);
   }, [startDate, endDate]);
-
-  useEffect(() => {
-    if (!open) return;
-    function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
 
   function countOutOfRange() {
     let removedEntries = 0;
@@ -94,8 +86,9 @@ export function PlannerRangePicker({
   const { removedEntries, removedBlocks } = countOutOfRange();
 
   return (
-    <div className="relative" ref={ref}>
+    <>
       <button
+        ref={triggerRef}
         onClick={() => setOpen((v) => !v)}
         className="font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-white border border-ink-3 text-ink hover:border-ink inline-flex items-center gap-1.5"
       >
@@ -108,64 +101,69 @@ export function PlannerRangePicker({
         <span>{formatRange(startDate, endDate)}</span>
         <span aria-hidden>▾</span>
       </button>
-      {open && (
-        <div className="absolute right-0 top-full mt-2 bg-white border border-ink-3 rounded-lg shadow-lg p-4 z-20 min-w-[280px]">
-          {!confirming ? (
-            <>
-              <div className="space-y-2 mb-3">
-                <div>
-                  <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2">Start</label>
-                  <input
-                    type="date"
-                    value={localStart}
-                    onChange={(e) => setLocalStart(e.target.value)}
-                    className="w-full mt-1 rounded-md border border-ink-3 px-2 py-1.5 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2">End</label>
-                  <input
-                    type="date"
-                    value={localEnd}
-                    onChange={(e) => setLocalEnd(e.target.value)}
-                    className="w-full mt-1 rounded-md border border-ink-3 px-2 py-1.5 text-sm"
-                  />
-                </div>
+      <AnchoredPopover
+        anchorRef={triggerRef}
+        open={open}
+        onClose={() => setOpen(false)}
+        align="end"
+        offset={8}
+        className="bg-white border border-ink-3 rounded-lg shadow-lg p-4 w-[300px]"
+      >
+        {!confirming ? (
+          <>
+            <div className="space-y-2 mb-3">
+              <div>
+                <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2">Start</label>
+                <input
+                  type="date"
+                  value={localStart}
+                  onChange={(e) => setLocalStart(e.target.value)}
+                  className="w-full mt-1 rounded-md border border-ink-3 px-2 py-1.5 text-sm min-w-0"
+                />
               </div>
-              <div className="flex gap-2 justify-end">
-                <button onClick={() => setOpen(false)} className="font-sans text-[11px] uppercase tracking-widest px-3 py-1.5 text-ink-2">Cancel</button>
-                <button
-                  onClick={handleSaveClick}
-                  disabled={isPending}
-                  className="font-sans text-[11px] uppercase tracking-widest px-3 py-1.5 rounded-full bg-ink text-white disabled:opacity-50"
-                >
-                  {isPending ? "Saving…" : "Save"}
-                </button>
+              <div>
+                <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2">End</label>
+                <input
+                  type="date"
+                  value={localEnd}
+                  onChange={(e) => setLocalEnd(e.target.value)}
+                  className="w-full mt-1 rounded-md border border-ink-3 px-2 py-1.5 text-sm min-w-0"
+                />
               </div>
-            </>
-          ) : (
-            <>
-              <div className="font-medium text-sm text-ink mb-2">Remove items outside the new range?</div>
-              <p className="text-xs text-ink-2 mb-3 leading-relaxed">
-                {removedEntries > 0 && <span>{removedEntries} activity entr{removedEntries === 1 ? "y" : "ies"}</span>}
-                {removedEntries > 0 && removedBlocks > 0 && <span> and </span>}
-                {removedBlocks > 0 && <span>{removedBlocks} block{removedBlocks === 1 ? "" : "s"}</span>}
-                {" "}fall outside the new range and will be deleted. This cannot be undone.
-              </p>
-              <div className="flex gap-2 justify-end">
-                <button onClick={() => setConfirming(false)} className="font-sans text-[11px] uppercase tracking-widest px-3 py-1.5 text-ink-2">Back</button>
-                <button
-                  onClick={commitSave}
-                  disabled={isPending}
-                  className="font-sans text-[11px] uppercase tracking-widest px-3 py-1.5 rounded-full bg-[#ef8c8f] text-white disabled:opacity-50"
-                >
-                  {isPending ? "Saving…" : "Remove & save"}
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      )}
-    </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setOpen(false)} className="font-sans text-[11px] uppercase tracking-widest px-3 py-1.5 text-ink-2">Cancel</button>
+              <button
+                onClick={handleSaveClick}
+                disabled={isPending}
+                className="font-sans text-[11px] uppercase tracking-widest px-3 py-1.5 rounded-full bg-ink text-white disabled:opacity-50"
+              >
+                {isPending ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="font-medium text-sm text-ink mb-2">Remove items outside the new range?</div>
+            <p className="text-xs text-ink-2 mb-3 leading-relaxed">
+              {removedEntries > 0 && <span>{removedEntries} activity entr{removedEntries === 1 ? "y" : "ies"}</span>}
+              {removedEntries > 0 && removedBlocks > 0 && <span> and </span>}
+              {removedBlocks > 0 && <span>{removedBlocks} block{removedBlocks === 1 ? "" : "s"}</span>}
+              {" "}fall outside the new range and will be deleted. This cannot be undone.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setConfirming(false)} className="font-sans text-[11px] uppercase tracking-widest px-3 py-1.5 text-ink-2">Back</button>
+              <button
+                onClick={commitSave}
+                disabled={isPending}
+                className="font-sans text-[11px] uppercase tracking-widest px-3 py-1.5 rounded-full bg-[#ef8c8f] text-white disabled:opacity-50"
+              >
+                {isPending ? "Saving…" : "Remove & save"}
+              </button>
+            </div>
+          </>
+        )}
+      </AnchoredPopover>
+    </>
   );
 }

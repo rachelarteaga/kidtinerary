@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { addKidToPlanner } from "@/lib/actions";
 import { ChildForm } from "@/components/kids/child-form";
 import { KidAvatar } from "./kid-avatar";
+import { AnchoredPopover } from "@/components/ui/anchored-popover";
 
 interface Kid {
   id: string;
@@ -28,17 +29,8 @@ export function AddKidMenu({ plannerId, availableKids, variant = "compact" }: Pr
   const [open, setOpen] = useState(false);
   const [creatingNew, setCreatingNew] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
-
-  useEffect(() => {
-    if (!open) return;
-    function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
 
   function addExisting(childId: string) {
     startTransition(async () => {
@@ -59,67 +51,71 @@ export function AddKidMenu({ plannerId, availableKids, variant = "compact" }: Pr
 
   return (
     <>
-      <div className="relative" ref={ref}>
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          title="Add kid"
-          aria-label="Add kid"
-          className={triggerClassName}
-        >
-          {isEmpty ? (
-            <>
-              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-dashed border-current text-xl leading-none flex-shrink-0">
-                +
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        title="Add kid"
+        aria-label="Add kid"
+        className={triggerClassName}
+      >
+        {isEmpty ? (
+          <>
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-dashed border-current text-xl leading-none flex-shrink-0">
+              +
+            </span>
+            <span className="flex-1 text-left">
+              <span className="font-display font-extrabold text-base text-ink block leading-tight">
+                Add a kid
               </span>
-              <span className="flex-1 text-left">
-                <span className="font-display font-extrabold text-base text-ink block leading-tight">
-                  Add a kid
-                </span>
-                <span className="font-sans text-[11px] uppercase tracking-widest text-ink-2">
-                  Pick one or create new
-                </span>
+              <span className="font-sans text-[11px] uppercase tracking-widest text-ink-2">
+                Pick one or create new
               </span>
-            </>
-          ) : (
-            "+"
-          )}
-        </button>
+            </span>
+          </>
+        ) : (
+          "+"
+        )}
+      </button>
 
-        {open && (
-          <div className={`absolute top-full ${isEmpty ? "left-0 right-0 mt-2" : "right-0 mt-1 min-w-[220px]"} bg-surface border border-ink-3 rounded-lg shadow-lg p-1 z-20`}>
-            {availableKids.length === 0 && (
-              <div className="px-3 py-2 font-sans text-[10px] uppercase tracking-wide text-ink-3 italic">
-                No other kids in your profile
-              </div>
-            )}
-            {availableKids.map((k) => (
-              <button
-                key={k.id}
-                type="button"
-                onClick={() => addExisting(k.id)}
-                disabled={isPending}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-ink-3/10 disabled:opacity-50 text-left"
-              >
-                <KidAvatar name={k.name} color={k.color} index={0} avatarUrl={k.avatar_url} size={20} />
-                <span className="text-sm text-ink">{k.name}</span>
-              </button>
-            ))}
-            <div className="border-t border-ink-3 mt-1 pt-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setCreatingNew(true);
-                  setOpen(false);
-                }}
-                className="w-full text-left px-2 py-1.5 rounded-md hover:bg-ink-3/10 font-sans text-[11px] uppercase tracking-widest text-ink"
-              >
-                + Add a new kid
-              </button>
-            </div>
+      <AnchoredPopover
+        anchorRef={triggerRef}
+        open={open}
+        onClose={() => setOpen(false)}
+        align={isEmpty ? "stretch" : "end"}
+        offset={isEmpty ? 8 : 4}
+        className={`bg-surface border border-ink-3 rounded-lg shadow-lg p-1 ${isEmpty ? "" : "min-w-[220px]"}`}
+      >
+        {availableKids.length === 0 && (
+          <div className="px-3 py-2 font-sans text-[10px] uppercase tracking-wide text-ink-3 italic">
+            No other kids in your profile
           </div>
         )}
-      </div>
+        {availableKids.map((k) => (
+          <button
+            key={k.id}
+            type="button"
+            onClick={() => addExisting(k.id)}
+            disabled={isPending}
+            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-ink-3/10 disabled:opacity-50 text-left"
+          >
+            <KidAvatar name={k.name} color={k.color} index={0} avatarUrl={k.avatar_url} size={20} />
+            <span className="text-sm text-ink">{k.name}</span>
+          </button>
+        ))}
+        <div className="border-t border-ink-3 mt-1 pt-1">
+          <button
+            type="button"
+            onClick={() => {
+              setCreatingNew(true);
+              setOpen(false);
+            }}
+            className="w-full text-left px-2 py-1.5 rounded-md hover:bg-ink-3/10 font-sans text-[11px] uppercase tracking-widest text-ink"
+          >
+            + Add a new kid
+          </button>
+        </div>
+      </AnchoredPopover>
 
       {creatingNew && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
