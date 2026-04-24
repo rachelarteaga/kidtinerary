@@ -66,7 +66,7 @@ export function CampPreviewModal({ camp, summary, onClose, onEdit }: Props) {
 
   const isCurated = a.source === "curated";
   const sourceLine = isCurated ? "Curated by Kidtinerary" : "You added this";
-  const ctaLabel = isCurated ? "See more info" : "Edit camp details";
+  const ctaLabel = isCurated ? "See more info" : "Edit activity details";
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-16 pb-8 overflow-y-auto">

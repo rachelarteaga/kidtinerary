@@ -85,7 +85,7 @@ export function AddBlockModal({ open, onClose, plannerId, children, scope, onSub
     <>
       <h2 className="font-display font-extrabold text-2xl mb-1">Add a block</h2>
       <p className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-4">
-        Besides a camp
+        Besides an activity
       </p>
 
       {step === 1 && (

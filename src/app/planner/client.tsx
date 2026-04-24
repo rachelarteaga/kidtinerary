@@ -427,7 +427,7 @@ export function PlannerClient({ kids, allUserKids, entries, userActivities, bloc
 
   const drawerEntry = useMemo(() => {
     // Two entry points: clicked a placed entry in a cell (drawerEntryId),
-    // or clicked "Edit camp details" from the rail preview (shortlistCampId).
+    // or clicked "Edit activity details" from the rail preview (shortlistCampId).
     if (drawerEntryId) {
       const e = entries.find((x) => x.id === drawerEntryId);
       if (!e) return null;
@@ -859,7 +859,7 @@ function DeletePlannerConfirm({
           Delete &quot;{plannerName}&quot;?
         </h3>
         <p className="font-sans text-sm text-ink-2 leading-relaxed mb-4">
-          This removes the planner and every camp placement, block, kid assignment, and
+          This removes the planner and every activity placement, block, kid assignment, and
           share link on it. This cannot be undone.
         </p>
         <div className="flex justify-end gap-2">

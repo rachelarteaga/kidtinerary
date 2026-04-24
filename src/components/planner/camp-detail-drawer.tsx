@@ -97,7 +97,7 @@ interface DrawerEntry {
   address: string | null;
   scrapedPrices: ScrapedPrice[];
   scrapedSessions: ScrapedSession[];
-  /** Null when the camp is in the shortlist but not placed on a week/kid yet. */
+  /** Null when the activity is in the shortlist but not placed on a week/kid yet. */
   placed: PlacedFields | null;
 }
 
@@ -245,7 +245,7 @@ export function CampDetailDrawer({ open, onClose, entry, kids, plannerId, onChan
   async function handleRemove() {
     if (!local) return;
     if (local.placed) {
-      if (!confirm("Remove this camp from this week?")) return;
+      if (!confirm("Remove this activity from this week?")) return;
       const placed = local.placed;
       startTransition(async () => {
         await removePlannerEntry(placed.id);
@@ -253,7 +253,7 @@ export function CampDetailDrawer({ open, onClose, entry, kids, plannerId, onChan
         onClose();
       });
     } else {
-      if (!confirm("Delete this camp from your shortlist? This can't be undone.")) return;
+      if (!confirm("Delete this activity from your shortlist? This can't be undone.")) return;
       const userCampId = local.userCampId;
       startTransition(async () => {
         const r = await removeActivityFromShortlist(userCampId);
@@ -310,13 +310,13 @@ export function CampDetailDrawer({ open, onClose, entry, kids, plannerId, onChan
                   onClick={() => startEdit("name")}
                   className={`font-display font-extrabold text-2xl leading-tight ${
                     isCurated ? "cursor-default" : "cursor-pointer"
-                  } ${local.activityName === "New camp" ? "italic text-ink-2" : "text-ink"}`}
+                  } ${local.activityName === "New activity" ? "italic text-ink-2" : "text-ink"}`}
                 >
                   {local.activityName}
                 </h2>
               )}
 
-              {local.activityName === "New camp" && (
+              {local.activityName === "New activity" && (
                 <div className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mt-0.5">
                   We&apos;re fetching details…
                 </div>
@@ -486,7 +486,7 @@ export function CampDetailDrawer({ open, onClose, entry, kids, plannerId, onChan
           {/* Helper: activity-level edits propagate */}
           {local.placed && !isCurated && (
             <p className="text-[11px] text-ink-2 italic -mt-3">
-              Edits to categories, description, and info below affect every week this camp is placed.
+              Edits to categories, description, and info below affect every week this activity is placed.
             </p>
           )}
 

@@ -156,7 +156,7 @@ export async function submitCampUrl(url: string) {
 
   if (error) {
     console.error("submitCampUrl error:", error);
-    return { error: "Failed to submit camp" };
+    return { error: "Failed to submit activity" };
   }
 
   return { success: true };
@@ -597,7 +597,7 @@ export async function submitActivity(
       }
       activityName = input.campName;
     } else {
-      activityName = "New camp";
+      activityName = "New activity";
     }
 
     const slug =
@@ -622,7 +622,7 @@ export async function submitActivity(
 
     if (stubErr || !stub) {
       console.error("submitCamp activity insert error:", stubErr);
-      return { error: "Failed to create camp entry" };
+      return { error: "Failed to create activity entry" };
     }
     activityId = stub.id;
   }
@@ -646,7 +646,7 @@ export async function submitActivity(
     );
   if (ucUpsertErr) {
     console.error("submitCamp user_camps upsert error:", ucUpsertErr);
-    return { error: "Failed to save camp to shortlist" };
+    return { error: "Failed to save activity to shortlist" };
   }
 
   const { data: userCamp } = await supabase
@@ -655,7 +655,7 @@ export async function submitActivity(
     .eq("user_id", user.id)
     .eq("activity_id", activityId)
     .single();
-  if (!userCamp) return { error: "Failed to retrieve user camp" };
+  if (!userCamp) return { error: "Failed to retrieve your saved activity" };
 
   let plannerEntryId: string | null = null;
   if (context.childId && context.weekStart) {
@@ -675,7 +675,7 @@ export async function submitActivity(
 
     if (!sessionId) {
       const locationId = await ensureActivityLocation(supabase, activityId!);
-      if (!locationId) return { error: "Could not set up camp location" };
+      if (!locationId) return { error: "Could not set up activity location" };
 
       const { data: newSession, error: sessErr } = await supabase
         .from("sessions")
@@ -713,7 +713,7 @@ export async function submitActivity(
 
     if (entryErr || !entry) {
       console.error("submitCamp planner entry insert error:", entryErr);
-      return { error: "Saved camp to shortlist, but couldn't place it in that week" };
+      return { error: "Saved activity to shortlist, but couldn't place it in that week" };
     }
     plannerEntryId = entry.id;
   }
@@ -771,7 +771,7 @@ export async function updateActivityFields(params: {
     .eq("user_id", user.id)
     .eq("activity_id", params.activityId)
     .maybeSingle();
-  if (!ownership) return { error: "Not your camp" };
+  if (!ownership) return { error: "Not your activity" };
 
   const patch: Record<string, unknown> = {};
 
@@ -893,7 +893,7 @@ export async function updateActivityFields(params: {
 
   if (hasLocationPatch) {
     const locationId = await ensureActivityLocation(supabase, params.activityId);
-    if (!locationId) return { error: "Could not set up camp location" };
+    if (!locationId) return { error: "Could not set up activity location" };
 
     const locPatch: Record<string, unknown> = {};
     if (params.address !== undefined) {
@@ -951,7 +951,7 @@ export async function assignActivityToWeek(
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (!uc) return { error: "Camp not in your shortlist" };
+  if (!uc) return { error: "Activity not in your shortlist" };
 
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 6);
@@ -969,7 +969,7 @@ export async function assignActivityToWeek(
 
   if (!sessionId) {
     const locationId = await ensureActivityLocation(supabase, uc.activity_id);
-    if (!locationId) return { error: "Could not set up camp location" };
+    if (!locationId) return { error: "Could not set up activity location" };
 
     const { data: newSession, error: sessErr } = await supabase
       .from("sessions")
@@ -1007,7 +1007,7 @@ export async function assignActivityToWeek(
     .select("id")
     .single();
 
-  if (error || !entry) return { error: "Failed to assign camp" };
+  if (error || !entry) return { error: "Failed to assign activity" };
 
   revalidatePath("/planner");
   return { entryId: entry.id };

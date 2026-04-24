@@ -160,7 +160,7 @@ export function dataChangeAlertHtml(p: DataChangeAlertParams): string {
       </thead>
       <tbody>${rows}</tbody>
     </table>
-    <p style="font-size:13px;color:#888;margin:16px 0 0;">Always verify details on the camp's website before registering.</p>
+    <p style="font-size:13px;color:#888;margin:16px 0 0;">Always verify details on the activity's website before registering.</p>
     ${ctaButton("View Activity", p.activityUrl)}
   `;
   return layout(body);
@@ -190,7 +190,7 @@ export function weeklyDigestHtml(p: WeeklyDigestParams): string {
     p.newMatches.length > 0
       ? `
     <h2 style="font-family:Georgia,serif;font-size:20px;color:${BRAND_COLORS.bark};margin:0 0 12px;">
-      New camps for ${p.childName}
+      New activities for ${p.childName}
     </h2>
     <ul style="list-style:none;padding:0;margin:0 0 24px;">${matchItems}</ul>`
       : "";

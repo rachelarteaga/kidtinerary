@@ -12,7 +12,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   if (!job) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // When the job has resolved to an activity, include the scraped fields the
-  // Add-Camp drawer renders in its review step. Before then, `activity` is null
+  // Add-Activity drawer renders in its review step. Before then, `activity` is null
   // and the client keeps polling.
   let activity = null;
   if (job.activity_id) {

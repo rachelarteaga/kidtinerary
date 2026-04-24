@@ -148,7 +148,7 @@ export function KidColumnHeader({ child, index, ageYears, onRemove, readOnly = f
                     setMenuOpen(false);
                     if (
                       confirm(
-                        `Remove ${child.name} from this planner? All their camps and blocks in this planner will also be deleted. ${child.name} stays in your profile.`
+                        `Remove ${child.name} from this planner? All their activities and blocks in this planner will also be deleted. ${child.name} stays in your profile.`
                       )
                     ) {
                       onRemove();

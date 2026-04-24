@@ -32,7 +32,7 @@ export function CellDropZones({ childId, weekStart, onTap }: Props) {
         type="button"
         onClick={onTap}
         className={`${className} cursor-pointer`}
-        aria-label="Place camp here"
+        aria-label="Place activity here"
       />
     );
   }
