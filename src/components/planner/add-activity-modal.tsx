@@ -33,7 +33,7 @@ interface Props {
   embeddedPicker?: React.ReactNode;
 }
 
-export function AddCampModal({ open, onClose, plannerId, scope, shareCampsDefault, onSubmitted, embedded = false, embeddedPicker }: Props) {
+export function AddActivityModal({ open, onClose, plannerId, scope, shareCampsDefault, onSubmitted, embedded = false, embeddedPicker }: Props) {
   const [orgName, setOrgName] = useState("");
   const [campName, setCampName] = useState("");
   const [url, setUrl] = useState("");
@@ -130,7 +130,7 @@ export function AddCampModal({ open, onClose, plannerId, scope, shareCampsDefaul
 
   const body = (
     <>
-      <h2 className="font-display font-extrabold text-2xl mb-1">Add a camp</h2>
+      <h2 className="font-display font-extrabold text-2xl mb-1">Add an activity</h2>
       <p className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-4">
         Drop a URL and we&apos;ll fill in the rest — or type it in manually
       </p>
@@ -195,7 +195,7 @@ export function AddCampModal({ open, onClose, plannerId, scope, shareCampsDefaul
         </div>
 
         <div>
-          <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2 block mb-1">Camp name</label>
+          <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2 block mb-1">Activity name</label>
           <input
             value={campName}
             onChange={(e) => { setCampName(e.target.value); setPickedActivityId(undefined); }}
@@ -232,7 +232,7 @@ export function AddCampModal({ open, onClose, plannerId, scope, shareCampsDefaul
             className="mt-0.5"
           />
           <span className="text-sm text-ink">
-            Share this camp with Kidtinerary&apos;s directory so other parents can find it. We&apos;ll verify the details before publishing.
+            Share this activity with Kidtinerary&apos;s directory so other parents can find it. We&apos;ll verify the details before publishing.
           </span>
         </label>
 
@@ -247,7 +247,7 @@ export function AddCampModal({ open, onClose, plannerId, scope, shareCampsDefaul
             disabled={isPending || !canSubmit}
             className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-ink/90 disabled:opacity-50"
           >
-            {isPending ? "Adding…" : "Add camp"}
+            {isPending ? "Adding…" : "Add activity"}
           </button>
         </div>
       </form>

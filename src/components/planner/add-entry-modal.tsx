@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AddCampModal } from "./add-camp-modal";
+import { AddActivityModal } from "./add-activity-modal";
 import { AddBlockModal } from "./add-block-modal";
 import { ActivityPickerSection } from "./activity-picker-section";
 import type { UserCampWithActivity } from "@/lib/queries";
@@ -68,7 +68,7 @@ function AddEntryModalInner({
                 tab === "camp" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
               }`}
             >
-              Camp
+              Activity
             </button>
             <button
               onClick={() => setTab("block")}
@@ -83,7 +83,7 @@ function AddEntryModalInner({
         </div>
 
         {tab === "camp" ? (
-          <AddCampModal
+          <AddActivityModal
             open={true}
             embedded={true}
             onClose={onClose}
