@@ -60,14 +60,15 @@ The new layout applies only when the modal opens with a defined `scope.childId` 
 ### Behavior
 
 - List items render the same info as the rail (color dot, activity name, org name when distinct, `Nx` placement count, verified badge).
-- **Tap = place.** One tap on a row calls the same placement pathway as a DnD drop on that cell (default status, creates planner entry, closes modal). Matches muscle memory; no confirm step.
+- **Tap = place at default status ("considering").** One tap on a row places the entry and closes the modal. No status-picker popover, no confirm step. The user can change status afterward via the existing entry's status picker.
+- **Note on divergence from DnD:** today, a drag-drop (and mobile tap-to-place) opens the cell-anchored `StatusPickerPopover` so the user picks status at drop time. The modal flow intentionally skips this popover — the user already committed to placement by opening the modal and tapping a row, so an additional status step adds friction without value. Status is still mutable after placement.
 - List is scrollable internally with a bounded max-height (~240px) so the "add new" form stays in view.
 - **Empty My Activities:** hide the "FROM MY ACTIVITIES" section entirely and render only the add-new form (no empty-state noise — the user is already in "add new" mode at that point).
 - **Loading/stale state:** list is server-rendered from the same `userCamps` prop the rail consumes, so no async fetch — renders instantly.
 
 ### Placement pathway
 
-Reuse the existing add-activity-to-planner server action that the DnD drop pathway already calls. The new tap-to-place-from-modal is a thin wrapper: takes `userActivityId + childId + weekStart`, calls the same action, closes the modal, `router.refresh()` on success.
+Call `assignCampToWeek(plannerId, userCampId, childId, weekStart)` directly with no `status` arg (defaults to `"considering"`). Close the modal on success; `router.refresh()` to re-render with the new entry. This is the same server action DnD uses — the only difference is the modal path skips the intermediate popover.
 
 ### Mobile
 
