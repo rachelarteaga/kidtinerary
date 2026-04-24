@@ -7,18 +7,6 @@ interface Props {
   onPick: (userCampId: string) => void;
 }
 
-function renderName(name: string): React.ReactNode {
-  const lower = name.toLowerCase();
-  const idx = lower.indexOf("verified");
-  if (idx === -1) return name;
-  return (
-    <>
-      <span>{name.slice(0, idx + 4)}</span>
-      <span>{name.slice(idx + 4)}</span>
-    </>
-  );
-}
-
 export function ActivityPickerSection({ activities, onPick }: Props) {
   if (activities.length === 0) return null;
 
@@ -49,7 +37,7 @@ export function ActivityPickerSection({ activities, onPick }: Props) {
                 />
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm text-ink break-words">
-                    {renderName(a.activity.name)}
+                    {a.activity.name}
                   </div>
                   {showOrg && (
                     <div className="mt-0.5 font-sans text-[11px] text-ink-2 break-words">

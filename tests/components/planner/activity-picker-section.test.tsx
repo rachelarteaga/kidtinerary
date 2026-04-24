@@ -107,7 +107,7 @@ describe("ActivityPickerSection", () => {
             plannerEntryCount: 3,
             activity: {
               id: "act-v",
-              name: "Verified Camp",
+              name: "Robotics Intensive",
               verified: true,
               organization: { id: "o-v", name: "Some Org" },
             },
