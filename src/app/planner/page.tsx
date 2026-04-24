@@ -71,7 +71,7 @@ export default async function PlannerPage({ searchParams }: PageProps) {
       kids={children}
       allUserKids={allUserKids}
       entries={allEntries}
-      userCamps={userCamps}
+      userActivities={userCamps}
       blocks={blocks}
       shareCampsDefault={profile?.share_camps_default ?? true}
       planner={planner}

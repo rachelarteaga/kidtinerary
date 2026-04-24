@@ -669,7 +669,7 @@ export async function fetchFavoriteActivitiesWithSessions(userId: string) {
   return (data ?? []) as any[];
 }
 
-export interface UserCampWithActivity {
+export interface UserActivityWithDetails {
   id: string;
   created_at: string;
   color: string;
@@ -701,7 +701,7 @@ export interface UserCampWithActivity {
   plannerEntryCount: number;
 }
 
-export async function fetchUserCamps(userId: string): Promise<UserCampWithActivity[]> {
+export async function fetchUserCamps(userId: string): Promise<UserActivityWithDetails[]> {
   const supabase = (await createClient()) as any;
 
   const { data, error } = await supabase

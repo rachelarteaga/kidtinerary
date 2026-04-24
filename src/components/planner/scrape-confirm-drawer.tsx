@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { ScrapeJobStatus, ScrapeConfidence } from "@/lib/supabase/types";
-import { updateActivityFields, removeCampFromShortlist } from "@/lib/actions";
+import { updateActivityFields, removeActivityFromShortlist } from "@/lib/actions";
 import { CATEGORIES } from "@/lib/constants";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -191,7 +191,7 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
       }
 
       if (attemptRef.current >= POLL_MAX_ATTEMPTS) {
-        setPollError("This is taking longer than expected. We'll keep the camp in your shortlist and finish in the background.");
+        setPollError("This is taking longer than expected. We'll keep the activity in your shortlist and finish in the background.");
         return;
       }
 
@@ -271,7 +271,7 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
                       {pollError ?? "We couldn't extract details from that page."}
                     </div>
                     <div className="text-ink-2 mt-1">
-                      The camp is saved to your shortlist with just the name and URL. You can fill in details later from the camp card.
+                      The activity is saved to your shortlist with just the name and URL. You can fill in details later from the activity card.
                     </div>
                   </div>
                 </div>
@@ -282,7 +282,7 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
           {!isResolving && !hasFailed && activity && (
             <>
               {/* 1. Camp name */}
-              <Field label="Camp name" confidence="scraped">
+              <Field label="Activity name" confidence="scraped">
                 <span className="text-sm text-ink">{activity.name}</span>
               </Field>
 
@@ -431,9 +431,9 @@ export function ScrapeConfirmDrawer({ open, jobId, userCampId, inputUrl, scopeLa
                 handleClose();
                 return;
               }
-              if (!confirm("Delete this camp from your shortlist? This can't be undone.")) return;
+              if (!confirm("Delete this activity from your shortlist? This can't be undone.")) return;
               setDeleting(true);
-              const r = await removeCampFromShortlist(userCampId);
+              const r = await removeActivityFromShortlist(userCampId);
               setDeleting(false);
               if (r.error) {
                 alert(r.error);

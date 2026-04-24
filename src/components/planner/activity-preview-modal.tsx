@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import type { UserCampWithActivity } from "@/lib/queries";
+import type { UserActivityWithDetails } from "@/lib/queries";
 
 const CATEGORY_LABELS: Record<string, string> = {
   sports: "Sports",
@@ -24,7 +24,7 @@ export interface PreviewSummary {
 }
 
 interface Props {
-  camp: UserCampWithActivity | null;
+  activity: UserActivityWithDetails | null;
   summary: PreviewSummary | null;
   onClose: () => void;
   onEdit: () => void;
@@ -39,19 +39,19 @@ function formatPlacements(counts: PreviewSummary["counts"]): string | null {
   return parts.join(" · ");
 }
 
-export function CampPreviewModal({ camp, summary, onClose, onEdit }: Props) {
+export function ActivityPreviewModal({ activity, summary, onClose, onEdit }: Props) {
   useEffect(() => {
-    if (!camp) return;
+    if (!activity) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [camp, onClose]);
+  }, [activity, onClose]);
 
-  if (!camp) return null;
+  if (!activity) return null;
 
-  const a = camp.activity;
+  const a = activity.activity;
   const primaryLocation = a.activity_locations?.[0];
   const locationText = primaryLocation
     ? primaryLocation.location_name
@@ -66,7 +66,7 @@ export function CampPreviewModal({ camp, summary, onClose, onEdit }: Props) {
 
   const isCurated = a.source === "curated";
   const sourceLine = isCurated ? "Curated by Kidtinerary" : "You added this";
-  const ctaLabel = isCurated ? "See more info" : "Edit camp details";
+  const ctaLabel = isCurated ? "See more info" : "Edit activity details";
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-16 pb-8 overflow-y-auto">
@@ -79,7 +79,7 @@ export function CampPreviewModal({ camp, summary, onClose, onEdit }: Props) {
               <div className="flex items-center gap-2 mb-1.5">
                 <span
                   className="w-3 h-3 rounded-full border border-ink flex-shrink-0"
-                  style={{ background: camp.color }}
+                  style={{ background: activity.color }}
                   aria-hidden
                 />
                 <h2 className="font-display font-extrabold text-2xl text-ink leading-tight tracking-tight">

@@ -673,7 +673,7 @@ function DeletePlannerConfirm({
           Delete &quot;{planner.name}&quot;?
         </h3>
         <p className="font-sans text-sm text-ink-2 leading-relaxed mb-4">
-          This removes the planner and every camp placement, block, kid assignment, and
+          This removes the planner and every activity placement, block, kid assignment, and
           share link on it. This cannot be undone.
         </p>
         <div className="flex justify-end gap-2">

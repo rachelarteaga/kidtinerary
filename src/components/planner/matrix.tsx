@@ -44,9 +44,9 @@ interface Props {
   plannerStart: Date;
   plannerEnd: Date;
   viewMode: "detail" | "simple";
-  isDraggingCamp: boolean;
+  isDraggingActivity: boolean;
   onPlacementTap?: (childId: string, weekStart: string) => void;
-  onAddCampClick: (childId: string | null, weekStart: string | null) => void;
+  onAddActivityClick: (childId: string | null, weekStart: string | null) => void;
   onAddBlockClick: (childId: string | null, weekStart: string | null) => void;
   onEntryClick: (entryId: string) => void;
   onBlockClick: (blockId: string) => void;
@@ -67,9 +67,9 @@ export function PlannerMatrix({
   plannerStart,
   plannerEnd,
   viewMode,
-  isDraggingCamp,
+  isDraggingActivity,
   onPlacementTap,
-  onAddCampClick,
+  onAddActivityClick,
   onAddBlockClick,
   onEntryClick,
   onBlockClick,
@@ -183,13 +183,13 @@ export function PlannerMatrix({
                     plannerStart={plannerStart}
                     plannerEnd={plannerEnd}
                     viewMode={viewMode}
-                    isDraggingCamp={isDraggingCamp}
+                    isDraggingActivity={isDraggingActivity}
                     onPlacementTap={onPlacementTap}
                     timelineEntries={focusedCell?.timelineEntries ?? []}
                     legendRows={focusedCell?.legendRows ?? []}
                     consideringChips={focusedCell?.consideringChips ?? []}
                     onEntryClick={onEntryClick}
-                    onAddClick={(cid, ws) => onAddCampClick(cid, ws)}
+                    onAddClick={(cid, ws) => onAddActivityClick(cid, ws)}
                   />
                 )}
               </div>
@@ -280,13 +280,13 @@ export function PlannerMatrix({
                   plannerStart={plannerStart}
                   plannerEnd={plannerEnd}
                   viewMode={viewMode}
-                  isDraggingCamp={isDraggingCamp}
+                  isDraggingActivity={isDraggingActivity}
                   onPlacementTap={onPlacementTap}
                   timelineEntries={cell?.timelineEntries ?? []}
                   legendRows={cell?.legendRows ?? []}
                   consideringChips={cell?.consideringChips ?? []}
                   onEntryClick={onEntryClick}
-                  onAddClick={(cid, ws) => onAddCampClick(cid, ws)}
+                  onAddClick={(cid, ws) => onAddActivityClick(cid, ws)}
                 />
               );
             })}

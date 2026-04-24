@@ -147,7 +147,7 @@ export function PlannerRangePicker({
             <>
               <div className="font-medium text-sm text-ink mb-2">Remove items outside the new range?</div>
               <p className="text-xs text-ink-2 mb-3 leading-relaxed">
-                {removedEntries > 0 && <span>{removedEntries} camp entr{removedEntries === 1 ? "y" : "ies"}</span>}
+                {removedEntries > 0 && <span>{removedEntries} activity entr{removedEntries === 1 ? "y" : "ies"}</span>}
                 {removedEntries > 0 && removedBlocks > 0 && <span> and </span>}
                 {removedBlocks > 0 && <span>{removedBlocks} block{removedBlocks === 1 ? "" : "s"}</span>}
                 {" "}fall outside the new range and will be deleted. This cannot be undone.

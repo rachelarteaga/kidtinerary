@@ -39,5 +39,5 @@ export function validateSubmitCampInput(raw: SubmitCampRawInput): SubmitCampVali
     return { ok: true, value: { orgName, campName, shared: raw.shared } };
   }
 
-  return { ok: false, error: "Enter an organization and camp name, or paste a URL." };
+  return { ok: false, error: "Enter an organization and activity name, or paste a URL." };
 }

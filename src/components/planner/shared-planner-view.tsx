@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { KidAvatar } from "./kid-avatar";
 import { KidColumnHeader } from "./kid-column-header";
-import { SharedCampDetailPanel } from "./shared-camp-detail-panel";
+import { SharedActivityDetailPanel } from "./shared-activity-detail-panel";
 import { CellTimelineGrid, type TimelineEntry } from "./cell-timeline-grid";
 import { BlockIcon } from "./block-icon";
 import { ConsideringChips, type ConsideringChip } from "./considering-chips";
@@ -136,10 +136,10 @@ export function SharedPlannerView({
     window.localStorage.setItem(storageKey, m);
   }
 
-  const [openCampEntryId, setOpenCampEntryId] = useState<string | null>(null);
-  const openCamp = useMemo(() => {
-    if (!openCampEntryId) return null;
-    const e = visibleEntries.find((x) => x.id === openCampEntryId);
+  const [openActivityEntryId, setOpenActivityEntryId] = useState<string | null>(null);
+  const openActivity = useMemo(() => {
+    if (!openActivityEntryId) return null;
+    const e = visibleEntries.find((x) => x.id === openActivityEntryId);
     if (!e) return null;
     const loc = e.session.activity.activity_locations[0];
     return {
@@ -151,7 +151,7 @@ export function SharedPlannerView({
       about: e.session.activity.description ?? "",
       weeklyCostCents: filters.includeCost ? e.price_cents : null,
     };
-  }, [openCampEntryId, visibleEntries, filters.includeCost]);
+  }, [openActivityEntryId, visibleEntries, filters.includeCost]);
 
   const weekStartDates = useMemo(() => {
     const from = new Date(plannerStart + "T00:00:00");
@@ -307,7 +307,7 @@ export function SharedPlannerView({
                     plannerStartDate,
                     plannerEndDate,
                     buildTimelineEntries,
-                    onOpenCamp: (id) => setOpenCampEntryId(id),
+                    onOpenActivity: (id) => setOpenActivityEntryId(id),
                   })}
                 </div>
               );
@@ -347,7 +347,7 @@ export function SharedPlannerView({
                       plannerStartDate,
                       plannerEndDate,
                       buildTimelineEntries,
-                      onOpenCamp: (id) => setOpenCampEntryId(id),
+                      onOpenActivity: (id) => setOpenActivityEntryId(id),
                     })
                   )}
                 </div>
@@ -357,10 +357,10 @@ export function SharedPlannerView({
         </div>
       )}
 
-      <SharedCampDetailPanel
-        open={openCampEntryId !== null && openCamp !== null}
-        onClose={() => setOpenCampEntryId(null)}
-        camp={openCamp ?? { org: "", name: "", location: "", url: null, about: "" }}
+      <SharedActivityDetailPanel
+        open={openActivityEntryId !== null && openActivity !== null}
+        onClose={() => setOpenActivityEntryId(null)}
+        camp={openActivity ?? { org: "", name: "", location: "", url: null, about: "" }}
       />
     </main>
   );
@@ -382,7 +382,7 @@ function renderSharedCell({
   plannerStartDate,
   plannerEndDate,
   buildTimelineEntries,
-  onOpenCamp,
+  onOpenActivity,
 }: {
   kidId: string;
   row: SharedCellRow;
@@ -392,7 +392,7 @@ function renderSharedCell({
   plannerStartDate: Date;
   plannerEndDate: Date;
   buildTimelineEntries: (entries: EntryRow[]) => TimelineEntry[];
-  onOpenCamp: (entryId: string) => void;
+  onOpenActivity: (entryId: string) => void;
 }) {
   const block = row.blockByKid[kidId];
   const cellEntries = row.cellsByKid[kidId]?.entries ?? [];
@@ -477,7 +477,7 @@ function renderSharedCell({
               <button
                 key={e.id}
                 type="button"
-                onClick={() => onOpenCamp(e.id)}
+                onClick={() => onOpenActivity(e.id)}
                 className="w-full flex items-start gap-1.5 text-left text-xs text-ink hover:underline cursor-pointer"
               >
                 <span className="w-2 h-2 mt-1 rounded-full flex-shrink-0" style={{ background: color }} />
@@ -506,7 +506,7 @@ function renderSharedCell({
       )}
       <ConsideringChips
         chips={consideringChips}
-        onChipClick={onOpenCamp}
+        onChipClick={onOpenActivity}
       />
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { submitCamp } from "@/lib/actions";
+import { submitActivity } from "@/lib/actions";
 
 interface ActivityHit {
   id: string;
@@ -30,13 +30,13 @@ interface Props {
   embedded?: boolean;
 }
 
-export function AddCampModal({ open, onClose, plannerId, scope, shareCampsDefault, onSubmitted, embedded = false }: Props) {
+export function AddActivityModal({ open, onClose, plannerId, scope, shareCampsDefault, onSubmitted, embedded = false }: Props) {
   const [orgName, setOrgName] = useState("");
-  const [campName, setCampName] = useState("");
+  const [activityName, setActivityName] = useState("");
   const [url, setUrl] = useState("");
   const [consent, setConsent] = useState(shareCampsDefault);
   const [orgHits, setOrgHits] = useState<OrgHit[]>([]);
-  const [campHits, setCampHits] = useState<ActivityHit[]>([]);
+  const [activityHits, setActivityHits] = useState<ActivityHit[]>([]);
   const [pickedActivityId, setPickedActivityId] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -45,11 +45,11 @@ export function AddCampModal({ open, onClose, plannerId, scope, shareCampsDefaul
   useEffect(() => {
     if (open) {
       setOrgName("");
-      setCampName("");
+      setActivityName("");
       setUrl("");
       setConsent(shareCampsDefault);
       setOrgHits([]);
-      setCampHits([]);
+      setActivityHits([]);
       setPickedActivityId(undefined);
       setError(null);
       setTimeout(() => urlRef.current?.focus(), 50);
@@ -66,13 +66,13 @@ export function AddCampModal({ open, onClose, plannerId, scope, shareCampsDefaul
   }, [orgName]);
 
   useEffect(() => {
-    if (campName.trim().length < 2) { setCampHits([]); return; }
+    if (activityName.trim().length < 2) { setActivityHits([]); return; }
     const t = setTimeout(async () => {
-      const res = await fetch(`/api/activities/search?q=${encodeURIComponent(campName.trim())}`, { cache: "no-store" });
-      if (res.ok) setCampHits((await res.json()).results ?? []);
+      const res = await fetch(`/api/activities/search?q=${encodeURIComponent(activityName.trim())}`, { cache: "no-store" });
+      if (res.ok) setActivityHits((await res.json()).results ?? []);
     }, 200);
     return () => clearTimeout(t);
-  }, [campName]);
+  }, [activityName]);
 
   if (!open) return null;
 
@@ -82,12 +82,12 @@ export function AddCampModal({ open, onClose, plannerId, scope, shareCampsDefaul
     const payload = {
       activityId: pickedActivityId,
       orgName: orgName.trim() || undefined,
-      campName: campName.trim() || undefined,
+      campName: activityName.trim() || undefined,
       url: url.trim() || undefined,
       shared: consent,
     };
     startTransition(async () => {
-      const result = await submitCamp(payload, {
+      const result = await submitActivity(payload, {
         plannerId,
         childId: scope.childId ?? undefined,
         weekStart: scope.weekStart ?? undefined,
@@ -108,11 +108,11 @@ export function AddCampModal({ open, onClose, plannerId, scope, shareCampsDefaul
     });
   }
 
-  function handlePickCamp(hit: ActivityHit) {
-    setCampName(hit.name);
+  function handlePickActivity(hit: ActivityHit) {
+    setActivityName(hit.name);
     if (hit.organization) setOrgName(hit.organization.name);
     setPickedActivityId(hit.id);
-    setCampHits([]);
+    setActivityHits([]);
   }
 
   function handlePickOrg(hit: OrgHit) {
@@ -123,11 +123,11 @@ export function AddCampModal({ open, onClose, plannerId, scope, shareCampsDefaul
   const canSubmit =
     !!pickedActivityId ||
     !!url.trim() ||
-    (!!orgName.trim() && !!campName.trim());
+    (!!orgName.trim() && !!activityName.trim());
 
   const body = (
     <>
-      <h2 className="font-display font-extrabold text-2xl mb-1">Add a camp</h2>
+      <h2 className="font-display font-extrabold text-2xl mb-1">Add an activity</h2>
       <p className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-4">
         Drop a URL and we&apos;ll fill in the rest — or type it in manually
       </p>
@@ -180,21 +180,21 @@ export function AddCampModal({ open, onClose, plannerId, scope, shareCampsDefaul
         </div>
 
         <div>
-          <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2 block mb-1">Camp name</label>
+          <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2 block mb-1">Activity name</label>
           <input
-            value={campName}
-            onChange={(e) => { setCampName(e.target.value); setPickedActivityId(undefined); }}
+            value={activityName}
+            onChange={(e) => { setActivityName(e.target.value); setPickedActivityId(undefined); }}
             placeholder="Camp Kanata"
             className="w-full bg-surface border border-ink rounded-lg px-4 py-2.5 text-ink focus:outline-none focus:border-ink"
             autoComplete="off"
           />
-          {campHits.length > 0 && (
+          {activityHits.length > 0 && (
             <div className="mt-1 border border-ink-3 rounded-lg bg-surface overflow-hidden">
-              {campHits.map((h) => (
+              {activityHits.map((h) => (
                 <button
                   type="button"
                   key={h.id}
-                  onClick={() => handlePickCamp(h)}
+                  onClick={() => handlePickActivity(h)}
                   className="w-full text-left px-3 py-2 hover:bg-ink-3/10 border-b border-ink-3/20 last:border-b-0"
                 >
                   <div className="font-medium text-sm text-ink">
@@ -217,7 +217,7 @@ export function AddCampModal({ open, onClose, plannerId, scope, shareCampsDefaul
             className="mt-0.5"
           />
           <span className="text-sm text-ink">
-            Share this camp with Kidtinerary&apos;s directory so other parents can find it. We&apos;ll verify the details before publishing.
+            Share this activity with Kidtinerary&apos;s directory so other parents can find it. We&apos;ll verify the details before publishing.
           </span>
         </label>
 
@@ -232,7 +232,7 @@ export function AddCampModal({ open, onClose, plannerId, scope, shareCampsDefaul
             disabled={isPending || !canSubmit}
             className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-ink/90 disabled:opacity-50"
           >
-            {isPending ? "Adding…" : "Add camp"}
+            {isPending ? "Adding…" : "Add activity"}
           </button>
         </div>
       </form>
