@@ -76,14 +76,14 @@ export function PlannerClient({ kids, allUserKids, entries, userActivities, bloc
 
   const [entryModal, setEntryModal] = useState<{ childId: string | null; weekStart: string | null; tab: "activity" | "block" } | null>(null);
   const [drawerEntryId, setDrawerEntryId] = useState<string | null>(null);
-  const [shortlistCampId, setShortlistCampId] = useState<string | null>(null);
+  const [shortlistActivityId, setShortlistActivityId] = useState<string | null>(null);
   const [drawerBlockId, setDrawerBlockId] = useState<string | null>(null);
   const [quickViewActivityId, setQuickViewActivityId] = useState<string | null>(null);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [scrapeDrawer, setScrapeDrawer] = useState<{ jobId: string; userCampId: string | null; url: string; scopeLabel: string | null } | null>(null);
   const [draggingActivity, setDraggingActivity] = useState<{ name: string; color: string } | null>(null);
   const [placementActivity, setPlacementActivity] = useState<{ userCampId: string; name: string; color: string } | null>(null);
-  const [mobileCampsOpen, setMobileCampsOpen] = useState(false);
+  const [mobileActivitiesOpen, setMobileActivitiesOpen] = useState(false);
   // Cells render their drop-zone overlay when either a desktop drag is in
   // flight or a mobile tap-to-place is armed.
   const isDraggingActivity = draggingActivity !== null || placementActivity !== null;
@@ -205,7 +205,7 @@ export function PlannerClient({ kids, allUserKids, entries, userActivities, bloc
   // produces, and the existing status-picker popover takes over.
   const handleActivityPlacementTap = useCallback((activity: UserActivityWithDetails) => {
     setPlacementActivity({ userCampId: activity.id, name: activity.activity.name, color: activity.color });
-    setMobileCampsOpen(false);
+    setMobileActivitiesOpen(false);
   }, []);
 
   const handleActivityPickFromModal = useCallback(
@@ -427,7 +427,7 @@ export function PlannerClient({ kids, allUserKids, entries, userActivities, bloc
 
   const drawerEntry = useMemo(() => {
     // Two entry points: clicked a placed entry in a cell (drawerEntryId),
-    // or clicked "Edit activity details" from the rail preview (shortlistCampId).
+    // or clicked "Edit activity details" from the rail preview (shortlistActivityId).
     if (drawerEntryId) {
       const e = entries.find((x) => x.id === drawerEntryId);
       if (!e) return null;
@@ -473,8 +473,8 @@ export function PlannerClient({ kids, allUserKids, entries, userActivities, bloc
         },
       };
     }
-    if (shortlistCampId) {
-      const uc = userActivities.find((u) => u.id === shortlistCampId);
+    if (shortlistActivityId) {
+      const uc = userActivities.find((u) => u.id === shortlistActivityId);
       if (!uc) return null;
       const primaryLoc = uc.activity.activity_locations?.[0] ?? null;
       return {
@@ -500,7 +500,7 @@ export function PlannerClient({ kids, allUserKids, entries, userActivities, bloc
       };
     }
     return null;
-  }, [drawerEntryId, shortlistCampId, entries, userActivities]);
+  }, [drawerEntryId, shortlistActivityId, entries, userActivities]);
 
   const drawerBlock = useMemo(() => {
     if (!drawerBlockId) return null;
@@ -571,8 +571,8 @@ export function PlannerClient({ kids, allUserKids, entries, userActivities, bloc
             onAddClick={() => setEntryModal({ childId: null, weekStart: null, tab: "activity" })}
             onChanged={() => router.refresh()}
             onActivityPlacementTap={handleActivityPlacementTap}
-            mobileOpen={mobileCampsOpen}
-            onMobileOpenChange={setMobileCampsOpen}
+            mobileOpen={mobileActivitiesOpen}
+            onMobileOpenChange={setMobileActivitiesOpen}
           />
 
           <div className="flex-1 min-w-0 flex flex-col md:h-full md:overflow-hidden">
@@ -724,10 +724,10 @@ export function PlannerClient({ kids, allUserKids, entries, userActivities, bloc
         />
 
         <ActivityDetailDrawer
-          open={drawerEntryId !== null || shortlistCampId !== null}
+          open={drawerEntryId !== null || shortlistActivityId !== null}
           onClose={() => {
             setDrawerEntryId(null);
-            setShortlistCampId(null);
+            setShortlistActivityId(null);
           }}
           entry={drawerEntry}
           kids={kids}
@@ -739,7 +739,7 @@ export function PlannerClient({ kids, allUserKids, entries, userActivities, bloc
           summary={previewSummary}
           onClose={() => setQuickViewActivityId(null)}
           onEdit={() => {
-            if (previewActivity) setShortlistCampId(previewActivity.id);
+            if (previewActivity) setShortlistActivityId(previewActivity.id);
             setQuickViewActivityId(null);
           }}
         />
@@ -809,7 +809,7 @@ export function PlannerClient({ kids, allUserKids, entries, userActivities, bloc
         {pendingAssignment && (
           <StatusPickerPopover
             anchor={pendingAssignment.anchor}
-            campName={pendingAssignment.name}
+            activityName={pendingAssignment.name}
             onChoose={handleStatusChoice}
             onCancel={() => setPendingAssignment(null)}
           />

@@ -984,7 +984,7 @@ export async function assignActivityToWeek(
       .select("id")
       .single();
     if (sessErr || !newSession) {
-      console.error("assignCampToWeek session insert error:", sessErr);
+      console.error("assignActivityToWeek session insert error:", sessErr);
       return { error: "Failed to create session for week" };
     }
     sessionId = newSession.id;

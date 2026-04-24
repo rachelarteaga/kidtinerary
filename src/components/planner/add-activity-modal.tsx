@@ -35,11 +35,11 @@ interface Props {
 
 export function AddActivityModal({ open, onClose, plannerId, scope, shareCampsDefault, onSubmitted, embedded = false, embeddedPicker }: Props) {
   const [orgName, setOrgName] = useState("");
-  const [campName, setCampName] = useState("");
+  const [activityName, setActivityName] = useState("");
   const [url, setUrl] = useState("");
   const [consent, setConsent] = useState(shareCampsDefault);
   const [orgHits, setOrgHits] = useState<OrgHit[]>([]);
-  const [campHits, setCampHits] = useState<ActivityHit[]>([]);
+  const [activityHits, setActivityHits] = useState<ActivityHit[]>([]);
   const [pickedActivityId, setPickedActivityId] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -48,11 +48,11 @@ export function AddActivityModal({ open, onClose, plannerId, scope, shareCampsDe
   useEffect(() => {
     if (open) {
       setOrgName("");
-      setCampName("");
+      setActivityName("");
       setUrl("");
       setConsent(shareCampsDefault);
       setOrgHits([]);
-      setCampHits([]);
+      setActivityHits([]);
       setPickedActivityId(undefined);
       setError(null);
       setTimeout(() => urlRef.current?.focus(), 50);
@@ -69,13 +69,13 @@ export function AddActivityModal({ open, onClose, plannerId, scope, shareCampsDe
   }, [orgName]);
 
   useEffect(() => {
-    if (campName.trim().length < 2) { setCampHits([]); return; }
+    if (activityName.trim().length < 2) { setActivityHits([]); return; }
     const t = setTimeout(async () => {
-      const res = await fetch(`/api/activities/search?q=${encodeURIComponent(campName.trim())}`, { cache: "no-store" });
-      if (res.ok) setCampHits((await res.json()).results ?? []);
+      const res = await fetch(`/api/activities/search?q=${encodeURIComponent(activityName.trim())}`, { cache: "no-store" });
+      if (res.ok) setActivityHits((await res.json()).results ?? []);
     }, 200);
     return () => clearTimeout(t);
-  }, [campName]);
+  }, [activityName]);
 
   if (!open) return null;
 
@@ -85,7 +85,7 @@ export function AddActivityModal({ open, onClose, plannerId, scope, shareCampsDe
     const payload = {
       activityId: pickedActivityId,
       orgName: orgName.trim() || undefined,
-      campName: campName.trim() || undefined,
+      campName: activityName.trim() || undefined,
       url: url.trim() || undefined,
       shared: consent,
     };
@@ -111,11 +111,11 @@ export function AddActivityModal({ open, onClose, plannerId, scope, shareCampsDe
     });
   }
 
-  function handlePickCamp(hit: ActivityHit) {
-    setCampName(hit.name);
+  function handlePickActivity(hit: ActivityHit) {
+    setActivityName(hit.name);
     if (hit.organization) setOrgName(hit.organization.name);
     setPickedActivityId(hit.id);
-    setCampHits([]);
+    setActivityHits([]);
   }
 
   function handlePickOrg(hit: OrgHit) {
@@ -126,7 +126,7 @@ export function AddActivityModal({ open, onClose, plannerId, scope, shareCampsDe
   const canSubmit =
     !!pickedActivityId ||
     !!url.trim() ||
-    (!!orgName.trim() && !!campName.trim());
+    (!!orgName.trim() && !!activityName.trim());
 
   const body = (
     <>
@@ -197,19 +197,19 @@ export function AddActivityModal({ open, onClose, plannerId, scope, shareCampsDe
         <div>
           <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2 block mb-1">Activity name</label>
           <input
-            value={campName}
-            onChange={(e) => { setCampName(e.target.value); setPickedActivityId(undefined); }}
+            value={activityName}
+            onChange={(e) => { setActivityName(e.target.value); setPickedActivityId(undefined); }}
             placeholder="Camp Kanata"
             className="w-full bg-surface border border-ink rounded-lg px-4 py-2.5 text-ink focus:outline-none focus:border-ink"
             autoComplete="off"
           />
-          {campHits.length > 0 && (
+          {activityHits.length > 0 && (
             <div className="mt-1 border border-ink-3 rounded-lg bg-surface overflow-hidden">
-              {campHits.map((h) => (
+              {activityHits.map((h) => (
                 <button
                   type="button"
                   key={h.id}
-                  onClick={() => handlePickCamp(h)}
+                  onClick={() => handlePickActivity(h)}
                   className="w-full text-left px-3 py-2 hover:bg-ink-3/10 border-b border-ink-3/20 last:border-b-0"
                 >
                   <div className="font-medium text-sm text-ink">

@@ -13,7 +13,7 @@ export interface StatusPickerAnchor {
 
 interface Props {
   anchor: StatusPickerAnchor;
-  campName: string;
+  activityName: string;
   onChoose: (status: PlannerEntryStatus) => void;
   onCancel: () => void;
 }
@@ -24,7 +24,7 @@ const OPTIONS: { status: PlannerEntryStatus; label: string; bg: string }[] = [
   { status: "considering", label: "Considering", bg: "var(--color-status-considering)" },
 ];
 
-export function StatusPickerPopover({ anchor, campName, onChoose, onCancel }: Props) {
+export function StatusPickerPopover({ anchor, activityName, onChoose, onCancel }: Props) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export function StatusPickerPopover({ anchor, campName, onChoose, onCancel }: Pr
     <div
       ref={ref}
       role="dialog"
-      aria-label={`Choose status for ${campName}`}
+      aria-label={`Choose status for ${activityName}`}
       style={{
         position: "fixed",
         top: anchor.top + anchor.height / 2,
@@ -82,7 +82,7 @@ export function StatusPickerPopover({ anchor, campName, onChoose, onCancel }: Pr
           Select status
         </div>
         <div className="font-display font-extrabold text-sm text-ink truncate max-w-full text-center leading-tight">
-          {campName}
+          {activityName}
         </div>
       </div>
       <div className="status-picker-row flex flex-row items-center justify-center gap-1.5">
