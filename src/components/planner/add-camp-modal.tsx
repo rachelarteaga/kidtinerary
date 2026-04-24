@@ -28,9 +28,12 @@ interface Props {
     url?: string;
   }) => void;
   embedded?: boolean;
+  /** Optional node rendered above the form body (used for the
+   * "From my activities" picker in cell-scoped flows). */
+  embeddedPicker?: React.ReactNode;
 }
 
-export function AddCampModal({ open, onClose, plannerId, scope, shareCampsDefault, onSubmitted, embedded = false }: Props) {
+export function AddCampModal({ open, onClose, plannerId, scope, shareCampsDefault, onSubmitted, embedded = false, embeddedPicker }: Props) {
   const [orgName, setOrgName] = useState("");
   const [campName, setCampName] = useState("");
   const [url, setUrl] = useState("");
@@ -131,6 +134,18 @@ export function AddCampModal({ open, onClose, plannerId, scope, shareCampsDefaul
       <p className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-4">
         Drop a URL and we&apos;ll fill in the rest — or type it in manually
       </p>
+
+      {embeddedPicker}
+
+      {embeddedPicker && (
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex-1 border-t border-ink-3" />
+          <span className="font-sans text-[10px] uppercase tracking-widest text-ink-2">
+            OR ADD NEW
+          </span>
+          <div className="flex-1 border-t border-ink-3" />
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
