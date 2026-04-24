@@ -14,7 +14,7 @@ export const RaleighParksAdapter: Adapter = {
     let html: string;
     try {
       const res = await fetch(SOURCE_URL, {
-        headers: { "User-Agent": "KidPlan-Scraper/1.0 (+https://kidplan.app)" },
+        headers: { "User-Agent": "Kidtinerary-Scraper/1.0 (+https://kidtinerary.app)" },
         signal: AbortSignal.timeout(30_000),
       });
       if (!res.ok) {

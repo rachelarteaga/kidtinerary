@@ -304,7 +304,7 @@ export async function scrapeAndUpsert(
   try {
     const res = await globalThis.fetch(url, {
       headers: {
-        "User-Agent": "KidPlan-Scraper/1.0 (+https://kidplan.app)",
+        "User-Agent": "Kidtinerary-Scraper/1.0 (+https://kidtinerary.app)",
         Accept: "text/html,application/xhtml+xml",
       },
       signal: AbortSignal.timeout(30_000),
