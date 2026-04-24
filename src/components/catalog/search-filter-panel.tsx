@@ -5,7 +5,7 @@ import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES, INDOOR_OUTDOOR, TIME_SLOTS } from "@/lib/constants";
 import { categoryLabel, formatTimeSlot } from "@/lib/format";
-import { AddressInput } from "@/components/explore/address-input";
+import { AddressInput } from "@/components/catalog/address-input";
 
 const RADIUS_OPTIONS = [5, 10, 15, 20, 30] as const;
 const DEFAULT_RADIUS = 20;
@@ -48,7 +48,7 @@ export function SearchFilterPanel() {
       params.delete(key);
     }
     params.delete("page");
-    router.push(`/explore?${params.toString()}`);
+    router.push(`/catalog?${params.toString()}`);
   }
 
   function toggleCategory(cat: string) {
@@ -66,7 +66,7 @@ export function SearchFilterPanel() {
     if (searchParams.get("lat")) params.set("lat", searchParams.get("lat")!);
     if (searchParams.get("lng")) params.set("lng", searchParams.get("lng")!);
     if (searchParams.get("radius")) params.set("radius", searchParams.get("radius")!);
-    router.push(`/explore?${params.toString()}`);
+    router.push(`/catalog?${params.toString()}`);
   }
 
   // Search button handler (for keyword + address + age)
@@ -123,7 +123,7 @@ export function SearchFilterPanel() {
     }
 
     params.delete("page");
-    router.push(`/explore?${params.toString()}`);
+    router.push(`/catalog?${params.toString()}`);
   }, [keyword, childAge, address, selectedLat, selectedLng, radius, searchParams, router]);
 
   const hasLocation = !!searchParams.get("lat");

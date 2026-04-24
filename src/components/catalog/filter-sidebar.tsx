@@ -16,7 +16,7 @@ export function FilterSidebar() {
       params.delete(key);
     }
     params.delete("page"); // Reset to page 1 on filter change
-    router.push(`/explore?${params.toString()}`);
+    router.push(`/catalog?${params.toString()}`);
   }
 
   function toggleCategory(cat: string) {
@@ -42,7 +42,7 @@ export function FilterSidebar() {
     params.delete("indoor_outdoor");
     params.delete("time_slot");
     params.delete("page");
-    router.push(`/explore?${params.toString()}`);
+    router.push(`/catalog?${params.toString()}`);
   }
 
   const RADIUS_OPTIONS = [5, 10, 15, 20, 30] as const;
@@ -51,7 +51,7 @@ export function FilterSidebar() {
     const params = new URLSearchParams(searchParams.toString());
     params.set("radius", mi.toString());
     params.delete("page");
-    router.push(`/explore?${params.toString()}`);
+    router.push(`/catalog?${params.toString()}`);
   }
 
   return (

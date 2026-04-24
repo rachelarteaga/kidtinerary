@@ -80,7 +80,7 @@ export async function toggleFavorite(activityId: string) {
       .eq("id", existing.id);
 
     if (error) return { error: "Failed to remove favorite" };
-    revalidatePath("/explore");
+    revalidatePath("/catalog");
     return { favorited: false };
   } else {
     const { error } = await supabase
@@ -88,7 +88,7 @@ export async function toggleFavorite(activityId: string) {
       .insert({ user_id: user.id, activity_id: activityId });
 
     if (error) return { error: "Failed to add favorite" };
-    revalidatePath("/explore");
+    revalidatePath("/catalog");
     return { favorited: true };
   }
 }

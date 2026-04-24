@@ -208,7 +208,7 @@ export function weeklyDigestHtml(p: WeeklyDigestParams): string {
   if (!matchSection && !gapSection) {
     const body = `
       <p style="font-size:16px;color:${BRAND_COLORS.bark};">Nothing new this week for ${p.childName}. Check back soon!</p>
-      ${ctaButton("Explore Activities", "https://kidplan.com/explore")}
+      ${ctaButton("Open your Catalog", "https://kidplan.com/catalog")}
     `;
     return layout(body);
   }
@@ -219,7 +219,7 @@ export function weeklyDigestHtml(p: WeeklyDigestParams): string {
     </h1>
     ${matchSection}
     ${gapSection}
-    ${ctaButton("Explore Activities", "https://kidplan.com/explore")}
+    ${ctaButton("Open your Catalog", "https://kidplan.com/catalog")}
   `;
   return layout(body);
 }

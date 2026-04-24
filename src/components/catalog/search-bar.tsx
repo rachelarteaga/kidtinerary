@@ -5,7 +5,7 @@ import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES } from "@/lib/constants";
 import { categoryLabel } from "@/lib/format";
-import { AddressInput } from "@/components/explore/address-input";
+import { AddressInput } from "@/components/catalog/address-input";
 
 const RADIUS_OPTIONS = [5, 10, 15, 20, 30] as const;
 const DEFAULT_RADIUS = 20;
@@ -74,7 +74,7 @@ export function SearchBar() {
       }
     }
 
-    router.push(`/explore?${params.toString()}`);
+    router.push(`/catalog?${params.toString()}`);
   }, [keyword, category, ageMin, ageMax, address, selectedLat, selectedLng, radius, router]);
 
   return (

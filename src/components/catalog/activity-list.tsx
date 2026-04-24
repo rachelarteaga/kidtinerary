@@ -26,7 +26,7 @@ export function ActivityList({
   function goToPage(p: number) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", p.toString());
-    router.push(`/explore?${params.toString()}`);
+    router.push(`/catalog?${params.toString()}`);
   }
 
   if (activities.length === 0) {

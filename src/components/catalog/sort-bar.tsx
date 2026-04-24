@@ -15,7 +15,7 @@ export function SortBar({ total }: SortBarProps) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("sort", value);
     params.delete("page");
-    router.push(`/explore?${params.toString()}`);
+    router.push(`/catalog?${params.toString()}`);
   }
 
   return (

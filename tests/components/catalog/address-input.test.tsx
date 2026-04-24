@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
-import { AddressInput } from "@/components/explore/address-input";
+import { AddressInput } from "@/components/catalog/address-input";
 
 // Mock global fetch
 const mockFetch = vi.fn();
