@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { AddCampModal } from "./add-camp-modal";
 import { AddBlockModal } from "./add-block-modal";
+import { ActivityPickerSection } from "./activity-picker-section";
+import type { UserCampWithActivity } from "@/lib/queries";
 
 interface ChildLite {
   id: string;
@@ -18,6 +20,7 @@ interface Props {
   scope: { childId: string | null; weekStart: string | null };
   shareCampsDefault: boolean;
   kids: ChildLite[];
+  userCamps: UserCampWithActivity[];
   initialTab?: "camp" | "block";
   onCampSubmitted: (result: {
     jobId?: string;
@@ -26,11 +29,9 @@ interface Props {
     url?: string;
   }) => void;
   onBlockSubmitted: () => void;
+  onActivityPick: (userCampId: string) => void;
 }
 
-// Outer component handles open/close. When it opens we use `initialTab` as a key so the
-// inner component remounts, resetting tab state to match. This avoids syncing props to
-// state with useEffect (which triggers the React compiler's cascading-render warning).
 export function AddEntryModal(props: Props) {
   if (!props.open) return null;
   return <AddEntryModalInner key={`${props.initialTab ?? "camp"}`} {...props} />;
@@ -42,11 +43,18 @@ function AddEntryModalInner({
   scope,
   shareCampsDefault,
   kids,
+  userCamps,
   initialTab = "camp",
   onCampSubmitted,
   onBlockSubmitted,
+  onActivityPick,
 }: Props) {
   const [tab, setTab] = useState<"camp" | "block">(initialTab);
+
+  const cellScoped = scope.childId !== null && scope.weekStart !== null;
+  const picker = cellScoped && tab === "camp" ? (
+    <ActivityPickerSection activities={userCamps} onPick={onActivityPick} />
+  ) : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -83,6 +91,7 @@ function AddEntryModalInner({
             scope={scope}
             shareCampsDefault={shareCampsDefault}
             onSubmitted={onCampSubmitted}
+            embeddedPicker={picker}
           />
         ) : (
           <AddBlockModal

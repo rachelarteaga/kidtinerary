@@ -208,6 +208,22 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
     setMobileCampsOpen(false);
   }, []);
 
+  const handleActivityPickFromModal = useCallback(
+    async (userCampId: string) => {
+      const childId = entryModal?.childId;
+      const weekStart = entryModal?.weekStart;
+      if (!childId || !weekStart) return;
+      setEntryModal(null);
+      const result = await assignCampToWeek(planner.id, userCampId, childId, weekStart);
+      if (result.error) {
+        alert(result.error);
+        return;
+      }
+      router.refresh();
+    },
+    [entryModal, planner.id, router]
+  );
+
   const handlePlacementCellTap = useCallback(
     (childId: string, weekStart: string) => {
       if (!placementCamp) return;
@@ -676,7 +692,9 @@ export function PlannerClient({ kids, allUserKids, entries, userCamps, blocks, s
           scope={entryModal ?? { childId: null, weekStart: null }}
           shareCampsDefault={shareCampsDefault}
           kids={kids}
+          userCamps={userCamps}
           initialTab={entryModal?.tab ?? "camp"}
+          onActivityPick={handleActivityPickFromModal}
           onCampSubmitted={(result) => {
             if (result.url && result.jobId) {
               // URL flow: open the scrape-confirm drawer and let it poll. Skip
