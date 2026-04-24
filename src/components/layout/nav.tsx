@@ -7,7 +7,7 @@ import { AuthCluster } from "@/components/layout/auth-cluster";
 import { createClient } from "@/lib/supabase/client";
 
 const NAV_LINKS = [
-  { href: "/explore", label: "Explore", comingSoon: true },
+  { href: "/catalog", label: "Catalog", comingSoon: true },
   { href: "/planner", label: "Planner" },
 ] as const;
 
@@ -83,6 +83,14 @@ export function Nav() {
   const onPlannerPage = pathname === "/planner";
 
   return (
+    <>
+    <div
+      aria-hidden={!mobileOpen}
+      onClick={() => setMobileOpen(false)}
+      className={`sm:hidden fixed inset-0 z-30 bg-ink/40 transition-opacity duration-200 ${
+        mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+      }`}
+    />
     <header className="sticky top-0 z-40 bg-hero border-b border-ink shadow-[0_3px_0_0_rgba(0,0,0,0.15)]">
       <div className="px-6 sm:px-8 lg:px-10 flex items-center justify-between py-[18px]">
         <Link href="/" className="font-display font-extrabold text-[24px] tracking-tight text-ink">
@@ -259,5 +267,6 @@ export function Nav() {
         )}
       </div>
     </header>
+    </>
   );
 }
