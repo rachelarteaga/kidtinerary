@@ -158,11 +158,11 @@ export function Nav() {
 
       <div
         id="mobile-nav-sheet"
-        className={`sm:hidden overflow-hidden transition-[max-height] duration-200 ease-out border-t border-ink/15 ${
-          mobileOpen ? "max-h-[560px]" : "max-h-0 border-t-transparent"
+        className={`sm:hidden bg-surface overflow-hidden transition-[max-height] duration-200 ease-out ${
+          mobileOpen ? "max-h-[640px] border-t border-ink/10 shadow-[0_6px_12px_-4px_rgba(0,0,0,0.12)]" : "max-h-0"
         }`}
       >
-        <div className="px-6 py-3">
+        <nav className="px-6 py-2 divide-y divide-ink/10">
           {NAV_LINKS.map(({ href, label, ...rest }) => {
             const comingSoon = "comingSoon" in rest ? rest.comingSoon : false;
             const isActive = pathname.startsWith(href);
@@ -171,18 +171,18 @@ export function Nav() {
                 key={href}
                 href={href}
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center justify-between min-h-[48px] py-2 font-sans text-[13px] uppercase tracking-widest text-ink ${
-                  isActive ? "font-extrabold" : "font-semibold opacity-70"
+                className={`flex items-center justify-between min-h-[56px] py-3 font-sans text-[16px] uppercase tracking-widest text-ink ${
+                  isActive ? "font-extrabold" : "font-semibold"
                 }`}
               >
                 <span>{label}</span>
                 {comingSoon ? (
                   <span
-                    className="font-sans text-[9px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded-[3px] border"
+                    className="font-sans text-[10px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-[4px] border"
                     style={{
-                      color: "rgba(21,21,21,0.55)",
-                      borderColor: "rgba(21,21,21,0.35)",
-                      background: "rgba(255,255,255,0.25)",
+                      color: "rgba(21,21,21,0.6)",
+                      borderColor: "rgba(21,21,21,0.3)",
+                      background: "rgba(21,21,21,0.04)",
                       letterSpacing: "0.1em",
                     }}
                   >
@@ -192,71 +192,71 @@ export function Nav() {
               </Link>
             );
           })}
+        </nav>
 
-          <div className="mt-2 pt-3 border-t border-dashed border-ink/25">
-            {user ? (
-              <>
-                <div className="pb-2">
-                  <p className="font-display font-extrabold text-sm text-ink leading-tight truncate">{user.name}</p>
-                  <p className="font-sans text-[11px] font-medium text-ink-2 truncate">{user.email}</p>
-                </div>
-                <Link
-                  href="/account/profile"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center min-h-[48px] py-2 font-sans text-[13px] font-medium text-ink"
-                >
-                  Edit profile
-                </Link>
-                <Link
-                  href="/kids"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center min-h-[48px] py-2 font-sans text-[13px] font-medium text-ink"
-                >
-                  My kids
-                </Link>
-                <Link
-                  href="/account/planners"
-                  onClick={(e) => {
-                    if (onPlannerPage) {
-                      e.preventDefault();
-                      setMobileOpen(false);
-                      window.location.href = "/account/planners";
-                      return;
-                    }
+        {user ? (
+          <>
+            <div className="px-6 pt-4 pb-3 bg-base/40 border-t border-ink/10">
+              <p className="font-display font-extrabold text-base text-ink leading-tight truncate">{user.name}</p>
+              <p className="font-sans text-[13px] font-medium text-ink-2 truncate mt-0.5">{user.email}</p>
+            </div>
+            <nav className="px-6 py-1 divide-y divide-ink/10 border-t border-ink/10">
+              <Link
+                href="/account/profile"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center min-h-[56px] py-3 font-sans text-[16px] font-medium text-ink"
+              >
+                Edit profile
+              </Link>
+              <Link
+                href="/kids"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center min-h-[56px] py-3 font-sans text-[16px] font-medium text-ink"
+              >
+                My kids
+              </Link>
+              <Link
+                href="/account/planners"
+                onClick={(e) => {
+                  if (onPlannerPage) {
+                    e.preventDefault();
                     setMobileOpen(false);
-                  }}
-                  className="flex items-center min-h-[48px] py-2 font-sans text-[13px] font-medium text-ink"
-                >
-                  My planners
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleLogOut}
-                  className="flex items-center w-full text-left min-h-[48px] py-2 font-sans text-[13px] font-medium text-[#ef8c8f]"
-                >
-                  Log out
-                </button>
-              </>
-            ) : (
-              <div className="flex gap-2 pt-1 pb-2">
-                <Link
-                  href="/auth/login"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex-1 inline-flex items-center justify-center min-h-[48px] px-4 rounded-full border border-ink bg-surface text-ink font-sans text-[12px] font-bold uppercase tracking-widest"
-                >
-                  Sign in
-                </Link>
-                <Link
-                  href="/auth/signup"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex-1 inline-flex items-center justify-center min-h-[48px] px-4 rounded-full border border-ink bg-ink text-white font-sans text-[12px] font-bold uppercase tracking-widest"
-                >
-                  Sign up
-                </Link>
-              </div>
-            )}
+                    window.location.href = "/account/planners";
+                    return;
+                  }
+                  setMobileOpen(false);
+                }}
+                className="flex items-center min-h-[56px] py-3 font-sans text-[16px] font-medium text-ink"
+              >
+                My planners
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogOut}
+                className="flex items-center w-full text-left min-h-[56px] py-3 font-sans text-[16px] font-medium text-[#c96164]"
+              >
+                Log out
+              </button>
+            </nav>
+          </>
+        ) : (
+          <div className="px-6 py-4 border-t border-ink/10 flex gap-3">
+            <Link
+              href="/auth/login"
+              onClick={() => setMobileOpen(false)}
+              className="flex-1 inline-flex items-center justify-center min-h-[52px] px-4 rounded-full border border-ink bg-surface text-ink font-sans text-[14px] font-bold uppercase tracking-widest"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/auth/signup"
+              onClick={() => setMobileOpen(false)}
+              className="flex-1 inline-flex items-center justify-center min-h-[52px] px-4 rounded-full border border-ink bg-ink text-white font-sans text-[14px] font-bold uppercase tracking-widest"
+            >
+              Sign up
+            </Link>
           </div>
-        </div>
+        )}
       </div>
     </header>
   );
