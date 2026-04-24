@@ -7,7 +7,7 @@ import { AuthCluster } from "@/components/layout/auth-cluster";
 import { createClient } from "@/lib/supabase/client";
 
 const NAV_LINKS = [
-  { href: "/explore", label: "Explore", comingSoon: true },
+  { href: "/catalog", label: "Catalog", comingSoon: true },
   { href: "/planner", label: "Planner" },
 ] as const;
 
@@ -15,6 +15,7 @@ export function Nav() {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   // Hide nav on auth and onboarding pages
   const hideOn = ["/auth", "/onboarding"];
@@ -53,17 +54,43 @@ export function Nav() {
     return () => subscription.unsubscribe();
   }, [shouldHide]);
 
+  // Close the mobile sheet on route change.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  // Close on Escape.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    function handler(e: KeyboardEvent) {
+      if (e.key === "Escape") setMobileOpen(false);
+    }
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [mobileOpen]);
+
   if (shouldHide) return null;
 
   async function handleLogOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
     setUser(null);
+    setMobileOpen(false);
     router.push("/");
     router.refresh();
   }
 
+  const onPlannerPage = pathname === "/planner";
+
   return (
+    <>
+    <div
+      aria-hidden={!mobileOpen}
+      onClick={() => setMobileOpen(false)}
+      className={`sm:hidden fixed inset-0 z-30 bg-ink/40 transition-opacity duration-200 ${
+        mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+      }`}
+    />
     <header className="sticky top-0 z-40 bg-hero border-b border-ink shadow-[0_3px_0_0_rgba(0,0,0,0.15)]">
       <div className="px-6 sm:px-8 lg:px-10 flex items-center justify-between py-[18px]">
         <Link href="/" className="font-display font-extrabold text-[24px] tracking-tight text-ink">
@@ -103,24 +130,143 @@ export function Nav() {
           <AuthCluster user={user} onLogOut={handleLogOut} />
         </nav>
 
-        {/* Mobile nav — simplified, full-bleed at bottom */}
-        <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-hero border-t border-ink flex justify-around py-2 z-40">
-          {NAV_LINKS.map(({ href, label }) => {
+        <button
+          type="button"
+          aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          aria-expanded={mobileOpen}
+          aria-controls="mobile-nav-sheet"
+          onClick={() => setMobileOpen((v) => !v)}
+          className="sm:hidden inline-flex items-center justify-center w-11 h-11 -mr-2 rounded-md text-ink"
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            {mobileOpen ? (
+              <>
+                <line x1="5" y1="5" x2="19" y2="19" />
+                <line x1="19" y1="5" x2="5" y2="19" />
+              </>
+            ) : (
+              <>
+                <line x1="4" y1="7" x2="20" y2="7" />
+                <line x1="4" y1="12" x2="20" y2="12" />
+                <line x1="4" y1="17" x2="20" y2="17" />
+              </>
+            )}
+          </svg>
+        </button>
+      </div>
+
+      <div
+        id="mobile-nav-sheet"
+        className={`sm:hidden bg-surface overflow-hidden transition-[max-height] duration-200 ease-out ${
+          mobileOpen ? "max-h-[640px] border-t border-ink/10 shadow-[0_6px_12px_-4px_rgba(0,0,0,0.12)]" : "max-h-0"
+        }`}
+      >
+        <nav className="px-6 py-2 divide-y divide-ink/10">
+          {NAV_LINKS.map(({ href, label, ...rest }) => {
+            const comingSoon = "comingSoon" in rest ? rest.comingSoon : false;
             const isActive = pathname.startsWith(href);
             return (
               <Link
                 key={href}
                 href={href}
-                className={`font-sans text-[9px] uppercase tracking-wide text-ink px-3 py-1 ${
-                  isActive ? "font-extrabold opacity-100" : "font-semibold opacity-55"
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center justify-between min-h-[56px] py-3 font-sans text-[16px] uppercase tracking-widest text-ink ${
+                  isActive ? "font-extrabold" : "font-semibold"
                 }`}
               >
-                {label}
+                <span>{label}</span>
+                {comingSoon ? (
+                  <span
+                    className="font-sans text-[10px] font-extrabold uppercase tracking-wider px-2 py-1 rounded-[4px] border"
+                    style={{
+                      color: "rgba(21,21,21,0.6)",
+                      borderColor: "rgba(21,21,21,0.3)",
+                      background: "rgba(21,21,21,0.04)",
+                      letterSpacing: "0.1em",
+                    }}
+                  >
+                    Coming soon!
+                  </span>
+                ) : null}
               </Link>
             );
           })}
         </nav>
+
+        {user ? (
+          <>
+            <div className="px-6 pt-4 pb-3 bg-base/40 border-t border-ink/10">
+              <p className="font-display font-extrabold text-base text-ink leading-tight truncate">{user.name}</p>
+              <p className="font-sans text-[13px] font-medium text-ink-2 truncate mt-0.5">{user.email}</p>
+            </div>
+            <nav className="px-6 py-1 divide-y divide-ink/10 border-t border-ink/10">
+              <Link
+                href="/account/profile"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center min-h-[56px] py-3 font-sans text-[16px] font-medium text-ink"
+              >
+                Edit profile
+              </Link>
+              <Link
+                href="/kids"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center min-h-[56px] py-3 font-sans text-[16px] font-medium text-ink"
+              >
+                My kids
+              </Link>
+              <Link
+                href="/account/planners"
+                onClick={(e) => {
+                  if (onPlannerPage) {
+                    e.preventDefault();
+                    setMobileOpen(false);
+                    window.location.href = "/account/planners";
+                    return;
+                  }
+                  setMobileOpen(false);
+                }}
+                className="flex items-center min-h-[56px] py-3 font-sans text-[16px] font-medium text-ink"
+              >
+                My planners
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogOut}
+                className="flex items-center w-full text-left min-h-[56px] py-3 font-sans text-[16px] font-medium text-[#c96164]"
+              >
+                Log out
+              </button>
+            </nav>
+          </>
+        ) : (
+          <div className="px-6 py-4 border-t border-ink/10 flex gap-3">
+            <Link
+              href="/auth/login"
+              onClick={() => setMobileOpen(false)}
+              className="flex-1 inline-flex items-center justify-center min-h-[52px] px-4 rounded-full border border-ink bg-surface text-ink font-sans text-[14px] font-bold uppercase tracking-widest"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/auth/signup"
+              onClick={() => setMobileOpen(false)}
+              className="flex-1 inline-flex items-center justify-center min-h-[52px] px-4 rounded-full border border-ink bg-ink text-white font-sans text-[14px] font-bold uppercase tracking-widest"
+            >
+              Sign up
+            </Link>
+          </div>
+        )}
       </div>
     </header>
+    </>
   );
 }

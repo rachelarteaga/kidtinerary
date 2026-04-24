@@ -45,6 +45,7 @@ interface Props {
   plannerEnd: Date;
   viewMode: "detail" | "simple";
   isDraggingCamp: boolean;
+  onPlacementTap?: (childId: string, weekStart: string) => void;
   onAddCampClick: (childId: string | null, weekStart: string | null) => void;
   onAddBlockClick: (childId: string | null, weekStart: string | null) => void;
   onEntryClick: (entryId: string) => void;
@@ -67,6 +68,7 @@ export function PlannerMatrix({
   plannerEnd,
   viewMode,
   isDraggingCamp,
+  onPlacementTap,
   onAddCampClick,
   onAddBlockClick,
   onEntryClick,
@@ -182,6 +184,7 @@ export function PlannerMatrix({
                     plannerEnd={plannerEnd}
                     viewMode={viewMode}
                     isDraggingCamp={isDraggingCamp}
+                    onPlacementTap={onPlacementTap}
                     timelineEntries={focusedCell?.timelineEntries ?? []}
                     legendRows={focusedCell?.legendRows ?? []}
                     consideringChips={focusedCell?.consideringChips ?? []}
@@ -278,6 +281,7 @@ export function PlannerMatrix({
                   plannerEnd={plannerEnd}
                   viewMode={viewMode}
                   isDraggingCamp={isDraggingCamp}
+                  onPlacementTap={onPlacementTap}
                   timelineEntries={cell?.timelineEntries ?? []}
                   legendRows={cell?.legendRows ?? []}
                   consideringChips={cell?.consideringChips ?? []}
