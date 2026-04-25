@@ -570,7 +570,7 @@ export interface UserActivityWithDetails {
   plannerEntryCount: number;
 }
 
-export async function fetchUserCamps(userId: string): Promise<UserActivityWithDetails[]> {
+export async function fetchUserActivities(userId: string): Promise<UserActivityWithDetails[]> {
   const supabase = (await createClient()) as any;
 
   const { data, error } = await supabase
@@ -589,7 +589,7 @@ export async function fetchUserCamps(userId: string): Promise<UserActivityWithDe
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("fetchUserCamps error:", error);
+    console.error("fetchUserActivities error:", error);
     return [];
   }
 
