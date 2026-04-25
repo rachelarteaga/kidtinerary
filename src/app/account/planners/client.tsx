@@ -179,15 +179,6 @@ export function MyPlannersClient({ initialPlanners, allKids }: Props) {
         </div>
       )}
 
-      <div className="mt-10">
-        <Link
-          href="/planner"
-          className="font-sans font-bold text-[11px] uppercase tracking-widest text-ink hover:underline"
-        >
-          ← Back to planner
-        </Link>
-      </div>
-
       {shareDrawer && (
         <ShareSettingsDrawer
           planner={shareDrawer}
@@ -768,14 +759,14 @@ function NewPlannerModal({
                 aria-label="Start date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="block w-full sm:flex-1 min-w-0 bg-surface border border-ink rounded-lg px-2.5 py-2 text-base text-left text-ink appearance-none [&::-webkit-date-and-time-value]:text-left"
+                className="block w-full sm:flex-1 min-w-0 bg-surface border border-ink rounded-lg px-2.5 py-2 text-base text-left text-ink appearance-none [&::-webkit-date-and-time-value]:text-left [&::-webkit-datetime-edit]:text-ink [&::-webkit-datetime-edit-fields-wrapper]:text-ink"
               />
               <input
                 type="date"
                 aria-label="End date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="block w-full sm:flex-1 min-w-0 bg-surface border border-ink rounded-lg px-2.5 py-2 text-base text-left text-ink appearance-none [&::-webkit-date-and-time-value]:text-left"
+                className="block w-full sm:flex-1 min-w-0 bg-surface border border-ink rounded-lg px-2.5 py-2 text-base text-left text-ink appearance-none [&::-webkit-date-and-time-value]:text-left [&::-webkit-datetime-edit]:text-ink [&::-webkit-datetime-edit-fields-wrapper]:text-ink"
               />
             </div>
           </div>

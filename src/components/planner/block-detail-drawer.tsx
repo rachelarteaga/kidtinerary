@@ -142,14 +142,14 @@ export function BlockDetailDrawer({ open, onClose, block, kids, onChanged }: Pro
                 aria-label="Start date"
                 value={local.startDate}
                 onChange={(e) => save({ startDate: e.target.value })}
-                className="block w-full sm:flex-1 min-w-0 rounded-md border border-ink-3 bg-surface px-2.5 py-2 text-base text-left appearance-none [&::-webkit-date-and-time-value]:text-left"
+                className="block w-full sm:flex-1 min-w-0 rounded-md border border-ink-3 bg-surface px-2.5 py-2 text-base text-left text-ink appearance-none [&::-webkit-date-and-time-value]:text-left [&::-webkit-datetime-edit]:text-ink [&::-webkit-datetime-edit-fields-wrapper]:text-ink"
               />
               <input
                 type="date"
                 aria-label="End date"
                 value={local.endDate}
                 onChange={(e) => save({ endDate: e.target.value })}
-                className="block w-full sm:flex-1 min-w-0 rounded-md border border-ink-3 bg-surface px-2.5 py-2 text-base text-left appearance-none [&::-webkit-date-and-time-value]:text-left"
+                className="block w-full sm:flex-1 min-w-0 rounded-md border border-ink-3 bg-surface px-2.5 py-2 text-base text-left text-ink appearance-none [&::-webkit-date-and-time-value]:text-left [&::-webkit-datetime-edit]:text-ink [&::-webkit-datetime-edit-fields-wrapper]:text-ink"
               />
             </div>
           </section>
