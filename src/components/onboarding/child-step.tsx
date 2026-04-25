@@ -107,7 +107,7 @@ export function ChildStep({ onComplete }: ChildStepProps) {
               type="date"
               value={birthDate}
               onChange={(e) => setBirthDate(e.target.value)}
-              className="block w-full min-w-0 bg-surface border border-ink rounded-lg px-3 py-2.5 text-base text-left text-ink appearance-none focus:outline-none focus:border-ink transition-colors [&::-webkit-date-and-time-value]:text-left"
+              className="block w-full min-w-0 bg-surface border border-ink rounded-lg px-3 py-2.5 text-base text-left text-ink appearance-none focus:outline-none focus:border-ink transition-colors [&::-webkit-date-and-time-value]:text-left [&::-webkit-datetime-edit]:text-ink [&::-webkit-datetime-edit-fields-wrapper]:text-ink"
             />
           </div>
           <Button
