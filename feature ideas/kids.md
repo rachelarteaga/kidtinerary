@@ -4,5 +4,4 @@ Kid profiles. Route: `/kids`.
 
 ## Ideas
 
-- **Add icons to category options.** Same treatment as onboarding — visual anchor for each category instead of text-only chips. (See also: [onboarding.md](onboarding.md))
-- **Edit kid name.** No way to rename a kid today — add an inline edit or edit screen.
+- **Add icons to category options.** Real icons (Lucide / SVG / branded set), not emoji glyphs — visual anchor for each category instead of text-only chips. Same treatment as onboarding. (See also: [onboarding.md](onboarding.md))
