@@ -116,18 +116,20 @@ export function PlannerRangePicker({
                 <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2">Start</label>
                 <input
                   type="date"
+                  aria-label="Start date"
                   value={localStart}
                   onChange={(e) => setLocalStart(e.target.value)}
-                  className="w-full mt-1 rounded-md border border-ink-3 px-2 py-1.5 text-sm min-w-0"
+                  className="block w-full min-w-0 mt-1 rounded-md border border-ink-3 px-2 py-2 text-base text-left appearance-none [&::-webkit-date-and-time-value]:text-left"
                 />
               </div>
               <div>
                 <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2">End</label>
                 <input
                   type="date"
+                  aria-label="End date"
                   value={localEnd}
                   onChange={(e) => setLocalEnd(e.target.value)}
-                  className="w-full mt-1 rounded-md border border-ink-3 px-2 py-1.5 text-sm min-w-0"
+                  className="block w-full min-w-0 mt-1 rounded-md border border-ink-3 px-2 py-2 text-base text-left appearance-none [&::-webkit-date-and-time-value]:text-left"
                 />
               </div>
             </div>
