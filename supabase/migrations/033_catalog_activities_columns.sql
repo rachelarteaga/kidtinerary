@@ -4,7 +4,7 @@
 --     and the row's "Reg closes <date>" footer badge.
 --   * registration_start_date is paired so we don't need a follow-up
 --     migration when registration-open alerts ship.
---   * origin is distinct from user_camps.source — it describes the
+--   * origin is distinct from user_activities.source — it describes the
 --     activity row's provenance (manual entry, scrape, LLM, submit form),
 --     not how this user came to have it.
 
@@ -15,4 +15,4 @@ alter table activities
     check (origin in ('manual', 'scrape', 'llm', 'submit'));
 
 comment on column activities.origin is
-  'How the activity row itself was created. Distinct from user_camps.source.';
+  'How the activity row itself was created. Distinct from user_activities.source.';

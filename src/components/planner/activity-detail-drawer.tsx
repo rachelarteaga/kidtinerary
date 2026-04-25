@@ -104,7 +104,7 @@ interface DrawerEntry {
   orgId: string | null;
   source: "user" | "curated";
   sourceUrl: string | null;
-  /** ISO timestamp from `user_camps.created_at`. Null only when the row could
+  /** ISO timestamp from `user_activities.created_at`. Null only when the row could
    * not be matched (defensive — should always be present in normal flows). */
   addedAt: string | null;
   activityName: string;

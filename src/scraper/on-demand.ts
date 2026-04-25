@@ -122,7 +122,7 @@ export async function runScrapeJob({ jobId }: RunJobArgs): Promise<void> {
       const best = extracted.activities[0] as ScrapedActivity;
       const upsertConfidence = confidence === "high" ? "high" : "medium";
       // When submitCamp created a stub activity for this user, enrich that
-      // row in place so user_camps.activity_id keeps pointing at the same
+      // row in place so user_activities.activity_id keeps pointing at the same
       // row after scraping completes. Without this the slug-based upsert
       // below would create a parallel canonical row and the stub would be
       // orphaned — leaving the user's shortlist stuck on the URL-as-name.

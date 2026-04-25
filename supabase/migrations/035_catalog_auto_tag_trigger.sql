@@ -1,15 +1,15 @@
 -- Catalog auto-tag rule: when a planner_entry is created or moved into
--- a kid's column, append that kid_id to the parent user_camps row's
+-- a kid's column, append that kid_id to the parent user_activities row's
 -- kid_tags. Historical attribution is durable — moving an entry away
 -- from a kid does NOT remove their tag (per the spec).
 --
--- planner_entries do not reference user_camps directly. The chain is:
---   planner_entries.session_id → sessions.activity_id → user_camps.activity_id
---   (with user_camps.user_id = planner_entries.user_id)
+-- planner_entries do not reference user_activities directly. The chain is:
+--   planner_entries.session_id → sessions.activity_id → user_activities.activity_id
+--   (with user_activities.user_id = planner_entries.user_id)
 --
 -- Fires on INSERT and on UPDATE of child_id or session_id (which would
 -- change the activity attribution). SECURITY DEFINER so the trigger can
--- update user_camps rows from any RLS context.
+-- update user_activities rows from any RLS context.
 
 create or replace function append_kid_tag_on_planner_entry()
 returns trigger
@@ -39,7 +39,7 @@ begin
     return new;
   end if;
 
-  update user_camps
+  update user_activities
   set kid_tags = case
     when new.child_id = any(kid_tags) then kid_tags
     else array_append(kid_tags, new.child_id)

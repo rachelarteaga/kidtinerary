@@ -574,7 +574,7 @@ export async function fetchUserActivities(userId: string): Promise<UserActivityW
   const supabase = (await createClient()) as any;
 
   const { data, error } = await supabase
-    .from("user_camps")
+    .from("user_activities")
     .select(`
       id, created_at, color,
       activity:activities!inner(
