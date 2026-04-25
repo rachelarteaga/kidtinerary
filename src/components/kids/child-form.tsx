@@ -104,7 +104,7 @@ export function ChildForm({ editingChild, onDone, onCreated, hideHeading = false
             type="date"
             value={birthDate}
             onChange={(e) => setBirthDate(e.target.value)}
-            className="block w-full min-w-0 px-2.5 py-2 rounded-lg border border-ink-3 bg-surface/50 text-ink text-base text-left appearance-none focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink/30 [&::-webkit-date-and-time-value]:text-left"
+            className="block w-full min-w-0 px-2.5 py-2 rounded-lg border border-ink-3 bg-surface/50 text-ink text-base text-left appearance-none focus:outline-none focus:border-ink focus:ring-1 focus:ring-ink/30 [&::-webkit-date-and-time-value]:text-left [&::-webkit-datetime-edit]:text-ink [&::-webkit-datetime-edit-fields-wrapper]:text-ink"
           />
         </div>
 

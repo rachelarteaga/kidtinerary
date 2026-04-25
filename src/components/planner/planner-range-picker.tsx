@@ -119,7 +119,7 @@ export function PlannerRangePicker({
                   aria-label="Start date"
                   value={localStart}
                   onChange={(e) => setLocalStart(e.target.value)}
-                  className="block w-full min-w-0 mt-1 rounded-md border border-ink-3 px-2 py-2 text-base text-left appearance-none [&::-webkit-date-and-time-value]:text-left"
+                  className="block w-full min-w-0 mt-1 rounded-md border border-ink-3 px-2 py-2 text-base text-left text-ink appearance-none [&::-webkit-date-and-time-value]:text-left [&::-webkit-datetime-edit]:text-ink [&::-webkit-datetime-edit-fields-wrapper]:text-ink"
                 />
               </div>
               <div>
@@ -129,7 +129,7 @@ export function PlannerRangePicker({
                   aria-label="End date"
                   value={localEnd}
                   onChange={(e) => setLocalEnd(e.target.value)}
-                  className="block w-full min-w-0 mt-1 rounded-md border border-ink-3 px-2 py-2 text-base text-left appearance-none [&::-webkit-date-and-time-value]:text-left"
+                  className="block w-full min-w-0 mt-1 rounded-md border border-ink-3 px-2 py-2 text-base text-left text-ink appearance-none [&::-webkit-date-and-time-value]:text-left [&::-webkit-datetime-edit]:text-ink [&::-webkit-datetime-edit-fields-wrapper]:text-ink"
                 />
               </div>
             </div>
