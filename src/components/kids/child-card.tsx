@@ -136,12 +136,20 @@ export function ChildCard({ child, index, onEdit }: ChildCardProps) {
             </button>
           </div>
         ) : (
-          <button
-            onClick={() => setShowConfirm(true)}
-            className="mt-4 font-sans text-[10px] uppercase tracking-wide text-ink-3 hover:text-[#ef8c8f]"
-          >
-            Remove profile
-          </button>
+          <div className="mt-4 flex items-center gap-4">
+            <button
+              onClick={() => onEdit(child)}
+              className="font-sans text-[11px] uppercase tracking-wide text-ink-2 hover:text-ink underline underline-offset-2"
+            >
+              Edit profile
+            </button>
+            <button
+              onClick={() => setShowConfirm(true)}
+              className="font-sans text-[11px] uppercase tracking-wide text-ink-3 hover:text-[#ef8c8f]"
+            >
+              Remove profile
+            </button>
+          </div>
         )}
       </div>
       {pickedImageUrl && (

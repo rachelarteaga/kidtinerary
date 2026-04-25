@@ -129,8 +129,20 @@ export function AddBlockModal({ open, onClose, plannerId, children, scope, onSub
             <div>
               <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2">Dates</label>
               <div className="flex flex-col sm:flex-row gap-2 mt-1">
-                <input type="date" aria-label="Start date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full sm:flex-1 min-w-0 bg-surface border border-ink rounded-lg px-3 py-2 text-ink" />
-                <input type="date" aria-label="End date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full sm:flex-1 min-w-0 bg-surface border border-ink rounded-lg px-3 py-2 text-ink" />
+                <input
+                  type="date"
+                  aria-label="Start date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="block w-full sm:flex-1 min-w-0 bg-surface border border-ink rounded-lg px-2.5 py-2 text-base text-left text-ink appearance-none [&::-webkit-date-and-time-value]:text-left"
+                />
+                <input
+                  type="date"
+                  aria-label="End date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="block w-full sm:flex-1 min-w-0 bg-surface border border-ink rounded-lg px-2.5 py-2 text-base text-left text-ink appearance-none [&::-webkit-date-and-time-value]:text-left"
+                />
               </div>
             </div>
 
