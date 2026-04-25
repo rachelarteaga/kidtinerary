@@ -379,7 +379,7 @@ export function ActivityDetailDrawer({ open, onClose, entry, kids, plannerId, on
                   type="button"
                   onClick={() => startEdit("org")}
                   disabled={isCurated}
-                  className={`group/edit -mx-1 mt-0.5 px-1 min-h-[36px] sm:min-h-[32px] rounded-md text-left w-full flex items-center gap-1.5 ${
+                  className={`group/edit -mx-1 mt-0.5 px-1 min-h-[36px] rounded-md text-left w-full flex items-center gap-1.5 ${
                     isCurated ? "cursor-default" : "cursor-pointer hover:bg-ink/5 active:bg-ink/10"
                   }`}
                 >
@@ -402,7 +402,7 @@ export function ActivityDetailDrawer({ open, onClose, entry, kids, plannerId, on
                     if (e.key === "Escape") cancelEdit();
                   }}
                   placeholder="https://…"
-                  className="font-sans text-sm sm:text-xs text-ink mt-0.5 w-full bg-transparent border-b border-ink focus:outline-none py-1"
+                  className="font-sans text-sm text-ink mt-0.5 w-full bg-transparent border-b border-ink focus:outline-none py-1"
                 />
               ) : local.activityUrl ? (
                 <div className="flex items-center gap-1 mt-0.5 -mx-1">
@@ -410,7 +410,7 @@ export function ActivityDetailDrawer({ open, onClose, entry, kids, plannerId, on
                     href={local.activityUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex-1 min-w-0 font-sans text-sm sm:text-xs text-ink underline truncate px-1 py-1.5"
+                    className="flex-1 min-w-0 font-sans text-sm text-ink underline truncate px-1 py-1.5"
                   >
                     {local.activityUrl}
                   </a>
@@ -419,7 +419,7 @@ export function ActivityDetailDrawer({ open, onClose, entry, kids, plannerId, on
                       type="button"
                       onClick={removeUrl}
                       aria-label="Remove URL"
-                      className="flex-shrink-0 inline-flex items-center justify-center sm:w-auto sm:px-3 w-9 h-9 sm:h-9 rounded-md text-ink-3 hover:text-[#c1474a] hover:bg-[#fdebec]"
+                      className="flex-shrink-0 inline-flex items-center justify-center sm:w-auto sm:px-3 w-9 h-9 rounded-md text-ink-3 hover:text-[#c1474a] hover:bg-[#fdebec]"
                     >
                       <span className="sm:hidden text-lg leading-none" aria-hidden>✕</span>
                       <span className="hidden sm:inline font-sans text-[11px] uppercase tracking-widest font-bold">Remove URL</span>
@@ -430,10 +430,10 @@ export function ActivityDetailDrawer({ open, onClose, entry, kids, plannerId, on
                 <button
                   type="button"
                   onClick={() => startEdit("url")}
-                  className="group/edit -mx-1 mt-0.5 px-1 min-h-[32px] rounded-md text-left flex items-center gap-1.5 hover:bg-ink/5 active:bg-ink/10 disabled:opacity-50"
+                  className="group/edit -mx-1 mt-0.5 px-1 min-h-[36px] rounded-md text-left flex items-center gap-1.5 hover:bg-ink/5 active:bg-ink/10 disabled:opacity-50"
                   disabled={isCurated}
                 >
-                  <span className="font-sans text-[13px] sm:text-[11px] uppercase tracking-widest text-ink-2">Add a URL</span>
+                  <span className="font-sans text-[13px] uppercase tracking-widest text-ink-2">Add a URL</span>
                   {!isCurated && <PencilIcon size={16} className="text-ink-3 group-hover/edit:text-ink flex-shrink-0" />}
                 </button>
               )}
