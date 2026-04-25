@@ -1,6 +1,6 @@
 # Camp list
 
-Browse / search camps. Route: `/explore`.
+Browse / search camps. Route: `/catalog`.
 
 ## Ideas
 

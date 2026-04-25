@@ -8,7 +8,7 @@ Each file captures raw ideas — not committed work. Add freely; prune as things
 
 - [Account](account.md) — profile, sharing, settings
 - [Planner](planner.md) — the weekly planner view
-- [Camp list](camp-list.md) — browse/search (currently `/explore`)
+- [Camp list](camp-list.md) — browse/search (currently `/catalog`)
 - [Camp detail](camp-detail.md) — individual camp page
 - [Kids](kids.md) — kid profiles
 - [Onboarding](onboarding.md) — signup → first planner entry

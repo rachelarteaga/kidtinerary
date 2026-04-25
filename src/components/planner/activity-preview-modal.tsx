@@ -65,7 +65,12 @@ export function ActivityPreviewModal({ activity, summary, onClose, onEdit }: Pro
     avgCents == null ? null : `$${(avgCents / 100).toFixed(0)}/week avg across registered`;
 
   const isCurated = a.source === "curated";
-  const sourceLine = isCurated ? "Curated by Kidtinerary" : "You added this";
+  const addedOn = new Date(activity.created_at).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+  const sourceLine = isCurated ? "Curated by Kidtinerary" : `You added this on ${addedOn}`;
   const ctaLabel = isCurated ? "See more info" : "Edit activity details";
 
   return (
