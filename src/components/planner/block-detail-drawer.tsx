@@ -136,18 +136,20 @@ export function BlockDetailDrawer({ open, onClose, block, kids, onChanged }: Pro
 
           <section>
             <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Dates</h3>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="date"
+                aria-label="Start date"
                 value={local.startDate}
                 onChange={(e) => save({ startDate: e.target.value })}
-                className="flex-1 rounded-md border border-ink-3 bg-surface px-2 py-1.5 text-sm"
+                className="w-full sm:flex-1 min-w-0 rounded-md border border-ink-3 bg-surface px-2 py-1.5 text-sm"
               />
               <input
                 type="date"
+                aria-label="End date"
                 value={local.endDate}
                 onChange={(e) => save({ endDate: e.target.value })}
-                className="flex-1 rounded-md border border-ink-3 bg-surface px-2 py-1.5 text-sm"
+                className="w-full sm:flex-1 min-w-0 rounded-md border border-ink-3 bg-surface px-2 py-1.5 text-sm"
               />
             </div>
           </section>
