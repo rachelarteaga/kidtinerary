@@ -104,6 +104,9 @@ interface DrawerEntry {
   orgId: string | null;
   source: "user" | "curated";
   sourceUrl: string | null;
+  /** ISO timestamp from `user_camps.created_at`. Null only when the row could
+   * not be matched (defensive — should always be present in normal flows). */
+  addedAt: string | null;
   activityName: string;
   activitySlug: string;
   activityUrl: string | null;
@@ -439,7 +442,11 @@ export function ActivityDetailDrawer({ open, onClose, entry, kids, plannerId, on
               )}
 
               <div className="font-sans text-xs sm:text-[10px] uppercase tracking-widest text-ink-2 mt-2">
-                {isCurated ? "Curated by Kidtinerary" : "You added this"}
+                {isCurated
+                  ? "Curated by Kidtinerary"
+                  : local.addedAt
+                    ? `You added this on ${new Date(local.addedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`
+                    : "You added this"}
               </div>
             </div>
             <button onClick={onClose} aria-label="Close" className="text-ink-2 hover:text-ink text-lg">✕</button>
