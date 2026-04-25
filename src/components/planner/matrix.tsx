@@ -134,7 +134,7 @@ export function PlannerMatrix({
             <AddKidMenu plannerId={plannerId} availableKids={availableKids} />
           </div>
         </div>
-        <div className="md:flex-1 md:overflow-y-auto min-h-0 space-y-3">
+        <div className="md:flex-1 md:overflow-y-auto min-h-0 space-y-3 pb-[calc(72px+env(safe-area-inset-bottom))] md:pb-0">
           {weeks.map((w) => {
             const weekKey = getWeekKey(w.weekStart);
             const weekStartStr = w.weekStart.toISOString().split("T")[0];
@@ -220,7 +220,7 @@ export function PlannerMatrix({
         </div>
       </div>
 
-      <div className="md:flex-1 md:overflow-y-auto min-h-0 space-y-2">
+      <div className="md:flex-1 md:overflow-y-auto min-h-0 space-y-2 pb-[calc(72px+env(safe-area-inset-bottom))] md:pb-0">
       {weeks.map((w) => {
         const weekKey = getWeekKey(w.weekStart);
         const weekStartStr = w.weekStart.toISOString().split("T")[0];

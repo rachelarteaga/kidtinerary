@@ -27,8 +27,16 @@ describe("ChildCard", () => {
     expect(screen.queryByText(/planner coming soon/i)).not.toBeInTheDocument();
   });
 
-  it("exposes an accessible avatar button", () => {
+  it("exposes accessible buttons for editing the profile and changing the photo", () => {
     render(<ChildCard child={child} index={0} onEdit={() => {}} />);
-    expect(screen.getByRole("button", { name: /change avatar for maya/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /edit maya's profile/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /change photo for maya/i })).toBeInTheDocument();
+  });
+
+  it("invokes onEdit when the avatar is tapped", () => {
+    const onEdit = vi.fn();
+    render(<ChildCard child={child} index={0} onEdit={onEdit} />);
+    fireEvent.click(screen.getByRole("button", { name: /edit maya's profile/i }));
+    expect(onEdit).toHaveBeenCalledWith(child);
   });
 });

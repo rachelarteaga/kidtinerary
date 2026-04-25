@@ -762,18 +762,20 @@ function NewPlannerModal({
           </div>
           <div>
             <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2 block mb-1">Dates</label>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="date"
+                aria-label="Start date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="flex-1 bg-surface border border-ink rounded-lg px-3 py-2 text-ink"
+                className="w-full sm:flex-1 min-w-0 bg-surface border border-ink rounded-lg px-3 py-2 text-ink"
               />
               <input
                 type="date"
+                aria-label="End date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="flex-1 bg-surface border border-ink rounded-lg px-3 py-2 text-ink"
+                className="w-full sm:flex-1 min-w-0 bg-surface border border-ink rounded-lg px-3 py-2 text-ink"
               />
             </div>
           </div>

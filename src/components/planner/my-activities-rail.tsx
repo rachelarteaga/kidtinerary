@@ -145,8 +145,8 @@ export function MyActivitiesRail({
             type="button"
             onClick={() => onMobileOpenChange?.(true)}
             aria-label="Open My Activities"
-            className="fixed left-1/2 -translate-x-1/2 z-30 inline-flex items-center gap-2 min-h-[48px] px-5 rounded-full bg-ink text-ink-inverse font-sans font-bold text-[12px] uppercase tracking-widest shadow-[0_4px_14px_rgba(0,0,0,0.18)]"
-            style={{ bottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}
+            className="fixed left-1/2 -translate-x-1/2 z-30 inline-flex items-center gap-2 min-h-[44px] px-5 rounded-full bg-ink text-ink-inverse font-sans font-bold text-[12px] uppercase tracking-widest shadow-[0_4px_14px_rgba(0,0,0,0.18)]"
+            style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden>
               <line x1="4" y1="6" x2="20" y2="6" />

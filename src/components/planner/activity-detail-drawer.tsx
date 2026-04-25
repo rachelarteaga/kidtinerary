@@ -27,6 +27,26 @@ import type {
   PriceUnit,
 } from "@/lib/supabase/types";
 
+function PencilIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className={className}
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
 const CATEGORY_LABELS: Record<string, string> = {
   sports: "Sports",
   arts: "Arts",
@@ -303,17 +323,26 @@ export function ActivityDetailDrawer({ open, onClose, entry, kids, plannerId, on
                     if (e.key === "Enter") commitEdit();
                     if (e.key === "Escape") cancelEdit();
                   }}
-                  className="font-display font-extrabold text-2xl text-ink leading-tight w-full bg-transparent border-b border-ink focus:outline-none"
+                  className="font-display font-extrabold text-2xl text-ink leading-tight w-full bg-transparent border-b border-ink focus:outline-none py-1"
                 />
               ) : (
-                <h2
+                <button
+                  type="button"
                   onClick={() => startEdit("name")}
-                  className={`font-display font-extrabold text-2xl leading-tight ${
-                    isCurated ? "cursor-default" : "cursor-pointer"
-                  } ${local.activityName === "New activity" ? "italic text-ink-2" : "text-ink"}`}
+                  disabled={isCurated}
+                  className={`group/edit -mx-1 -my-1 px-1 py-1 rounded-md text-left w-full flex items-start gap-1.5 ${
+                    isCurated ? "cursor-default" : "cursor-pointer hover:bg-ink/5 active:bg-ink/10"
+                  }`}
                 >
-                  {local.activityName}
-                </h2>
+                  <span
+                    className={`font-display font-extrabold text-2xl leading-tight ${
+                      local.activityName === "New activity" ? "italic text-ink-2" : "text-ink"
+                    }`}
+                  >
+                    {local.activityName}
+                  </span>
+                  {!isCurated && <PencilIcon className="mt-1.5 text-ink-3 group-hover/edit:text-ink flex-shrink-0" />}
+                </button>
               )}
 
               {local.activityName === "New activity" && (
@@ -333,18 +362,23 @@ export function ActivityDetailDrawer({ open, onClose, entry, kids, plannerId, on
                     if (e.key === "Escape") cancelEdit();
                   }}
                   placeholder="Organization"
-                  className="font-sans text-[10px] uppercase tracking-wide text-ink mt-1 w-full bg-transparent border-b border-ink focus:outline-none"
+                  className="font-sans text-xs text-ink mt-1 w-full bg-transparent border-b border-ink focus:outline-none py-1"
                 />
               ) : (
-                <div
+                <button
+                  type="button"
                   onClick={() => startEdit("org")}
-                  className={`font-sans text-[10px] uppercase tracking-wide text-ink-2 mt-1 ${
-                    isCurated ? "cursor-default" : "cursor-pointer"
+                  disabled={isCurated}
+                  className={`group/edit -mx-1 mt-1 px-1 min-h-[32px] rounded-md text-left w-full flex items-center gap-1.5 ${
+                    isCurated ? "cursor-default" : "cursor-pointer hover:bg-ink/5 active:bg-ink/10"
                   }`}
                 >
-                  {local.orgName ?? "Add organization"}
-                  {local.verified && <span className="text-[#5fc39c]"> · verified ✓</span>}
-                </div>
+                  <span className="font-sans text-[11px] uppercase tracking-wide text-ink-2">
+                    {local.orgName ?? "Add organization"}
+                    {local.verified && <span className="text-[#5fc39c]"> · verified ✓</span>}
+                  </span>
+                  {!isCurated && <PencilIcon className="text-ink-3 group-hover/edit:text-ink flex-shrink-0" />}
+                </button>
               )}
 
               {editingField === "url" ? (
@@ -358,34 +392,36 @@ export function ActivityDetailDrawer({ open, onClose, entry, kids, plannerId, on
                     if (e.key === "Escape") cancelEdit();
                   }}
                   placeholder="https://…"
-                  className="font-sans text-xs text-ink mt-1 w-full bg-transparent border-b border-ink focus:outline-none"
+                  className="font-sans text-xs text-ink mt-1 w-full bg-transparent border-b border-ink focus:outline-none py-1"
                 />
               ) : local.activityUrl ? (
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-1 mt-1 -mx-1">
                   <a
                     href={local.activityUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="font-sans text-xs text-ink underline truncate"
+                    className="flex-1 min-w-0 font-sans text-xs text-ink underline truncate px-1 py-2"
                   >
                     {local.activityUrl}
                   </a>
                   <button
                     type="button"
                     onClick={() => startEdit("url")}
-                    className="font-sans text-[10px] uppercase tracking-widest text-ink-2 hover:text-ink"
+                    aria-label="Edit URL"
+                    className="flex-shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-md text-ink-3 hover:text-ink hover:bg-ink/5"
                   >
-                    Edit
+                    <PencilIcon />
                   </button>
                 </div>
               ) : (
                 <button
                   type="button"
                   onClick={() => startEdit("url")}
-                  className="font-sans text-[10px] uppercase tracking-widest text-ink-2 hover:text-ink mt-1"
+                  className="group/edit -mx-1 mt-1 px-1 min-h-[32px] rounded-md text-left flex items-center gap-1.5 hover:bg-ink/5 active:bg-ink/10 disabled:opacity-50"
                   disabled={isCurated}
                 >
-                  Add a URL
+                  <span className="font-sans text-[11px] uppercase tracking-widest text-ink-2">Add a URL</span>
+                  {!isCurated && <PencilIcon className="text-ink-3 group-hover/edit:text-ink flex-shrink-0" />}
                 </button>
               )}
 
