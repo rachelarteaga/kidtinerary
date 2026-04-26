@@ -5,9 +5,10 @@ import { categoryLabel, isRegDeadlineSoon, formatShortDate, formatSeasonHint } f
 interface Props {
   activity: UserActivityWithDetails;
   kids: { id: string; name: string }[];
+  onClick?: () => void;
 }
 
-export function CatalogRow({ activity, kids }: Props) {
+export function CatalogRow({ activity, kids, onClick }: Props) {
   const showOrg =
     activity.activity.organization &&
     activity.activity.organization.name &&
@@ -53,7 +54,7 @@ export function CatalogRow({ activity, kids }: Props) {
   const hasFooter = hasPlanner || isSharedByFriend || regDeadlineSoon;
 
   return (
-    <div className="rounded-lg border border-ink-3 bg-surface p-4 hover:border-ink transition-colors cursor-pointer">
+    <div className="rounded-lg border border-ink-3 bg-surface p-4 hover:border-ink transition-colors cursor-pointer" onClick={onClick}>
       {/* Top section */}
       <div className="flex items-start gap-3">
         <span
@@ -78,14 +79,14 @@ export function CatalogRow({ activity, kids }: Props) {
             {/* Kid pill(s) right-aligned */}
             <div className="flex items-start gap-2 flex-wrap justify-end mt-0.5 flex-shrink-0">
               {taggedKids.length === 0 ? (
-                <span className="text-[11px] italic text-ink-3">Unassigned</span>
+                <span className="text-xs italic text-ink-3">Unassigned</span>
               ) : (
                 taggedKids.map((kid) => (
                   <span
                     key={kid.index}
-                    className="inline-flex items-center gap-1 text-[11px] text-ink font-medium"
+                    className="inline-flex items-center gap-1.5 text-sm text-ink font-medium"
                   >
-                    <KidShape index={kid.index} size={11} dotOnly />
+                    <KidShape index={kid.index} size={16} dotOnly />
                     {kid.name}
                   </span>
                 ))
