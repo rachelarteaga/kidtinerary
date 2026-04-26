@@ -628,7 +628,7 @@ export async function submitActivity(
   }
 
   const { data: existingCamps } = await supabase
-    .from("user_camps")
+    .from("user_activities")
     .select("color")
     .eq("user_id", user.id);
 
@@ -639,18 +639,18 @@ export async function submitActivity(
   const color = nextAvailablePaletteColor(usedColors);
 
   const { error: ucUpsertErr } = await supabase
-    .from("user_camps")
+    .from("user_activities")
     .upsert(
       { user_id: user.id, activity_id: activityId, color },
       { onConflict: "user_id,activity_id", ignoreDuplicates: true }
     );
   if (ucUpsertErr) {
-    console.error("submitCamp user_camps upsert error:", ucUpsertErr);
+    console.error("submitCamp user_activities upsert error:", ucUpsertErr);
     return { error: "Failed to save activity to shortlist" };
   }
 
   const { data: userCamp } = await supabase
-    .from("user_camps")
+    .from("user_activities")
     .select("id, color")
     .eq("user_id", user.id)
     .eq("activity_id", activityId)
@@ -764,9 +764,9 @@ export async function updateActivityFields(params: {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
-  // Auth guard: caller must own a user_camps row for this activity.
+  // Auth guard: caller must own a user_activities row for this activity.
   const { data: ownership } = await supabase
-    .from("user_camps")
+    .from("user_activities")
     .select("id")
     .eq("user_id", user.id)
     .eq("activity_id", params.activityId)
@@ -945,7 +945,7 @@ export async function assignActivityToWeek(
   if (!planner) return { error: "No planner found — refresh and retry" };
 
   const { data: uc } = await supabase
-    .from("user_camps")
+    .from("user_activities")
     .select("activity_id")
     .eq("id", userCampId)
     .eq("user_id", user.id)
@@ -1019,7 +1019,7 @@ export async function removeActivityFromShortlist(userCampId: string): Promise<{
   if (!user) return { error: "Not authenticated" };
 
   const { data: uc } = await supabase
-    .from("user_camps")
+    .from("user_activities")
     .select("activity_id")
     .eq("id", userCampId)
     .eq("user_id", user.id)
@@ -1042,7 +1042,7 @@ export async function removeActivityFromShortlist(userCampId: string): Promise<{
       .in("session_id", sessionIds);
   }
 
-  await supabase.from("user_camps").delete().eq("id", userCampId).eq("user_id", user.id);
+  await supabase.from("user_activities").delete().eq("id", userCampId).eq("user_id", user.id);
 
   revalidatePath("/planner");
   return {};

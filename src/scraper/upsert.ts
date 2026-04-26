@@ -30,7 +30,7 @@ function isAdultOnly(name: string): boolean {
 export interface UpsertOptions {
   /**
    * When set, enrich this existing activity row in place instead of creating a
-   * new canonical one. Used by the on-demand scraper so user_camps rows pointing
+   * new canonical one. Used by the on-demand scraper so user_activities rows pointing
    * at the submitCamp stub stay linked after enrichment — without this, the
    * slug-based upsert creates a parallel canonical row and the stub is orphaned.
    */

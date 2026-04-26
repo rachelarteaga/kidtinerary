@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   fetchChildren,
   fetchPlannerEntries,
-  fetchUserCamps,
+  fetchUserActivities,
   fetchPlannerBlocks,
   fetchPlannerById,
   fetchUserPlannerIds,
@@ -61,7 +61,7 @@ export default async function PlannerPage({ searchParams }: PageProps) {
     await Promise.all(children.map((c: any) => fetchPlannerEntries(user.id, c.id, planner.id)))
   ).flat();
 
-  const userCamps = await fetchUserCamps(user.id);
+  const userCamps = await fetchUserActivities(user.id);
   const blocks = await fetchPlannerBlocks(user.id, planner.id);
 
   const ownerDisplayName = (user.user_metadata?.full_name as string | undefined) ?? null;
