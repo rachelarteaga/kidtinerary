@@ -18,8 +18,10 @@ interface OrgHit {
 interface Props {
   open: boolean;
   onClose: () => void;
-  plannerId: string;
-  scope: { childId: string | null; weekStart: string | null };
+  /** Optional — omit when adding from /catalog (no planner context). */
+  plannerId?: string;
+  /** Optional — omit when adding from /catalog. Without it, no planner_entry is created. */
+  scope?: { childId: string | null; weekStart: string | null };
   shareCampsDefault: boolean;
   onSubmitted: (result: {
     jobId?: string;
@@ -89,8 +91,8 @@ export function AddActivityModal({ open, onClose, plannerId, scope, shareCampsDe
     startTransition(async () => {
       const result = await submitActivity(payload, {
         plannerId,
-        childId: scope.childId ?? undefined,
-        weekStart: scope.weekStart ?? undefined,
+        childId: scope?.childId ?? undefined,
+        weekStart: scope?.weekStart ?? undefined,
       });
       if (result.error) {
         setError(result.error);
