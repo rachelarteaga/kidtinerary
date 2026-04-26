@@ -2099,3 +2099,97 @@ export async function saveHelpMeFindResult(
  * the user has on sessions of that activity.
  */
 export const removeFromCatalog = removeActivityFromShortlist;
+
+/**
+ * Catalog-direct add: creates an activities row + a user_activities row
+ * for a manual entry. No planner placement (pure catalog add). Either
+ * `name` or `url` (or both) must be provided.
+ */
+export interface AddActivityToCatalogPayload {
+  name: string | null;
+  url: string | null;
+  organizationName: string | null;
+  description: string | null;
+  categories: string[];
+  ageMin: number | null;
+  ageMax: number | null;
+}
+
+export async function addActivityToCatalog(
+  payload: AddActivityToCatalogPayload,
+): Promise<{ error?: string; userActivityId?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  // Validation: at least one of name or url is required.
+  const trimmedName = (payload.name ?? "").trim();
+  const trimmedUrl = (payload.url ?? "").trim();
+  if (!trimmedName && !trimmedUrl) {
+    return { error: "Provide an activity name or a URL." };
+  }
+
+  // If name is empty, derive a placeholder from the URL hostname.
+  let displayName = trimmedName;
+  if (!displayName && trimmedUrl) {
+    try {
+      const u = new URL(trimmedUrl.startsWith("http") ? trimmedUrl : `https://${trimmedUrl}`);
+      displayName = u.hostname.replace(/^www\./, "");
+    } catch {
+      displayName = trimmedUrl;
+    }
+  }
+
+  const slugBase = displayName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 60) || `manual-activity-${Date.now()}`;
+
+  const { data: activityRow, error: activityErr } = await supabase
+    .from("activities")
+    .insert({
+      name: displayName,
+      slug: `${slugBase}-${Date.now().toString(36)}`,
+      registration_url: trimmedUrl || null,
+      description: payload.description,
+      categories: payload.categories,
+      age_min: payload.ageMin,
+      age_max: payload.ageMax,
+      origin: "manual",
+      source: "user",
+    })
+    .select("id")
+    .single();
+  if (activityErr || !activityRow) {
+    console.error("addActivityToCatalog: activities insert failed", activityErr);
+    return { error: activityErr?.message ?? "Could not save activity" };
+  }
+
+  const { data: existing } = await supabase
+    .from("user_activities")
+    .select("color")
+    .eq("user_id", user.id);
+  const usedColors = ((existing ?? []) as { color: string | null }[])
+    .map((r) => r.color)
+    .filter((c): c is string => typeof c === "string" && c.length > 0);
+  const color = nextAvailablePaletteColor(usedColors);
+
+  const { data: ua, error: uaErr } = await supabase
+    .from("user_activities")
+    .insert({
+      user_id: user.id,
+      activity_id: activityRow.id,
+      source: "self",
+      color,
+    })
+    .select("id")
+    .single();
+  if (uaErr || !ua) {
+    console.error("addActivityToCatalog: user_activities insert failed", uaErr);
+    return { error: uaErr?.message ?? "Could not save catalog row" };
+  }
+
+  revalidatePath("/catalog");
+  return { userActivityId: ua.id };
+}

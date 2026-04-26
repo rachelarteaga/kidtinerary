@@ -11,6 +11,8 @@ import { SourceFilter } from "@/components/catalog/source-filter";
 import { SeasonFilter } from "@/components/catalog/season-filter";
 import { CategoryFilter } from "@/components/catalog/category-filter";
 import { SortMenu } from "@/components/catalog/sort-menu";
+import { AddActivityToCatalogModal } from "@/components/catalog/add-activity-to-catalog-modal";
+import { SparkleIcon } from "@/components/ui/sparkle-icon";
 import {
   parseFilterState,
   matchesSourceFilter,
@@ -25,6 +27,7 @@ interface Props {
 
 export function CatalogClient({ activities, kids }: Props) {
   const [activeActivity, setActiveActivity] = useState<UserActivityWithDetails | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
   const searchParams = useSearchParams();
 
   const filterState = useMemo(
@@ -86,11 +89,35 @@ export function CatalogClient({ activities, kids }: Props) {
     return arr;
   }, [filtered, sortKey]);
 
+  function handleHelpMeFind() {
+    // TODO: Phase 9 wires the slide-over
+    console.log("Help me find — coming soon");
+  }
+
   return (
     <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="font-display font-extrabold text-3xl sm:text-4xl text-ink tracking-tight">
-        Your catalog
-      </h1>
+      <div className="flex items-start justify-between gap-4 mb-2">
+        <h1 className="font-display font-extrabold text-3xl sm:text-4xl text-ink tracking-tight">
+          Your catalog
+        </h1>
+        <div className="flex items-center gap-2 flex-shrink-0 mt-2">
+          <button
+            type="button"
+            onClick={() => setAddOpen(true)}
+            className="font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-surface text-ink border border-ink hover:bg-base"
+          >
+            + Add activity
+          </button>
+          <button
+            type="button"
+            onClick={handleHelpMeFind}
+            className="inline-flex items-center gap-1.5 font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-hero text-ink border border-ink hover:brightness-95"
+          >
+            <SparkleIcon size={11} fill="#151515" />
+            Help me find
+          </button>
+        </div>
+      </div>
       <p className="text-ink-2 mb-8">
         Every camp, class &amp; lesson — past, present, considering.
       </p>
@@ -114,7 +141,7 @@ export function CatalogClient({ activities, kids }: Props) {
           <p className="font-sans text-sm text-ink-2">No matches. Try clearing a filter.</p>
         </div>
       ) : sorted.length === 0 ? (
-        <CatalogEmptyState />
+        <CatalogEmptyState onAdd={() => setAddOpen(true)} onHelpMeFind={handleHelpMeFind} />
       ) : (
         <div className="space-y-3">
           {sorted.map((activity) => (
@@ -136,6 +163,11 @@ export function CatalogClient({ activities, kids }: Props) {
           onClose={() => setActiveActivity(null)}
         />
       )}
+
+      <AddActivityToCatalogModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+      />
     </main>
   );
 }
