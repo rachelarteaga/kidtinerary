@@ -1927,3 +1927,175 @@ export async function deletePlanner(plannerId: string): Promise<{ error?: string
   revalidatePath("/planner");
   return {};
 }
+
+// =============================================================================
+// Catalog actions
+// =============================================================================
+
+/** Append a kid_id to a user_activities row's kid_tags array. No-op if already present. */
+export async function tagKidOnUserActivity(
+  userActivityId: string,
+  kidId: string,
+): Promise<{ error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  // Read current kid_tags so we can dedupe in TS (Supabase JS doesn't expose
+  // array_append in update payloads cleanly).
+  const { data: row, error: readErr } = await supabase
+    .from("user_activities")
+    .select("kid_tags")
+    .eq("id", userActivityId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (readErr) return { error: readErr.message };
+  if (!row) return { error: "Activity not found" };
+
+  const current = (row.kid_tags ?? []) as string[];
+  if (current.includes(kidId)) {
+    revalidatePath("/catalog");
+    return {};
+  }
+
+  const next = [...current, kidId];
+  const { error } = await supabase
+    .from("user_activities")
+    .update({ kid_tags: next })
+    .eq("id", userActivityId)
+    .eq("user_id", user.id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/catalog");
+  return {};
+}
+
+/** Remove a kid_id from a user_activities row's kid_tags array. */
+export async function untagKidOnUserActivity(
+  userActivityId: string,
+  kidId: string,
+): Promise<{ error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: row, error: readErr } = await supabase
+    .from("user_activities")
+    .select("kid_tags")
+    .eq("id", userActivityId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (readErr) return { error: readErr.message };
+  if (!row) return { error: "Activity not found" };
+
+  const current = (row.kid_tags ?? []) as string[];
+  const next = current.filter((id) => id !== kidId);
+  if (next.length === current.length) {
+    revalidatePath("/catalog");
+    return {};
+  }
+
+  const { error } = await supabase
+    .from("user_activities")
+    .update({ kid_tags: next })
+    .eq("id", userActivityId)
+    .eq("user_id", user.id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/catalog");
+  return {};
+}
+
+/**
+ * Payload returned by the Help-me-find LLM and saved into the catalog.
+ * Sparse fields are tolerated — the LLM may not fill them all in.
+ */
+export interface HelpMeFindResultPayload {
+  name: string;
+  url: string;
+  organizationName: string | null;
+  description: string | null;
+  categories: string[];
+  ageMin: number | null;
+  ageMax: number | null;
+  registrationEndDate: string | null;
+  /** The original prompt text the user typed; persisted for "find more like this" later. */
+  discoveryQuery: string;
+}
+
+/**
+ * Save a Help-me-find suggestion into the user's catalog. Creates the
+ * activities row (origin='llm') and a user_activities row (source='llm'),
+ * skipping organization linkage in v1 (the LLM's organizationName is
+ * dropped — adding org lookup/create is a follow-up).
+ */
+export async function saveHelpMeFindResult(
+  payload: HelpMeFindResultPayload,
+): Promise<{ error?: string; userActivityId?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const slug = payload.name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 60) || `llm-activity-${Date.now()}`;
+
+  const { data: activityRow, error: activityErr } = await supabase
+    .from("activities")
+    .insert({
+      name: payload.name,
+      slug: `${slug}-${Date.now().toString(36)}`,
+      registration_url: payload.url,
+      description: payload.description,
+      categories: payload.categories,
+      age_min: payload.ageMin,
+      age_max: payload.ageMax,
+      registration_end_date: payload.registrationEndDate,
+      origin: "llm",
+      source: "user",
+    })
+    .select("id")
+    .single();
+  if (activityErr || !activityRow) {
+    console.error("saveHelpMeFindResult: activities insert failed", activityErr);
+    return { error: activityErr?.message ?? "Could not save activity" };
+  }
+
+  // Pick a palette color the user hasn't used yet for this activity row.
+  const { data: existing } = await supabase
+    .from("user_activities")
+    .select("color")
+    .eq("user_id", user.id);
+  const usedColors = ((existing ?? []) as { color: string | null }[])
+    .map((r) => r.color)
+    .filter((c): c is string => typeof c === "string" && c.length > 0);
+  const color = nextAvailablePaletteColor(usedColors);
+
+  const { data: ua, error: uaErr } = await supabase
+    .from("user_activities")
+    .insert({
+      user_id: user.id,
+      activity_id: activityRow.id,
+      source: "llm",
+      discovery_query: payload.discoveryQuery,
+      color,
+    })
+    .select("id")
+    .single();
+  if (uaErr || !ua) {
+    console.error("saveHelpMeFindResult: user_activities insert failed", uaErr);
+    return { error: uaErr?.message ?? "Could not save catalog row" };
+  }
+
+  revalidatePath("/catalog");
+  return { userActivityId: ua.id };
+}
+
+/**
+ * Alias for removeActivityFromShortlist with catalog-friendly naming.
+ * Same semantics: deletes the user_activities row AND any planner_entries
+ * the user has on sessions of that activity.
+ */
+export const removeFromCatalog = removeActivityFromShortlist;

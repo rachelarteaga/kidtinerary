@@ -12,6 +12,9 @@ import {
   generateWeeks,
   formatWeekRange,
   formatUsPhone,
+  isRegDeadlineSoon,
+  formatShortDate,
+  formatSeasonHint,
 } from "@/lib/format";
 
 describe("formatPrice", () => {
@@ -217,5 +220,77 @@ describe("formatUsPhone", () => {
 
   it("truncates extra digits beyond 10 (or 11 with leading 1)", () => {
     expect(formatUsPhone("202555123456789")).toBe("(202) 555-1234");
+  });
+});
+
+describe("isRegDeadlineSoon", () => {
+  it("returns true when deadline is within 30 days", () => {
+    const today = new Date("2026-04-25T00:00:00Z");
+    expect(isRegDeadlineSoon("2026-05-10", today)).toBe(true);
+  });
+
+  it("returns true when deadline is exactly 30 days away", () => {
+    const today = new Date("2026-04-25T00:00:00Z");
+    expect(isRegDeadlineSoon("2026-05-25", today)).toBe(true);
+  });
+
+  it("returns false when deadline is more than 30 days away", () => {
+    const today = new Date("2026-04-25T00:00:00Z");
+    expect(isRegDeadlineSoon("2026-06-30", today)).toBe(false);
+  });
+
+  it("returns false when deadline is in the past", () => {
+    const today = new Date("2026-04-25T00:00:00Z");
+    expect(isRegDeadlineSoon("2026-04-20", today)).toBe(false);
+  });
+
+  it("returns false for null date", () => {
+    expect(isRegDeadlineSoon(null)).toBe(false);
+  });
+});
+
+describe("formatShortDate", () => {
+  it("formats date in current year without year suffix", () => {
+    const today = new Date("2026-04-25T00:00:00Z");
+    expect(formatShortDate("2026-04-30", today)).toBe("Apr 30");
+  });
+
+  it("formats date in a different year with year suffix", () => {
+    const today = new Date("2026-04-25T00:00:00Z");
+    expect(formatShortDate("2025-12-01", today)).toBe("Dec 1, 2025");
+  });
+});
+
+describe("formatSeasonHint", () => {
+  it("returns null for null input", () => {
+    expect(formatSeasonHint(null)).toBeNull();
+  });
+
+  it("returns Summer for a June date", () => {
+    expect(formatSeasonHint("2026-06-15")).toBe("Summer 2026");
+  });
+
+  it("returns Summer for an August date", () => {
+    expect(formatSeasonHint("2026-08-31")).toBe("Summer 2026");
+  });
+
+  it("returns Fall for a September date", () => {
+    expect(formatSeasonHint("2026-09-01")).toBe("Fall 2026");
+  });
+
+  it("returns Winter for a December date", () => {
+    expect(formatSeasonHint("2026-12-15")).toBe("Winter 2026");
+  });
+
+  it("returns Winter for a January date", () => {
+    expect(formatSeasonHint("2027-01-10")).toBe("Winter 2027");
+  });
+
+  it("returns Spring for a March date", () => {
+    expect(formatSeasonHint("2026-03-20")).toBe("Spring 2026");
+  });
+
+  it("returns Spring for a May date", () => {
+    expect(formatSeasonHint("2026-05-31")).toBe("Spring 2026");
   });
 });

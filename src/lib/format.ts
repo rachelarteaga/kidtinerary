@@ -160,6 +160,45 @@ export function formatWeekLabelCompact(weekStart: Date): string {
   return `${sMonth} ${sDay} – ${eMonth} ${eDay}`;
 }
 
+/** True if a registration end date is within the next 30 days (and not already past). */
+export function isRegDeadlineSoon(date: string | null, today: Date = new Date()): boolean {
+  if (!date) return false;
+  const end = new Date(date + "T00:00:00Z");
+  const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+  if (end < todayUtc) return false;
+  const msInDay = 86_400_000;
+  const diffDays = Math.floor((end.getTime() - todayUtc.getTime()) / msInDay);
+  return diffDays <= 30;
+}
+
+/** Short month-day, e.g. "Apr 30". Includes year only when not in current year. */
+export function formatShortDate(iso: string, today: Date = new Date()): string {
+  const d = new Date(iso + "T00:00:00Z");
+  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", timeZone: "UTC" };
+  if (d.getUTCFullYear() !== today.getUTCFullYear()) {
+    opts.year = "numeric";
+  }
+  return d.toLocaleDateString("en-US", opts);
+}
+
+/**
+ * Display-label season hint based on a date, e.g. "Summer 2026", "Fall 2025".
+ * Buckets: Jun–Aug=Summer, Sep–Nov=Fall, Dec–Feb=Winter, Mar–May=Spring.
+ * Returns null when the input is null.
+ */
+export function formatSeasonHint(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso + "T00:00:00Z");
+  const month = d.getUTCMonth();
+  const year = d.getUTCFullYear();
+  let season: string;
+  if (month >= 5 && month <= 7) season = "Summer";
+  else if (month >= 8 && month <= 10) season = "Fall";
+  else if (month === 11 || month === 0 || month === 1) season = "Winter";
+  else season = "Spring";
+  return `${season} ${year}`;
+}
+
 // Progressive US phone formatter for `(xxx) xxx-xxxx`. A leading `+`
 // disables formatting so international numbers pass through unchanged.
 export function formatUsPhone(raw: string): string {
