@@ -7,7 +7,7 @@ import { AuthCluster } from "@/components/layout/auth-cluster";
 import { createClient } from "@/lib/supabase/client";
 
 const NAV_LINKS = [
-  { href: "/catalog", label: "Catalog", comingSoon: true },
+  { href: "/catalog", label: "Catalog" },
   { href: "/planner", label: "Planner" },
 ] as const;
 

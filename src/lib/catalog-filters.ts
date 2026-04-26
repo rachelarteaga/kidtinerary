@@ -65,6 +65,26 @@ export function parseFilterState(params: URLSearchParams): FilterState {
 }
 
 /**
+ * Evaluates the kid filter's special-case logic, including the
+ * "__unassigned" sentinel for rows with no kid tags.
+ *
+ *   * kidIds undefined / empty → matches everything
+ *   * "__unassigned" in kidIds → also match rows where kidTags.length === 0
+ *   * other ids → match when any id appears in kidTags
+ */
+export function matchesKidFilter(
+  kidTags: string[],
+  kidIds: string[] | undefined,
+): boolean {
+  if (!kidIds || kidIds.length === 0) return true;
+  const wantsUnassigned = kidIds.includes("__unassigned");
+  const otherWanted = kidIds.filter((k) => k !== "__unassigned");
+  const matchesUnassigned = wantsUnassigned && kidTags.length === 0;
+  const matchesAnyKid = otherWanted.some((kid) => kidTags.includes(kid));
+  return matchesUnassigned || matchesAnyKid;
+}
+
+/**
  * Maps the row's user_activities.source enum onto the filter's
  * binary "Added by me" / "From friends" split.
  *   * 'me'      → row.source IN ('self', 'llm')
