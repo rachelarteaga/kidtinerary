@@ -538,10 +538,26 @@ export async function fetchFavoriteActivitiesWithSessions(userId: string) {
   return (data ?? []) as any[];
 }
 
+export interface PlannerPlacement {
+  plannerId: string;
+  plannerName: string;
+  status: "considering" | "waitlisted" | "registered";
+}
+
 export interface UserActivityWithDetails {
   id: string;
   created_at: string;
   color: string;
+  /** How this user came to have this in their catalog. */
+  source: "self" | "friend" | "llm";
+  /** Display name of the friend who shared this (when source = 'friend'). */
+  sharedByName: string | null;
+  /** Multi-kid attribution. Auto-populated when entries land in a kid's column. */
+  kidTags: string[];
+  /** Original Help-me-find prompt text (when source = 'llm'). */
+  discoveryQuery: string | null;
+  /** Mirrored from activities.registration_end_date for sort/badge convenience. */
+  registrationEndDate: string | null;
   activity: {
     id: string;
     name: string;
@@ -554,6 +570,7 @@ export interface UserActivityWithDetails {
     age_min: number | null;
     age_max: number | null;
     registration_url: string | null;
+    registration_end_date: string | null;
     organization_id: string | null;
     organization: { id: string; name: string } | null;
     activity_locations: { id: string; address: string; location_name: string | null }[];
@@ -568,6 +585,8 @@ export interface UserActivityWithDetails {
     }[];
   };
   plannerEntryCount: number;
+  /** Distinct planners this activity sits on, with a representative status per planner. */
+  plannerPlacements: PlannerPlacement[];
 }
 
 export async function fetchUserActivities(userId: string): Promise<UserActivityWithDetails[]> {
@@ -576,9 +595,10 @@ export async function fetchUserActivities(userId: string): Promise<UserActivityW
   const { data, error } = await supabase
     .from("user_activities")
     .select(`
-      id, created_at, color,
+      id, created_at, color, source, shared_by_name, kid_tags, discovery_query,
       activity:activities!inner(
-        id, name, slug, verified, source, source_url, categories, description, age_min, age_max, registration_url, organization_id,
+        id, name, slug, verified, source, source_url, categories, description,
+        age_min, age_max, registration_url, registration_end_date, organization_id,
         organization:organizations(id, name),
         activity_locations(id, address, location_name),
         price_options(id, label, price_cents, price_unit),
@@ -593,28 +613,55 @@ export async function fetchUserActivities(userId: string): Promise<UserActivityW
     return [];
   }
 
-  // Get planner entry counts per activity_id for this user
   const activityIds = (data ?? []).map((r: any) => r.activity.id);
   if (activityIds.length === 0) return [];
 
-  const { data: counts } = await supabase
+  // Pull this user's planner_entries for these activities, with planner names so
+  // we can build the per-activity placements list (and keep the legacy
+  // plannerEntryCount field that the rail still consumes).
+  const { data: entries } = await supabase
     .from("planner_entries")
-    .select("session:sessions(activity_id)", { count: "exact" })
+    .select(`
+      planner_id,
+      status,
+      session:sessions(activity_id),
+      planner:planners(id, name)
+    `)
     .eq("user_id", userId)
     .in("session.activity_id", activityIds);
 
   const countMap: Record<string, number> = {};
-  for (const row of (counts ?? []) as any[]) {
+  // activity_id → (planner_id → placement)
+  const placementsMap: Record<string, Map<string, PlannerPlacement>> = {};
+  for (const row of (entries ?? []) as any[]) {
     const aid = row.session?.activity_id;
-    if (aid) countMap[aid] = (countMap[aid] ?? 0) + 1;
+    if (!aid) continue;
+    countMap[aid] = (countMap[aid] ?? 0) + 1;
+    if (!row.planner_id || !row.planner) continue;
+    const seen = placementsMap[aid] ?? (placementsMap[aid] = new Map());
+    if (!seen.has(row.planner_id)) {
+      seen.set(row.planner_id, {
+        plannerId: row.planner_id,
+        plannerName: row.planner.name ?? "Untitled planner",
+        status: row.status,
+      });
+    }
   }
 
   return (data ?? []).map((row: any) => ({
     id: row.id,
     created_at: row.created_at,
     color: row.color,
+    source: row.source,
+    sharedByName: row.shared_by_name,
+    kidTags: (row.kid_tags ?? []) as string[],
+    discoveryQuery: row.discovery_query,
+    registrationEndDate: row.activity.registration_end_date,
     activity: row.activity,
     plannerEntryCount: countMap[row.activity.id] ?? 0,
+    plannerPlacements: Array.from(
+      (placementsMap[row.activity.id] ?? new Map<string, PlannerPlacement>()).values()
+    ),
   }));
 }
 
