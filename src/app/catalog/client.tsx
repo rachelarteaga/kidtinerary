@@ -6,9 +6,10 @@ import { CatalogEmptyState } from "@/components/catalog/empty-state";
 
 interface Props {
   activities: UserActivityWithDetails[];
+  kids: { id: string; name: string }[];
 }
 
-export function CatalogClient({ activities }: Props) {
+export function CatalogClient({ activities, kids }: Props) {
   return (
     <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <h1 className="font-display font-extrabold text-3xl sm:text-4xl text-ink tracking-tight">
@@ -23,7 +24,7 @@ export function CatalogClient({ activities }: Props) {
       ) : (
         <div className="space-y-3">
           {activities.map((activity) => (
-            <CatalogRow key={activity.id} activity={activity} />
+            <CatalogRow key={activity.id} activity={activity} kids={kids} />
           ))}
         </div>
       )}

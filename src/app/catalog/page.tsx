@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { fetchUserActivities } from "@/lib/queries";
+import { fetchUserActivities, fetchChildren } from "@/lib/queries";
 import { CatalogClient } from "./client";
 
 export const metadata = {
@@ -14,7 +14,10 @@ export default async function CatalogPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  const activities = await fetchUserActivities(user.id);
+  const [activities, kids] = await Promise.all([
+    fetchUserActivities(user.id),
+    fetchChildren(user.id),
+  ]);
 
-  return <CatalogClient activities={activities} />;
+  return <CatalogClient activities={activities} kids={kids} />;
 }
