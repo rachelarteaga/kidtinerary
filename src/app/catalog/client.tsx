@@ -1,17 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { UserActivityWithDetails } from "@/lib/queries";
 import { CatalogRow } from "@/components/catalog/catalog-row";
 import { CatalogEmptyState } from "@/components/catalog/empty-state";
 import { ActivityDetailDrawer } from "@/components/planner/activity-detail-drawer";
+import { AddActivityModal } from "@/components/planner/add-activity-modal";
 import { KidFilter } from "@/components/catalog/kid-filter";
 import { SourceFilter } from "@/components/catalog/source-filter";
 import { SeasonFilter } from "@/components/catalog/season-filter";
 import { CategoryFilter } from "@/components/catalog/category-filter";
 import { SortMenu } from "@/components/catalog/sort-menu";
-import { AddActivityToCatalogModal } from "@/components/catalog/add-activity-to-catalog-modal";
 import { SparkleIcon } from "@/components/ui/sparkle-icon";
 import {
   parseFilterState,
@@ -23,9 +23,11 @@ import {
 interface Props {
   activities: UserActivityWithDetails[];
   kids: { id: string; name: string }[];
+  shareCampsDefault: boolean;
 }
 
-export function CatalogClient({ activities, kids }: Props) {
+export function CatalogClient({ activities, kids, shareCampsDefault }: Props) {
+  const router = useRouter();
   const [activeActivity, setActiveActivity] = useState<UserActivityWithDetails | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const searchParams = useSearchParams();
@@ -164,9 +166,14 @@ export function CatalogClient({ activities, kids }: Props) {
         />
       )}
 
-      <AddActivityToCatalogModal
+      <AddActivityModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
+        shareCampsDefault={shareCampsDefault}
+        onSubmitted={() => {
+          setAddOpen(false);
+          router.refresh();
+        }}
       />
     </main>
   );

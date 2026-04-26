@@ -14,10 +14,22 @@ export default async function CatalogPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  const [activities, kids] = await Promise.all([
+  const [activities, kids, profile] = await Promise.all([
     fetchUserActivities(user.id),
     fetchChildren(user.id),
+    supabase
+      .from("profiles")
+      .select("share_camps_default")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then((r: any) => r.data),
   ]);
 
-  return <CatalogClient activities={activities} kids={kids} />;
+  return (
+    <CatalogClient
+      activities={activities}
+      kids={kids}
+      shareCampsDefault={profile?.share_camps_default ?? true}
+    />
+  );
 }
