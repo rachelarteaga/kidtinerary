@@ -1601,6 +1601,35 @@ export async function updateProfile(input: {
 }
 
 /**
+ * Persist just the address field on the current user's profile.
+ * Used by the Help-me-find panel when the user provides a location for the
+ * first time from the inline mini-form.
+ */
+export async function saveProfileAddress(
+  address: string,
+): Promise<{ error?: string }> {
+  if (!address.trim()) return { error: "Address is required" };
+
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const addr = address.trim();
+  let storedAddress: string = addr;
+  const geo = await geocodeAddress(addr);
+  if (geo) storedAddress = geo.formatted_address;
+
+  const { error: profErr } = await supabase
+    .from("profiles")
+    .update({ address: storedAddress })
+    .eq("id", user.id);
+  if (profErr) return { error: profErr.message };
+
+  revalidatePath("/catalog");
+  return {};
+}
+
+/**
  * Binary per-planner sharing: at most one active share row per (user, planner).
  * If a row already exists, update it in place (token stays stable while the
  * owner edits filters). If none exists, insert a fresh row with a new token.
