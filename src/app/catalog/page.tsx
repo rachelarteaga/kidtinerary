@@ -19,7 +19,7 @@ export default async function CatalogPage() {
     fetchChildren(user.id),
     supabase
       .from("profiles")
-      .select("share_camps_default")
+      .select("share_camps_default, address")
       .eq("id", user.id)
       .maybeSingle()
       .then((r: any) => r.data),
@@ -30,6 +30,7 @@ export default async function CatalogPage() {
       activities={activities}
       kids={kids}
       shareCampsDefault={profile?.share_camps_default ?? true}
+      address={profile?.address ?? null}
     />
   );
 }

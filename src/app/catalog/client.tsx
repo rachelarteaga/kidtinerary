@@ -13,6 +13,7 @@ import { SeasonFilter } from "@/components/catalog/season-filter";
 import { CategoryFilter } from "@/components/catalog/category-filter";
 import { SortMenu } from "@/components/catalog/sort-menu";
 import { SparkleIcon } from "@/components/ui/sparkle-icon";
+import { HelpMeFindPanel, type KidSummary } from "@/components/catalog/help-me-find-panel";
 import { removeFromCatalog } from "@/lib/actions";
 import {
   parseFilterState,
@@ -23,14 +24,16 @@ import {
 
 interface Props {
   activities: UserActivityWithDetails[];
-  kids: { id: string; name: string }[];
+  kids: KidSummary[];
   shareCampsDefault: boolean;
+  address: string | null;
 }
 
-export function CatalogClient({ activities, kids, shareCampsDefault }: Props) {
+export function CatalogClient({ activities, kids, shareCampsDefault, address }: Props) {
   const router = useRouter();
   const [activeActivity, setActiveActivity] = useState<UserActivityWithDetails | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [helpMeFindOpen, setHelpMeFindOpen] = useState(false);
   const [pendingRemove, setPendingRemove] = useState<UserActivityWithDetails | null>(null);
   const [removeError, setRemoveError] = useState<string | null>(null);
   const [isRemoving, startRemoveTransition] = useTransition();
@@ -111,8 +114,7 @@ export function CatalogClient({ activities, kids, shareCampsDefault }: Props) {
   }, [filtered, sortKey]);
 
   function handleHelpMeFind() {
-    // TODO: Phase 9 wires the slide-over
-    console.log("Help me find — coming soon");
+    setHelpMeFindOpen(true);
   }
 
   return (
@@ -197,6 +199,14 @@ export function CatalogClient({ activities, kids, shareCampsDefault }: Props) {
           setAddOpen(false);
           router.refresh();
         }}
+      />
+
+      <HelpMeFindPanel
+        open={helpMeFindOpen}
+        onClose={() => setHelpMeFindOpen(false)}
+        kids={kids}
+        address={address}
+        onSaved={() => router.refresh()}
       />
 
       {pendingRemove && (
