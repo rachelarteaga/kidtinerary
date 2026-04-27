@@ -116,7 +116,7 @@ export function CatalogRow({ activity, kids, onClick, onRemove }: Props) {
               )}
             </div>
 
-            {/* Overflow menu — visible on hover (desktop), always visible on touch */}
+            {/* Overflow menu — always visible (mobile-first; no hover gating). */}
             {onRemove && (
               <button
                 ref={menuButtonRef}
@@ -125,7 +125,7 @@ export function CatalogRow({ activity, kids, onClick, onRemove }: Props) {
                 aria-label="More actions"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
-                className="flex-shrink-0 -mr-1 -mt-1 w-8 h-8 inline-flex items-center justify-center rounded-full text-ink-3 hover:text-ink hover:bg-base opacity-100 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                className="flex-shrink-0 -mr-1 -mt-1 w-8 h-8 inline-flex items-center justify-center rounded-full text-ink-3 hover:text-ink hover:bg-base transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                   <circle cx="5" cy="12" r="2" />
