@@ -19,9 +19,9 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Kidtinerary — Find camps & activities your kids will love",
+  title: "Kidtinerary — Every activity your kid does, in one place",
   description:
-    "Discover local camps, classes, and extracurricular activities for kids ages 3-12 in the Raleigh/Triangle area. Plan your schedule, track favorites, and never miss a registration deadline.",
+    "A personal catalog of every camp, class, lesson, and sport — past, present, and considering. With a text when it's time to sign up, pay, or show up.",
 };
 
 export default function RootLayout({

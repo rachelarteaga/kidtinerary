@@ -1,20 +1,23 @@
 import { NextResponse } from "next/server";
-import { generateText, Output } from "ai";
+import { generateText, Output, stepCountIs } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Help me find — LLM-backed activity suggestions.
+ * Help me find — LLM-backed activity suggestions, grounded by real-time
+ * web search.
  *
- * Uses Vercel AI Gateway via the default `provider/model` string syntax.
- * Set `AI_GATEWAY_API_KEY` in env (or rely on OIDC for Vercel deployments).
+ * Uses Vercel AI Gateway routing (`anthropic/claude-sonnet-4.6` provider
+ * string) plus Anthropic's provider-executed web_search_20250305 tool so
+ * the model can verify URLs and program details against the live web
+ * before returning structured results. Web search billing is metered
+ * separately by the gateway ($10 / 1000 searches at time of writing);
+ * with maxUses=3 per call and the 50/day per-user cap, the worst-case
+ * search cost per user is ~$1.50/day on top of LLM tokens.
  *
- * v1: structured output, no provider-executed web search. The model returns
- * results based on its training data; URLs may be stale or hallucinated. The
- * UI footer caveat ("These come from the web — double-check dates and
- * registration before signing up.") sets the right expectations. A follow-up
- * can wire OpenAI's webSearch tool or Anthropic's web search if URL accuracy
- * becomes a real problem.
+ * Required env: AI_GATEWAY_API_KEY (or rely on OIDC for Vercel deployments).
+ * Web search must also be enabled for the underlying Anthropic console.
  */
 
 // Function-scoped, lazy: instantiated per-request inside POST so cold-start
@@ -102,6 +105,14 @@ export async function POST(req: Request) {
       model: "anthropic/claude-sonnet-4.6",
       system: systemPrompt,
       prompt,
+      tools: {
+        web_search: anthropic.tools.webSearch_20250305({
+          maxUses: 3,
+        }),
+      },
+      // Web search adds steps (search call → search result → final synthesis).
+      // Cap total steps so a misbehaving model can't loop indefinitely.
+      stopWhen: stepCountIs(8),
       experimental_output: Output.object({ schema: ResponseSchema }),
       temperature: 0.4,
     });
@@ -117,21 +128,28 @@ export async function POST(req: Request) {
 function buildSystemPrompt(context: ContextPayload | null): string {
   const lines: string[] = [
     "You help busy parents find kids' activities (camps, classes, lessons, sports).",
-    "Given a description of what they're looking for, return 3 to 5 specific real-world activities you're CONFIDENT exist and are currently active.",
+    "",
+    "Given a description of what they're looking for, USE THE web_search TOOL to find 3 to 5 specific real-world activities currently being offered. Verify URLs and program details against the live web before returning them — do NOT rely on training data alone.",
+    "",
+    "Search strategy:",
+    "- Start with one targeted query that combines the parent's description with their location (e.g., 'art camps Park Slope Brooklyn summer 2026').",
+    "- If the first search isn't enough, do up to 2 more focused searches (different keywords or specific neighborhoods).",
+    "- For each candidate program, use a fresh search if you need to verify the registration page or current dates.",
+    "",
     "Return ONLY structured JSON matching the requested schema — no prose.",
     "",
     "For each result:",
     "- name: the specific program/camp name (e.g. 'Summer Outdoor Art Week'), not the parent organization",
-    "- url: a direct registration URL if you're confident it works; otherwise null",
+    "- url: a direct registration URL you have VERIFIED via search results; null if you couldn't find a current one",
     "- organizationName: the running org's name, when different from the program name",
     "- description: one or two short sentences",
     "- categories: zero or more of: sports, arts, stem, music, theater, academic, special_needs, religious, swimming, cooking, language, nature",
     "- ageMin / ageMax: integer years; null when not known",
-    "- registrationEndDate: YYYY-MM-DD if known; null otherwise",
+    "- registrationEndDate: YYYY-MM-DD if a search result confirms it; null otherwise",
     "- neighborhood: short location label (e.g. 'Park Slope'); null when not relevant",
     "- distanceMiles: rough distance from the user's location, when computable; null otherwise",
     "",
-    "BE CONSERVATIVE. If you can't confidently return 3 results, return fewer. Never fabricate URLs. Prefer well-known, established programs over speculative ones.",
+    "BE CONSERVATIVE. If your searches don't surface 3 confident matches, return fewer. Never fabricate URLs — return null instead.",
   ];
 
   if (context?.address) {
