@@ -20,24 +20,30 @@ import { createClient } from "@/lib/supabase/server";
  * Web search must also be enabled for the underlying Anthropic console.
  */
 
-// Function-scoped, lazy: instantiated per-request inside POST so cold-start
-// type-checks don't fail if env isn't yet present in dev.
+// Anthropic's structured-output mode does NOT accept array length
+// constraints (minItems / maxItems) or string format constraints (url,
+// minLength, etc.) on the schema it serializes for the model. Stripping
+// those down to plain shape — we instead enforce conservative bounds
+// in the system prompt ("3 to 5 results") and trim the array post-call
+// in case the model returns more.
 const ResultSchema = z.object({
-  name: z.string().min(1),
-  url: z.string().url().nullable(),
+  name: z.string(),
+  url: z.string().nullable(),
   organizationName: z.string().nullable(),
   description: z.string().nullable(),
   categories: z.array(z.string()),
-  ageMin: z.number().int().nullable(),
-  ageMax: z.number().int().nullable(),
+  ageMin: z.number().nullable(),
+  ageMax: z.number().nullable(),
   registrationEndDate: z.string().nullable(), // YYYY-MM-DD or null
   neighborhood: z.string().nullable(),
   distanceMiles: z.number().nullable(),
 });
 
 const ResponseSchema = z.object({
-  results: z.array(ResultSchema).min(0).max(8),
+  results: z.array(ResultSchema),
 });
+
+const HARD_RESULT_CAP = 8;
 
 interface ContextPayload {
   kids: Array<{
@@ -117,7 +123,14 @@ export async function POST(req: Request) {
       temperature: 0.4,
     });
 
-    return NextResponse.json(experimental_output);
+    // Defensive trim — the schema can't enforce a max so a misbehaving
+    // model could in theory return more. The system prompt asks for 3–5;
+    // an 8-item hard cap covers the long tail without surprising the user.
+    const trimmed = {
+      ...experimental_output,
+      results: (experimental_output?.results ?? []).slice(0, HARD_RESULT_CAP),
+    };
+    return NextResponse.json(trimmed);
   } catch (err) {
     console.error("help-me-find error:", err);
     const message = err instanceof Error ? err.message : "Could not load suggestions";
