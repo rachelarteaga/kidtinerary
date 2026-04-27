@@ -2052,7 +2052,8 @@ export async function untagKidOnUserActivity(
  */
 export interface HelpMeFindResultPayload {
   name: string;
-  url: string;
+  /** Registration URL when the LLM is confident; null otherwise. */
+  url: string | null;
   organizationName: string | null;
   description: string | null;
   categories: string[];
@@ -2087,7 +2088,7 @@ export async function saveHelpMeFindResult(
     .insert({
       name: payload.name,
       slug: `${slug}-${Date.now().toString(36)}`,
-      registration_url: payload.url,
+      registration_url: payload.url ?? null,
       description: payload.description,
       categories: payload.categories,
       age_min: payload.ageMin,

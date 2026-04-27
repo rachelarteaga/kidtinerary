@@ -21,10 +21,11 @@ interface Props {
   onSaved: () => void;
 }
 
-interface MockResult {
+interface FindResult {
+  /** Stable local id for keyed list rendering; generated from the array index. */
   id: string;
   name: string;
-  url: string;
+  url: string | null;
   organizationName: string | null;
   description: string | null;
   categories: string[];
@@ -34,75 +35,6 @@ interface MockResult {
   neighborhood: string | null;
   distanceMiles: number | null;
 }
-
-// Static mock data for v1. Phase 10 swaps to /api/help-me-find.
-const MOCK_RESULTS: MockResult[] = [
-  {
-    id: "mock-1",
-    name: "Brooklyn Open Studio — Outdoor Art Week",
-    url: "https://brooklynopenstudio.org/summer",
-    organizationName: "Brooklyn Open Studio",
-    description: "Half-day outdoor painting and printmaking week in Prospect Park.",
-    categories: ["arts"],
-    ageMin: 5,
-    ageMax: 8,
-    registrationEndDate: "2026-05-30",
-    neighborhood: "Park Slope",
-    distanceMiles: 0.6,
-  },
-  {
-    id: "mock-2",
-    name: "Prospect Park Outdoor Painting Camp",
-    url: "https://prospectpark.org/kids/painting",
-    organizationName: "Prospect Park Alliance",
-    description: "Plein air painting camp for elementary-aged kids.",
-    categories: ["arts", "nature"],
-    ageMin: 5,
-    ageMax: 10,
-    registrationEndDate: null,
-    neighborhood: "Prospect Park",
-    distanceMiles: 1.2,
-  },
-  {
-    id: "mock-3",
-    name: "Lefferts Historic Art Workshop",
-    url: "https://leffertshouse.org/programs",
-    organizationName: "Lefferts House",
-    description: "Mornings of museum-led art and history activities.",
-    categories: ["arts", "academic"],
-    ageMin: 6,
-    ageMax: null,
-    registrationEndDate: "2026-06-15",
-    neighborhood: "Crown Heights",
-    distanceMiles: 1.8,
-  },
-  {
-    id: "mock-4",
-    name: "BAM Kids Art + Music Lab",
-    url: "https://bam.org/kids/art-music",
-    organizationName: "Brooklyn Academy of Music",
-    description: "Combined art and music workshops in two-week sessions.",
-    categories: ["arts", "music"],
-    ageMin: 4,
-    ageMax: 7,
-    registrationEndDate: null,
-    neighborhood: "Fort Greene",
-    distanceMiles: 2.1,
-  },
-  {
-    id: "mock-5",
-    name: "Carroll Park Pottery Studio Summer",
-    url: "https://carrollparkpottery.com/summer-2026",
-    organizationName: "Carroll Park Pottery",
-    description: "Half-day pottery sessions in Carroll Gardens.",
-    categories: ["arts"],
-    ageMin: 7,
-    ageMax: 12,
-    registrationEndDate: "2026-05-10",
-    neighborhood: "Carroll Gardens",
-    distanceMiles: 1.5,
-  },
-];
 
 function kidAgeYears(birthDate: string | null): number | null {
   if (!birthDate) return null;
@@ -156,8 +88,9 @@ function formatAgeRange(min: number | null, max: number | null): string | null {
 export function HelpMeFindPanel({ open, onClose, kids, address: initialAddress, onSaved }: Props) {
   const [prompt, setPrompt] = useState("");
   const [useContext, setUseContext] = useState(true);
-  const [results, setResults] = useState<MockResult[] | null>(null);
+  const [results, setResults] = useState<FindResult[] | null>(null);
   const [isFinding, setIsFinding] = useState(false);
+  const [findError, setFindError] = useState<string | null>(null);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   const [addressDraft, setAddressDraft] = useState("");
@@ -185,18 +118,53 @@ export function HelpMeFindPanel({ open, onClose, kids, address: initialAddress, 
   const hasNoContext = !currentAddress && kids.length === 0;
   const showAddressForm = useContext && !currentAddress;
 
-  function handleFind() {
+  async function handleFind() {
     if (!prompt.trim() || isFinding) return;
     setIsFinding(true);
+    setFindError(null);
     setResults(null);
     setSavedIds(new Set());
-    setTimeout(() => {
-      setResults(MOCK_RESULTS);
+
+    try {
+      const contextPayload = useContext
+        ? {
+            kids:
+              kids.length > 0
+                ? kids.map((k) => ({
+                    name: k.name,
+                    ageYears: kidAgeYears(k.birth_date),
+                    interests: k.interests,
+                  }))
+                : null,
+            address: currentAddress,
+          }
+        : null;
+
+      const res = await fetch("/api/help-me-find", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: prompt.trim(), context: contextPayload }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? `Request failed (${res.status})`);
+      }
+
+      const data = (await res.json()) as { results: Omit<FindResult, "id">[] };
+      const withIds: FindResult[] = (data.results ?? []).map((r, i) => ({
+        ...r,
+        id: `r${i}-${(r.name ?? "").slice(0, 24).replace(/\s+/g, "-")}`,
+      }));
+      setResults(withIds);
+    } catch (err) {
+      setFindError(err instanceof Error ? err.message : "Could not load suggestions.");
+    } finally {
       setIsFinding(false);
-    }, 600);
+    }
   }
 
-  async function handleSave(result: MockResult) {
+  async function handleSave(result: FindResult) {
     if (savedIds.has(result.id) || savingIds.has(result.id)) return;
     setSavingIds((prev) => new Set(prev).add(result.id));
     const res = await saveHelpMeFindResult({
@@ -355,10 +323,24 @@ export function HelpMeFindPanel({ open, onClose, kids, address: initialAddress, 
             <SparkleIcon size={11} fill="#ffffff" />
             {isFinding ? "Looking…" : "Help me find"}
           </button>
+          {findError && (
+            <p className="font-sans text-xs text-[#c96164] mt-2">{findError}</p>
+          )}
         </section>
 
+        {/* Empty-results state — Find succeeded but returned 0 */}
+        {results !== null && results.length === 0 && !isFinding && (
+          <section className="px-6 mb-4">
+            <div className="rounded-lg border border-dashed border-ink-3 bg-surface p-4 text-center">
+              <p className="font-sans text-sm text-ink-2">
+                No matches. Try a different prompt or relax your constraints.
+              </p>
+            </div>
+          </section>
+        )}
+
         {/* Results list */}
-        {results !== null && (
+        {results !== null && results.length > 0 && (
           <section className="px-6 mb-4">
             <p className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-3">
               Options · {results.length} found
@@ -415,14 +397,16 @@ export function HelpMeFindPanel({ open, onClose, kids, address: initialAddress, 
                       </p>
                     )}
 
-                    <a
-                      href={result.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-sans text-[10px] text-ink underline underline-offset-2 mt-1.5 block truncate"
-                    >
-                      {result.url}
-                    </a>
+                    {result.url ? (
+                      <a
+                        href={result.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-sans text-[10px] text-ink underline underline-offset-2 mt-1.5 block truncate"
+                      >
+                        {result.url}
+                      </a>
+                    ) : null}
                   </div>
                 );
               })}
