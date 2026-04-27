@@ -1,14 +1,23 @@
+"use client";
+
+import { useRef, useState } from "react";
 import type { UserActivityWithDetails } from "@/lib/queries";
 import { KidShape } from "@/components/ui/kid-shape";
 import { categoryLabel, isRegDeadlineSoon, formatShortDate, formatSeasonHint } from "@/lib/format";
+import { AnchoredPopover } from "@/components/ui/anchored-popover";
 
 interface Props {
   activity: UserActivityWithDetails;
   kids: { id: string; name: string }[];
   onClick?: () => void;
+  /** Asks the parent to confirm + delete this row. Parent owns the modal. */
+  onRemove?: () => void;
 }
 
-export function CatalogRow({ activity, kids, onClick }: Props) {
+export function CatalogRow({ activity, kids, onClick, onRemove }: Props) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+
   const showOrg =
     activity.activity.organization &&
     activity.activity.organization.name &&
@@ -53,8 +62,22 @@ export function CatalogRow({ activity, kids, onClick }: Props) {
   const regDeadlineSoon = isRegDeadlineSoon(activity.registrationEndDate);
   const hasFooter = hasPlanner || isSharedByFriend || regDeadlineSoon;
 
+  function handleRemoveClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    setMenuOpen(false);
+    onRemove?.();
+  }
+
+  function handleMenuButtonClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    setMenuOpen((v) => !v);
+  }
+
   return (
-    <div className="rounded-lg border border-ink-3 bg-surface p-4 hover:border-ink transition-colors cursor-pointer" onClick={onClick}>
+    <div
+      className="group rounded-lg border border-ink-3 bg-surface p-4 hover:border-ink transition-colors cursor-pointer"
+      onClick={onClick}
+    >
       {/* Top section */}
       <div className="flex items-start gap-3">
         <span
@@ -92,6 +115,25 @@ export function CatalogRow({ activity, kids, onClick }: Props) {
                 ))
               )}
             </div>
+
+            {/* Overflow menu — visible on hover (desktop), always visible on touch */}
+            {onRemove && (
+              <button
+                ref={menuButtonRef}
+                type="button"
+                onClick={handleMenuButtonClick}
+                aria-label="More actions"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                className="flex-shrink-0 -mr-1 -mt-1 w-8 h-8 inline-flex items-center justify-center rounded-full text-ink-3 hover:text-ink hover:bg-base opacity-100 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <circle cx="5" cy="12" r="2" />
+                  <circle cx="12" cy="12" r="2" />
+                  <circle cx="19" cy="12" r="2" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -126,6 +168,23 @@ export function CatalogRow({ activity, kids, onClick }: Props) {
           )}
         </div>
       )}
+
+      <AnchoredPopover
+        anchorRef={menuButtonRef}
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        align="end"
+        className="bg-surface border border-ink rounded-lg shadow-[3px_3px_0_0_rgba(0,0,0,0.12)] py-1 min-w-[200px]"
+      >
+        <button
+          type="button"
+          role="menuitem"
+          onClick={handleRemoveClick}
+          className="block w-full text-left px-3 py-2 font-sans text-[13px] font-medium text-[#c96164] hover:bg-[#fdebec]"
+        >
+          Remove from catalog
+        </button>
+      </AnchoredPopover>
     </div>
   );
 }
