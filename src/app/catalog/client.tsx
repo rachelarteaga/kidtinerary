@@ -119,11 +119,11 @@ export function CatalogClient({ activities, kids, shareCampsDefault, address }: 
 
   return (
     <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="flex items-start justify-between gap-4 mb-2">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-2">
         <h1 className="font-display font-extrabold text-3xl sm:text-4xl text-ink tracking-tight">
           Your catalog
         </h1>
-        <div className="flex items-center gap-2 flex-shrink-0 mt-2">
+        <div className="flex items-center gap-2 flex-shrink-0 sm:mt-2">
           <button
             type="button"
             onClick={() => setAddOpen(true)}
@@ -147,8 +147,8 @@ export function CatalogClient({ activities, kids, shareCampsDefault, address }: 
 
       {/* Toolbar: filter chips + sort selector */}
       {activities.length > 0 && (
-        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-          <div className="flex items-center gap-2 flex-wrap min-w-0">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-2 min-w-0 flex-1 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <KidFilter kids={kids} value={filterState.kidIds} />
             <SourceFilter value={filterState.source} />
             <SeasonFilter value={filterState.seasons} />
@@ -239,7 +239,7 @@ export function CatalogClient({ activities, kids, shareCampsDefault, address }: 
             {removeError && (
               <p className="font-sans text-xs text-[#c96164] mb-3">{removeError}</p>
             )}
-            <div className="flex gap-2 justify-end">
+            <div className="flex flex-wrap gap-2 justify-end">
               <button
                 type="button"
                 onClick={() => setPendingRemove(null)}

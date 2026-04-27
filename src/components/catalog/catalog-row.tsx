@@ -86,7 +86,7 @@ export function CatalogRow({ activity, kids, onClick, onRemove }: Props) {
           aria-hidden
         />
         <div className="flex-1 min-w-0">
-          <div className="flex items-start gap-2">
+          <div className="flex flex-wrap items-start gap-2">
             {/* Name + meta */}
             <div className="flex-1 min-w-0">
               <h2 className="font-display font-extrabold text-base text-ink leading-tight break-words">
@@ -99,23 +99,6 @@ export function CatalogRow({ activity, kids, onClick, onRemove }: Props) {
               )}
             </div>
 
-            {/* Kid pill(s) right-aligned */}
-            <div className="flex items-start gap-2 flex-wrap justify-end mt-0.5 flex-shrink-0">
-              {taggedKids.length === 0 ? (
-                <span className="text-xs italic text-ink-3">Unassigned</span>
-              ) : (
-                taggedKids.map((kid) => (
-                  <span
-                    key={kid.index}
-                    className="inline-flex items-center gap-1.5 text-sm text-ink font-medium"
-                  >
-                    <KidShape index={kid.index} size={16} dotOnly />
-                    {kid.name}
-                  </span>
-                ))
-              )}
-            </div>
-
             {/* Overflow menu — always visible (mobile-first; no hover gating). */}
             {onRemove && (
               <button
@@ -125,7 +108,7 @@ export function CatalogRow({ activity, kids, onClick, onRemove }: Props) {
                 aria-label="More actions"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
-                className="flex-shrink-0 -mr-1 -mt-1 w-8 h-8 inline-flex items-center justify-center rounded-full text-ink-3 hover:text-ink hover:bg-base transition-colors"
+                className="order-2 sm:order-3 flex-shrink-0 -mr-1 -mt-1 w-10 h-10 inline-flex items-center justify-center rounded-full text-ink-3 hover:text-ink hover:bg-base transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                   <circle cx="5" cy="12" r="2" />
@@ -134,6 +117,23 @@ export function CatalogRow({ activity, kids, onClick, onRemove }: Props) {
                 </svg>
               </button>
             )}
+
+            {/* Kid pill(s) — wraps below meta line on mobile, inline on sm+ */}
+            <div className="order-3 sm:order-2 w-full sm:w-auto flex items-center gap-2 flex-wrap sm:justify-end mt-1 sm:mt-0.5">
+              {taggedKids.length === 0 ? (
+                <span className="text-xs italic text-ink-3">Unassigned</span>
+              ) : (
+                taggedKids.map((kid) => (
+                  <span
+                    key={kid.index}
+                    className="inline-flex items-center gap-1.5 text-sm text-ink font-medium flex-shrink-0"
+                  >
+                    <KidShape index={kid.index} size={16} dotOnly />
+                    {kid.name}
+                  </span>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>
