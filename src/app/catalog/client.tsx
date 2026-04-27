@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { UserActivityWithDetails } from "@/lib/queries";
 import { CatalogRow } from "@/components/catalog/catalog-row";
@@ -13,6 +13,7 @@ import { SeasonFilter } from "@/components/catalog/season-filter";
 import { CategoryFilter } from "@/components/catalog/category-filter";
 import { SortMenu } from "@/components/catalog/sort-menu";
 import { SparkleIcon } from "@/components/ui/sparkle-icon";
+import { removeFromCatalog } from "@/lib/actions";
 import {
   parseFilterState,
   matchesSourceFilter,
@@ -30,7 +31,25 @@ export function CatalogClient({ activities, kids, shareCampsDefault }: Props) {
   const router = useRouter();
   const [activeActivity, setActiveActivity] = useState<UserActivityWithDetails | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [pendingRemove, setPendingRemove] = useState<UserActivityWithDetails | null>(null);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+  const [isRemoving, startRemoveTransition] = useTransition();
   const searchParams = useSearchParams();
+
+  function confirmRemove() {
+    if (!pendingRemove) return;
+    setRemoveError(null);
+    const target = pendingRemove;
+    startRemoveTransition(async () => {
+      const result = await removeFromCatalog(target.id);
+      if (result.error) {
+        setRemoveError(result.error);
+        return;
+      }
+      setPendingRemove(null);
+      router.refresh();
+    });
+  }
 
   const filterState = useMemo(
     () => parseFilterState(new URLSearchParams(searchParams.toString())),
@@ -152,6 +171,10 @@ export function CatalogClient({ activities, kids, shareCampsDefault }: Props) {
               activity={activity}
               kids={kids}
               onClick={() => setActiveActivity(activity)}
+              onRemove={() => {
+                setRemoveError(null);
+                setPendingRemove(activity);
+              }}
             />
           ))}
         </div>
@@ -175,6 +198,58 @@ export function CatalogClient({ activities, kids, shareCampsDefault }: Props) {
           router.refresh();
         }}
       />
+
+      {pendingRemove && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Remove ${pendingRemove.activity.name}`}
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+        >
+          <div
+            className="absolute inset-0 bg-ink/40 cursor-pointer"
+            onClick={() => !isRemoving && setPendingRemove(null)}
+          />
+          <div className="relative bg-surface rounded-2xl shadow-xl w-full max-w-sm p-6 border border-ink-3">
+            <h3 className="font-display font-extrabold text-xl text-ink mb-2">
+              Remove {pendingRemove.activity.name}?
+            </h3>
+            <p className="text-sm text-ink-2 mb-4 leading-relaxed">
+              {pendingRemove.plannerEntryCount > 0 ? (
+                <>
+                  This will remove {pendingRemove.activity.name} from your catalog AND delete{" "}
+                  <strong>{pendingRemove.plannerEntryCount}</strong> planner entr
+                  {pendingRemove.plannerEntryCount === 1 ? "y" : "ies"} across your weeks.
+                  This cannot be undone.
+                </>
+              ) : (
+                <>This will remove {pendingRemove.activity.name} from your catalog.</>
+              )}
+            </p>
+            {removeError && (
+              <p className="font-sans text-xs text-[#c96164] mb-3">{removeError}</p>
+            )}
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setPendingRemove(null)}
+                disabled={isRemoving}
+                className="font-sans font-semibold text-[11px] uppercase tracking-widest px-3 py-1.5 text-ink-2 hover:text-ink disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmRemove}
+                disabled={isRemoving}
+                className="font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-[#ef8c8f] text-ink border border-ink hover:brightness-95 disabled:opacity-50"
+              >
+                {isRemoving ? "Removing…" : "Remove"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
