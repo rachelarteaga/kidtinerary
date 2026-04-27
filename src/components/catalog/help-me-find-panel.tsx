@@ -91,6 +91,10 @@ export function HelpMeFindPanel({ open, onClose, kids, address: initialAddress, 
   const [results, setResults] = useState<FindResult[] | null>(null);
   const [isFinding, setIsFinding] = useState(false);
   const [findError, setFindError] = useState<string | null>(null);
+  /** Wall-clock ms when Find re-enables. null = no active cooldown. */
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  /** True while cooldownUntil is in the future; ticks down via the timer below. */
+  const [now, setNow] = useState<number>(() => Date.now());
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   const [addressDraft, setAddressDraft] = useState("");
@@ -112,6 +116,20 @@ export function HelpMeFindPanel({ open, onClose, kids, address: initialAddress, 
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, onClose]);
 
+  // Tick `now` once a second while a cooldown is active so the Find
+  // button re-enables and the countdown label updates.
+  useEffect(() => {
+    if (cooldownUntil == null) return;
+    const t = setInterval(() => {
+      const t = Date.now();
+      setNow(t);
+      if (t >= cooldownUntil) {
+        setCooldownUntil(null);
+      }
+    }, 250);
+    return () => clearInterval(t);
+  }, [cooldownUntil]);
+
   if (!open) return null;
 
   const snippet = deriveSnippet(kids, currentAddress);
@@ -120,6 +138,7 @@ export function HelpMeFindPanel({ open, onClose, kids, address: initialAddress, 
 
   async function handleFind() {
     if (!prompt.trim() || isFinding) return;
+    if (cooldownUntil != null && now < cooldownUntil) return;
     setIsFinding(true);
     setFindError(null);
     setResults(null);
@@ -148,6 +167,12 @@ export function HelpMeFindPanel({ open, onClose, kids, address: initialAddress, 
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        // 429 = daily cap reached. Surface the server message verbatim;
+        // don't enter the local cooldown (the cap message is more useful).
+        if (res.status === 429) {
+          setFindError(data.error ?? "Daily limit reached. Try again tomorrow.");
+          return;
+        }
         throw new Error(data.error ?? `Request failed (${res.status})`);
       }
 
@@ -161,6 +186,10 @@ export function HelpMeFindPanel({ open, onClose, kids, address: initialAddress, 
       setFindError(err instanceof Error ? err.message : "Could not load suggestions.");
     } finally {
       setIsFinding(false);
+      // Brief client-side cooldown after each Find (success or generic
+      // failure) — prevents accidental double-clicks and gives users a
+      // moment to read results before re-running.
+      setCooldownUntil(Date.now() + 5000);
     }
   }
 
@@ -314,15 +343,27 @@ export function HelpMeFindPanel({ open, onClose, kids, address: initialAddress, 
 
         {/* Find button */}
         <section className="px-6 mb-4">
-          <button
-            type="button"
-            onClick={handleFind}
-            disabled={!prompt.trim() || isFinding}
-            className="w-full inline-flex items-center justify-center gap-2 font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-3 rounded-full bg-ink text-ink-inverse border border-ink disabled:opacity-50"
-          >
-            <SparkleIcon size={11} fill="#ffffff" />
-            {isFinding ? "Looking…" : "Help me find"}
-          </button>
+          {(() => {
+            const cooldownActive = cooldownUntil != null && now < cooldownUntil;
+            const cooldownSeconds = cooldownActive
+              ? Math.max(1, Math.ceil((cooldownUntil! - now) / 1000))
+              : 0;
+            return (
+              <button
+                type="button"
+                onClick={handleFind}
+                disabled={!prompt.trim() || isFinding || cooldownActive}
+                className="w-full inline-flex items-center justify-center gap-2 font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-3 rounded-full bg-ink text-ink-inverse border border-ink disabled:opacity-50"
+              >
+                <SparkleIcon size={11} fill="#ffffff" />
+                {isFinding
+                  ? "Looking…"
+                  : cooldownActive
+                    ? `Try again in ${cooldownSeconds}s`
+                    : "Help me find"}
+              </button>
+            );
+          })()}
           {findError && (
             <p className="font-sans text-xs text-[#c96164] mt-2">{findError}</p>
           )}

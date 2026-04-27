@@ -73,6 +73,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Prompt required" }, { status: 400 });
   }
 
+  // Daily cap (default 50/day). Increment-then-check is atomic via the RPC's
+  // SELECT FOR UPDATE; -1 returned means the user is already at or over the
+  // cap and the increment was NOT applied.
+  const DAILY_CAP = 50;
+  const { data: countAfter, error: rpcErr } = await supabase.rpc(
+    "increment_help_me_find_usage",
+    { p_user_id: user.id, p_cap: DAILY_CAP },
+  );
+  if (rpcErr) {
+    console.error("help-me-find rate-limit RPC error:", rpcErr);
+    return NextResponse.json({ error: "Could not check usage" }, { status: 500 });
+  }
+  if (countAfter === -1) {
+    return NextResponse.json(
+      {
+        error: `You've hit today's limit of ${DAILY_CAP} searches. Try again tomorrow.`,
+        rateLimited: true,
+      },
+      { status: 429 },
+    );
+  }
+
   const systemPrompt = buildSystemPrompt(body.context);
 
   try {
