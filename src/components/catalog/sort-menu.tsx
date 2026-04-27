@@ -42,10 +42,14 @@ export function SortMenu({ value }: Props) {
         ref={ref}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="font-sans text-[10px] font-semibold tracking-wide text-ink-2 border border-ink-3 rounded-full px-3 py-1.5 inline-flex items-center gap-1 hover:border-ink transition-colors whitespace-nowrap"
+        aria-label={`Sort: ${activeLabel}`}
+        className="font-sans text-[10px] font-semibold tracking-wide text-ink-2 border border-ink-3 rounded-full px-3 py-1.5 inline-flex items-center gap-1 hover:border-ink transition-colors whitespace-nowrap flex-shrink-0"
       >
-        <span className="text-ink-2">Sort:</span>{" "}
-        <span className="text-ink">{activeLabel}</span>{" "}
+        <span className="hidden sm:inline">
+          <span className="text-ink-2">Sort:</span>{" "}
+          <span className="text-ink">{activeLabel}</span>{" "}
+        </span>
+        <span className="sm:hidden text-ink-2" aria-hidden>↕</span>
         <span aria-hidden className="text-ink-2">▾</span>
       </button>
       <AnchoredPopover

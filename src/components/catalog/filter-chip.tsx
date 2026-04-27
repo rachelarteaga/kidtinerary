@@ -22,7 +22,7 @@ export function FilterChip({ label, active, children }: Props) {
         ref={ref}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`font-sans text-[10px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-full border transition-colors inline-flex items-center gap-1
+        className={`font-sans text-[10px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-full border transition-colors inline-flex items-center gap-1 flex-shrink-0
           ${active ? "bg-ink text-ink-inverse border-ink" : "bg-surface text-ink border-ink-3 hover:border-ink"}`}
       >
         {label} <span aria-hidden>▾</span>

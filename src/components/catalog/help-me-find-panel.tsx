@@ -260,7 +260,7 @@ export function HelpMeFindPanel({ open, onClose, kids, address: initialAddress, 
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="text-ink-2 hover:text-ink text-2xl leading-none p-1"
+            className="text-ink-2 hover:text-ink text-2xl leading-none p-2 min-w-11 min-h-11 inline-flex items-center justify-center -mr-1"
           >
             ✕
           </button>
@@ -308,12 +308,12 @@ export function HelpMeFindPanel({ open, onClose, kids, address: initialAddress, 
                 <p className="font-sans text-xs text-ink mb-2">
                   We need a starting point. Where should we look around?
                 </p>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <input
                     value={addressDraft}
                     onChange={(e) => setAddressDraft(e.target.value)}
                     placeholder="123 Main St, Brooklyn NY"
-                    className="flex-1 bg-surface border border-ink rounded-lg px-3 py-2 text-sm text-ink focus:outline-none font-sans"
+                    className="flex-1 min-w-0 bg-surface border border-ink rounded-lg px-3 py-2 text-sm text-ink focus:outline-none font-sans"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
@@ -325,7 +325,7 @@ export function HelpMeFindPanel({ open, onClose, kids, address: initialAddress, 
                     type="button"
                     onClick={handleSaveAddress}
                     disabled={savingAddress || !addressDraft.trim()}
-                    className="font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-1.5 rounded-full bg-ink text-ink-inverse border border-ink disabled:opacity-50 whitespace-nowrap"
+                    className="font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-1.5 rounded-full bg-ink text-ink-inverse border border-ink disabled:opacity-50 whitespace-nowrap flex-shrink-0"
                   >
                     {savingAddress ? "Saving…" : "Save"}
                   </button>
@@ -406,8 +406,8 @@ export function HelpMeFindPanel({ open, onClose, kids, address: initialAddress, 
                     key={result.id}
                     className="bg-surface border border-ink-3 rounded-lg p-3"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-display font-extrabold text-sm text-ink leading-snug">
+                    <div className="flex flex-wrap items-start gap-2">
+                      <h3 className="font-display font-extrabold text-sm text-ink leading-snug flex-1 min-w-0">
                         {result.name}
                       </h3>
                       <button
