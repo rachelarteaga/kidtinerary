@@ -32,7 +32,6 @@ interface FindResult {
   ageMin: number | null;
   ageMax: number | null;
   registrationEndDate: string | null;
-  neighborhood: string | null;
   address: string | null;
   distanceMiles: number | null;
 }
@@ -206,7 +205,6 @@ export function HelpMeFindPanel({ open, onClose, kids, address: initialAddress, 
       ageMin: result.ageMin,
       ageMax: result.ageMax,
       registrationEndDate: result.registrationEndDate,
-      neighborhood: result.neighborhood,
       address: result.address,
       discoveryQuery: prompt,
     });
@@ -399,9 +397,9 @@ export function HelpMeFindPanel({ open, onClose, kids, address: initialAddress, 
                   result.organizationName,
                   catLabels || null,
                   ageRange,
-                  result.neighborhood && result.distanceMiles != null
-                    ? `${result.neighborhood} (${result.distanceMiles} mi)`
-                    : result.neighborhood,
+                  result.address && result.distanceMiles != null
+                    ? `${result.address} (${result.distanceMiles} mi)`
+                    : result.address,
                 ].filter(Boolean);
 
                 return (

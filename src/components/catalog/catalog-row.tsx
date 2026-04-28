@@ -24,27 +24,14 @@ export function CatalogRow({ activity, kids, onClick, onRemove }: Props) {
     activity.activity.organization.name !== activity.activity.name &&
     activity.activity.organization.name !== "User-submitted";
 
-  // First location with usable text. Manual entry seeds an empty placeholder
-  // row, so filter on trimmed content rather than presence.
-  const locationRow =
-    activity.activity.activity_locations.find(
-      (l) =>
-        (l.address && l.address.trim().length > 0) ||
-        (l.location_name && l.location_name.trim().length > 0),
-    ) ?? null;
-  const locationLabel = locationRow
-    ? (locationRow.address?.trim() || locationRow.location_name?.trim() || null)
-    : null;
-  const mapsQuery = locationRow
-    ? (
-        locationRow.address?.trim() ||
-        [activity.activity.organization?.name, locationRow.location_name]
-          .filter((s): s is string => Boolean(s && s.trim()))
-          .join(" ")
-      )
-    : null;
-  const mapsUrl = mapsQuery
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`
+  // First location with a usable address. Manual entry seeds an empty
+  // placeholder row, so filter on trimmed content rather than presence.
+  const locationLabel =
+    activity.activity.activity_locations
+      .map((l) => l.address?.trim())
+      .find((a): a is string => Boolean(a && a.length > 0)) ?? null;
+  const mapsUrl = locationLabel
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(locationLabel)}`
     : null;
 
   // --- Meta line parts ---
