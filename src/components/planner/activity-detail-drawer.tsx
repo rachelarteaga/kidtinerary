@@ -143,32 +143,80 @@ interface CatalogModeProps {
   open: boolean;
   onClose: () => void;
   catalogActivity: UserActivityWithDetails;
+  /** Called after any successful edit so the parent can refresh server data
+   * (e.g. router.refresh()). Edits to `activeActivity` would otherwise be
+   * invisible to the catalog list. */
+  onChanged: () => void;
   /** Unused in catalog mode — pass [] or omit (required by JS, typed as optional via never trick) */
   entry?: never;
   kids?: never;
   plannerId?: never;
-  onChanged?: never;
 }
 
 type Props = PlannerModeProps | CatalogModeProps;
 
+function buildEntryFromCatalog(ca: UserActivityWithDetails): DrawerEntry {
+  return {
+    userCampId: ca.id,
+    activityId: ca.activity.id,
+    orgId: ca.activity.organization_id,
+    source: ca.activity.source,
+    sourceUrl: ca.activity.source_url,
+    addedAt: ca.created_at,
+    activityName: ca.activity.name,
+    activitySlug: ca.activity.slug,
+    activityUrl: ca.activity.registration_url,
+    activityDescription: ca.activity.description,
+    ageMin: ca.activity.age_min,
+    ageMax: ca.activity.age_max,
+    categories: ca.activity.categories,
+    orgName: ca.activity.organization?.name ?? null,
+    verified: ca.activity.verified,
+    locationName: ca.activity.activity_locations[0]?.location_name ?? null,
+    address: ca.activity.activity_locations[0]?.address ?? null,
+    scrapedPrices: ca.activity.price_options.map((p) => ({
+      id: p.id,
+      label: p.label,
+      price_cents: p.price_cents,
+      price_unit: p.price_unit,
+    })),
+    scrapedSessions: ca.activity.sessions.map((s) => ({
+      id: s.id,
+      starts_at: s.starts_at,
+      ends_at: s.ends_at,
+      time_slot: s.time_slot,
+    })),
+    placed: null,
+  };
+}
+
 export function ActivityDetailDrawer(props: Props) {
   const { mode = "planner", open, onClose } = props;
-  // Planner-mode props (undefined in catalog mode)
   const plannerEntry = props.mode !== "catalog" ? props.entry : null;
   const kids = props.mode !== "catalog" ? props.kids : [];
   const plannerId = props.mode !== "catalog" ? props.plannerId : "";
-  const onChanged = props.mode !== "catalog" ? props.onChanged : (() => {});
+  const onChanged = props.onChanged;
   const catalogActivity = props.mode === "catalog" ? props.catalogActivity : null;
   const plannerPlacements = props.mode === "catalog" ? props.catalogActivity.plannerPlacements : [];
 
-  // Track previous plannerEntry so we can reset local state when it changes
-  // without calling setState inside a useEffect (which triggers lint warnings).
-  const [local, setLocal] = useState<DrawerEntry | null>(plannerEntry ?? null);
-  const [prevPlannerEntry, setPrevPlannerEntry] = useState(plannerEntry);
-  if (mode !== "catalog" && plannerEntry !== prevPlannerEntry) {
-    setPrevPlannerEntry(plannerEntry);
-    setLocal(plannerEntry ?? null);
+  // Single optimistic-state model for both modes. Seeded from whichever
+  // source prop the current mode uses; reset whenever that source ref
+  // changes (e.g. parent re-fetches after onChanged → router.refresh()).
+  // Doing this without a useEffect avoids lint warnings on render-phase
+  // setState; React handles the in-render setState correctly.
+  const sourceRef: unknown = mode === "catalog" ? catalogActivity : plannerEntry;
+  const buildInitial = (): DrawerEntry | null =>
+    mode === "catalog"
+      ? catalogActivity
+        ? buildEntryFromCatalog(catalogActivity)
+        : null
+      : plannerEntry ?? null;
+
+  const [local, setLocal] = useState<DrawerEntry | null>(buildInitial);
+  const [prevSourceRef, setPrevSourceRef] = useState<unknown>(sourceRef);
+  if (sourceRef !== prevSourceRef) {
+    setPrevSourceRef(sourceRef);
+    setLocal(buildInitial());
   }
 
   const [isPending, startTransition] = useTransition();
@@ -177,45 +225,6 @@ export function ActivityDetailDrawer(props: Props) {
   const [draftName, setDraftName] = useState("");
   const [draftOrg, setDraftOrg] = useState("");
   const [draftUrl, setDraftUrl] = useState("");
-
-  // Build a synthetic DrawerEntry from catalogActivity for catalog mode
-  const catalogLocal: DrawerEntry | null = catalogActivity
-    ? {
-        userCampId: catalogActivity.id,
-        activityId: catalogActivity.activity.id,
-        orgId: catalogActivity.activity.organization_id,
-        source: catalogActivity.activity.source,
-        sourceUrl: catalogActivity.activity.source_url,
-        addedAt: catalogActivity.created_at,
-        activityName: catalogActivity.activity.name,
-        activitySlug: catalogActivity.activity.slug,
-        activityUrl: catalogActivity.activity.registration_url,
-        activityDescription: catalogActivity.activity.description,
-        ageMin: catalogActivity.activity.age_min,
-        ageMax: catalogActivity.activity.age_max,
-        categories: catalogActivity.activity.categories,
-        orgName: catalogActivity.activity.organization?.name ?? null,
-        verified: catalogActivity.activity.verified,
-        locationName: catalogActivity.activity.activity_locations[0]?.location_name ?? null,
-        address: catalogActivity.activity.activity_locations[0]?.address ?? null,
-        scrapedPrices: catalogActivity.activity.price_options.map((p) => ({
-          id: p.id,
-          label: p.label,
-          price_cents: p.price_cents,
-          price_unit: p.price_unit,
-        })),
-        scrapedSessions: catalogActivity.activity.sessions.map((s) => ({
-          id: s.id,
-          starts_at: s.starts_at,
-          ends_at: s.ends_at,
-          time_slot: s.time_slot,
-        })),
-        placed: null,
-      }
-    : null;
-
-  // In catalog mode, use catalogLocal; in planner mode use the local state
-  const effectiveLocal: DrawerEntry | null = mode === "catalog" ? catalogLocal : local;
 
   useEffect(() => {
     if (!open) return;
@@ -227,34 +236,34 @@ export function ActivityDetailDrawer(props: Props) {
   }, [open, onClose, editingField]);
 
   function startEdit(field: "name" | "org" | "url") {
-    if (!effectiveLocal) return;
-    if (effectiveLocal.source === "curated") return; // curated rows are read-only
-    setDraftName(effectiveLocal.activityName);
-    setDraftOrg(effectiveLocal.orgName ?? "");
-    setDraftUrl(effectiveLocal.activityUrl ?? "");
+    if (!local) return;
+    if (local.source === "curated") return; // curated rows are read-only
+    setDraftName(local.activityName);
+    setDraftOrg(local.orgName ?? "");
+    setDraftUrl(local.activityUrl ?? "");
     setEditingField(field);
   }
 
   async function commitEdit() {
-    if (!effectiveLocal || !editingField) return;
+    if (!local || !editingField) return;
     const field = editingField;
     setEditingField(null);
     const patch: { name?: string; orgName?: string; url?: string | null } = {};
-    if (field === "name" && draftName !== effectiveLocal.activityName) {
+    if (field === "name" && draftName !== local.activityName) {
       patch.name = draftName;
-      if (mode !== "catalog") setLocal({ ...effectiveLocal, activityName: draftName });
+      setLocal({ ...local, activityName: draftName });
     }
-    if (field === "org" && draftOrg !== (effectiveLocal.orgName ?? "")) {
+    if (field === "org" && draftOrg !== (local.orgName ?? "")) {
       patch.orgName = draftOrg;
-      if (mode !== "catalog") setLocal({ ...effectiveLocal, orgName: draftOrg || null });
+      setLocal({ ...local, orgName: draftOrg || null });
     }
-    if (field === "url" && draftUrl !== (effectiveLocal.activityUrl ?? "")) {
+    if (field === "url" && draftUrl !== (local.activityUrl ?? "")) {
       patch.url = draftUrl || null;
-      if (mode !== "catalog") setLocal({ ...effectiveLocal, activityUrl: draftUrl || null });
+      setLocal({ ...local, activityUrl: draftUrl || null });
     }
     if (Object.keys(patch).length === 0) return;
     startTransition(async () => {
-      const r = await updateActivityFields({ activityId: effectiveLocal.activityId, ...patch });
+      const r = await updateActivityFields({ activityId: local.activityId, ...patch });
       if (r.error) {
         alert(r.error);
       }
@@ -267,19 +276,19 @@ export function ActivityDetailDrawer(props: Props) {
   }
 
   function removeUrl() {
-    if (!effectiveLocal || effectiveLocal.source === "curated") return;
-    if (mode !== "catalog") setLocal({ ...effectiveLocal, activityUrl: null });
+    if (!local || local.source === "curated") return;
+    setLocal({ ...local, activityUrl: null });
     startTransition(async () => {
-      const r = await updateActivityFields({ activityId: effectiveLocal.activityId, url: null });
+      const r = await updateActivityFields({ activityId: local.activityId, url: null });
       if (r.error) alert(r.error);
       onChanged();
     });
   }
 
-  if (!open || !effectiveLocal) return null;
+  if (!open || !local) return null;
 
-  // Use effectiveLocal as the single source of truth for render
-  const local2 = effectiveLocal;
+  // Use local as the single source of truth for render
+  const local2 = local;
   const isCurated = local2.source === "curated";
   const kidName = local2.placed ? (kids ?? []).find((k) => k.id === local2.placed!.childId)?.name ?? "" : "";
 
@@ -616,15 +625,18 @@ export function ActivityDetailDrawer(props: Props) {
             <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Location</h3>
             <input
               value={local2.address ?? ""}
-              onChange={(e) => {
-                if (mode !== "catalog") setLocal({ ...local2, address: e.target.value });
-              }}
+              onChange={(e) => setLocal({ ...local2, address: e.target.value })}
               onBlur={() => {
                 startTransition(async () => {
                   const r = await updateActivityFields({ activityId: local2.activityId, address: local2.address ?? "" });
                   if (r.error) alert(r.error);
                   onChanged();
                 });
+              }}
+              onKeyDown={(e) => {
+                // Enter commits via blur (which runs the save above).
+                if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
+                if (e.key === "Escape") (e.currentTarget as HTMLInputElement).blur();
               }}
               disabled={isCurated}
               placeholder="Address"
@@ -671,7 +683,7 @@ export function ActivityDetailDrawer(props: Props) {
                       const next = selected
                         ? local2.categories.filter((c) => c !== cat)
                         : [...local2.categories, cat];
-                      if (mode !== "catalog") setLocal({ ...local2, categories: next });
+                      setLocal({ ...local2, categories: next });
                       startTransition(async () => {
                         const r = await updateActivityFields({ activityId: local2.activityId, categories: next });
                         if (r.error) alert(r.error);
@@ -809,7 +821,14 @@ export function ActivityDetailDrawer(props: Props) {
             )}
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => {
+                // Blur whatever's focused so any pending input fires its
+                // onBlur (and thus saves) before the drawer unmounts.
+                if (document.activeElement instanceof HTMLElement) {
+                  document.activeElement.blur();
+                }
+                onClose();
+              }}
               className="font-sans text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-ink/90 ml-auto"
             >
               Done

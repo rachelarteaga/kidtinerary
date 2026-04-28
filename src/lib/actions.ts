@@ -313,6 +313,7 @@ export async function updatePlannerEntryStatus(
   }
 
   revalidatePath("/planner");
+  revalidatePath("/catalog");
   return { success: true };
 }
 
@@ -391,6 +392,7 @@ export async function removePlannerEntry(entryId: string) {
   }
 
   revalidatePath("/planner");
+  revalidatePath("/catalog");
   return { success: true };
 }
 
@@ -932,6 +934,7 @@ export async function updateActivityFields(params: {
   }
 
   revalidatePath("/planner");
+  revalidatePath("/catalog");
   return { orgId: resolvedOrgId };
 }
 
@@ -1021,6 +1024,7 @@ export async function assignActivityToWeek(
   if (error || !entry) return { error: "Failed to assign activity" };
 
   revalidatePath("/planner");
+  revalidatePath("/catalog");
   return { entryId: entry.id };
 }
 
@@ -1056,6 +1060,7 @@ export async function removeActivityFromShortlist(userCampId: string): Promise<{
   await supabase.from("user_activities").delete().eq("id", userCampId).eq("user_id", user.id);
 
   revalidatePath("/planner");
+  revalidatePath("/catalog");
   return {};
 }
 
