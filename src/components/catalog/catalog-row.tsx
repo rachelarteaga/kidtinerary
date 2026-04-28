@@ -24,15 +24,69 @@ export function CatalogRow({ activity, kids, onClick, onRemove }: Props) {
     activity.activity.organization.name !== activity.activity.name &&
     activity.activity.organization.name !== "User-submitted";
 
+  // First location with usable text. Manual entry seeds an empty placeholder
+  // row, so filter on trimmed content rather than presence.
+  const locationRow =
+    activity.activity.activity_locations.find(
+      (l) =>
+        (l.address && l.address.trim().length > 0) ||
+        (l.location_name && l.location_name.trim().length > 0),
+    ) ?? null;
+  const locationLabel = locationRow
+    ? (locationRow.address?.trim() || locationRow.location_name?.trim() || null)
+    : null;
+  const mapsQuery = locationRow
+    ? (
+        locationRow.address?.trim() ||
+        [activity.activity.organization?.name, locationRow.location_name]
+          .filter((s): s is string => Boolean(s && s.trim()))
+          .join(" ")
+      )
+    : null;
+  const mapsUrl = mapsQuery
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`
+    : null;
+
   // --- Meta line parts ---
-  const metaParts: string[] = [];
+  // Mixed strings and JSX (links) — joined with " · " separators in render.
+  const metaItems: React.ReactNode[] = [];
 
   if (showOrg && activity.activity.organization) {
-    metaParts.push(activity.activity.organization.name);
+    const orgName = activity.activity.organization.name;
+    const orgUrl = activity.activity.registration_url;
+    metaItems.push(
+      orgUrl ? (
+        <a
+          href={orgUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="underline underline-offset-2 hover:text-ink"
+        >
+          {orgName}
+        </a>
+      ) : (
+        orgName
+      ),
+    );
   }
 
   if (activity.activity.categories.length > 0) {
-    metaParts.push(categoryLabel(activity.activity.categories[0]));
+    metaItems.push(categoryLabel(activity.activity.categories[0]));
+  }
+
+  if (locationLabel && mapsUrl) {
+    metaItems.push(
+      <a
+        href={mapsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className="underline underline-offset-2 hover:text-ink"
+      >
+        {locationLabel}
+      </a>,
+    );
   }
 
   // Season hint: derive from the earliest session start date
@@ -43,7 +97,7 @@ export function CatalogRow({ activity, kids, onClick, onRemove }: Props) {
   const earliestSession = sessionDates[0] ?? null;
   const seasonHint = formatSeasonHint(earliestSession);
   if (seasonHint) {
-    metaParts.push(seasonHint);
+    metaItems.push(seasonHint);
   }
 
   // --- Kid pills ---
@@ -92,9 +146,14 @@ export function CatalogRow({ activity, kids, onClick, onRemove }: Props) {
               <h2 className="font-display font-extrabold text-base text-ink leading-tight break-words">
                 {activity.activity.name}
               </h2>
-              {metaParts.length > 0 && (
+              {metaItems.length > 0 && (
                 <p className="font-sans text-xs text-ink-2 mt-1">
-                  {metaParts.join(" · ")}
+                  {metaItems.map((item, i) => (
+                    <span key={i}>
+                      {i > 0 && " · "}
+                      {item}
+                    </span>
+                  ))}
                 </p>
               )}
             </div>
