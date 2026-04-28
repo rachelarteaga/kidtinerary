@@ -313,6 +313,7 @@ export async function updatePlannerEntryStatus(
   }
 
   revalidatePath("/planner");
+  revalidatePath("/catalog");
   return { success: true };
 }
 
@@ -391,6 +392,7 @@ export async function removePlannerEntry(entryId: string) {
   }
 
   revalidatePath("/planner");
+  revalidatePath("/catalog");
   return { success: true };
 }
 
@@ -932,6 +934,7 @@ export async function updateActivityFields(params: {
   }
 
   revalidatePath("/planner");
+  revalidatePath("/catalog");
   return { orgId: resolvedOrgId };
 }
 
@@ -1021,6 +1024,7 @@ export async function assignActivityToWeek(
   if (error || !entry) return { error: "Failed to assign activity" };
 
   revalidatePath("/planner");
+  revalidatePath("/catalog");
   return { entryId: entry.id };
 }
 
@@ -1056,6 +1060,7 @@ export async function removeActivityFromShortlist(userCampId: string): Promise<{
   await supabase.from("user_activities").delete().eq("id", userCampId).eq("user_id", user.id);
 
   revalidatePath("/planner");
+  revalidatePath("/catalog");
   return {};
 }
 
@@ -2060,9 +2065,7 @@ export interface HelpMeFindResultPayload {
   ageMin: number | null;
   ageMax: number | null;
   registrationEndDate: string | null;
-  /** Short location label (e.g. "Park Slope"); null when LLM didn't surface one. */
-  neighborhood: string | null;
-  /** Street address verified from search results; null otherwise. */
+  /** Location text — street address when verifiable, neighborhood/area label otherwise. */
   address: string | null;
   /** The original prompt text the user typed; persisted for "find more like this" later. */
   discoveryQuery: string;
@@ -2134,17 +2137,17 @@ export async function saveHelpMeFindResult(
     return { error: activityErr?.message ?? "Could not save activity" };
   }
 
-  // Persist address/neighborhood when the LLM surfaced either, so the saved
-  // card has something to render and link to Google Maps. `location` is
-  // NOT NULL geography — POINT(0 0) is the project-wide sentinel for
-  // unverified coordinates; the scraper backfills real coords later.
-  if (payload.address || payload.neighborhood) {
+  // Persist the LLM's address into the same column the activity-detail
+  // drawer's Location editor reads and writes, so users can correct it
+  // post-save. `location` is NOT NULL geography; POINT(0 0) is the
+  // project-wide sentinel for unverified coordinates (scraper backfills).
+  if (payload.address) {
     const { error: locErr } = await supabase
       .from("activity_locations")
       .insert({
         activity_id: activityRow.id,
-        address: payload.address ?? "",
-        location_name: payload.neighborhood ?? null,
+        address: payload.address,
+        location_name: null,
         location: "POINT(0 0)",
       });
     if (locErr) {

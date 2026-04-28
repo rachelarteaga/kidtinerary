@@ -35,7 +35,6 @@ const ResultSchema = z.object({
   ageMin: z.number().nullable(),
   ageMax: z.number().nullable(),
   registrationEndDate: z.string().nullable(), // YYYY-MM-DD or null
-  neighborhood: z.string().nullable(),
   address: z.string().nullable(),
   distanceMiles: z.number().nullable(),
 });
@@ -160,8 +159,7 @@ function buildSystemPrompt(context: ContextPayload | null): string {
     "- categories: zero or more of: sports, arts, stem, music, theater, academic, special_needs, religious, swimming, cooking, language, nature",
     "- ageMin / ageMax: integer years; null when not known",
     "- registrationEndDate: YYYY-MM-DD if a search result confirms it; null otherwise",
-    "- neighborhood: short location label (e.g. 'Park Slope'); null when not relevant",
-    "- address: street address (e.g. '123 5th Ave, Brooklyn NY 11215') ONLY when verified from a search result; null otherwise — never guess",
+    "- address: location of the program — prefer a verified street address (e.g. '123 5th Ave, Brooklyn NY 11215'); when only a neighborhood or area is verifiable, return that label (e.g. 'Park Slope, Brooklyn'); null when unknown — never guess a street address",
     "- distanceMiles: rough distance from the user's location, when computable; null otherwise",
     "",
     "BE CONSERVATIVE. If your searches don't surface 4 confident matches, return fewer. Never fabricate URLs or addresses — return null instead.",
