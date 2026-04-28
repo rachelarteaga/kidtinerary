@@ -200,11 +200,18 @@ export function ActivityDetailDrawer(props: Props) {
   const plannerPlacements = props.mode === "catalog" ? props.catalogActivity.plannerPlacements : [];
 
   // Single optimistic-state model for both modes. Seeded from whichever
-  // source prop the current mode uses; reset whenever that source ref
-  // changes (e.g. parent re-fetches after onChanged → router.refresh()).
-  // Doing this without a useEffect avoids lint warnings on render-phase
-  // setState; React handles the in-render setState correctly.
-  const sourceRef: unknown = mode === "catalog" ? catalogActivity : plannerEntry;
+  // source prop the current mode uses, but reset only when the underlying
+  // ENTITY changes — not when the source object's reference changes from
+  // a parent re-render. The planner's drawerEntry is a useMemo that emits
+  // a new object literal on every recompute (entries/userActivities array
+  // refs change after router.refresh()), so reference-based reset would
+  // wipe the user's just-typed value on every save round-trip even though
+  // the entity is unchanged. Tracking by id keeps optimistic edits sticky
+  // until the user navigates to a different activity or placement.
+  const trackedKey =
+    mode === "catalog"
+      ? `c:${catalogActivity?.id ?? ""}`
+      : `p:${plannerEntry?.userCampId ?? ""}:${plannerEntry?.placed?.id ?? ""}`;
   const buildInitial = (): DrawerEntry | null =>
     mode === "catalog"
       ? catalogActivity
@@ -213,9 +220,9 @@ export function ActivityDetailDrawer(props: Props) {
       : plannerEntry ?? null;
 
   const [local, setLocal] = useState<DrawerEntry | null>(buildInitial);
-  const [prevSourceRef, setPrevSourceRef] = useState<unknown>(sourceRef);
-  if (sourceRef !== prevSourceRef) {
-    setPrevSourceRef(sourceRef);
+  const [prevTrackedKey, setPrevTrackedKey] = useState<string>(trackedKey);
+  if (trackedKey !== prevTrackedKey) {
+    setPrevTrackedKey(trackedKey);
     setLocal(buildInitial());
   }
 
@@ -625,7 +632,10 @@ export function ActivityDetailDrawer(props: Props) {
             <h3 className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-2">Location</h3>
             <input
               value={local2.address ?? ""}
-              onChange={(e) => setLocal({ ...local2, address: e.target.value })}
+              onChange={(e) => {
+                const v = e.target.value;
+                setLocal((prev) => (prev ? { ...prev, address: v } : prev));
+              }}
               onBlur={() => {
                 startTransition(async () => {
                   const r = await updateActivityFields({ activityId: local2.activityId, address: local2.address ?? "" });
