@@ -33,6 +33,7 @@ interface FindResult {
   ageMax: number | null;
   registrationEndDate: string | null;
   neighborhood: string | null;
+  address: string | null;
   distanceMiles: number | null;
 }
 
@@ -205,6 +206,8 @@ export function HelpMeFindPanel({ open, onClose, kids, address: initialAddress, 
       ageMin: result.ageMin,
       ageMax: result.ageMax,
       registrationEndDate: result.registrationEndDate,
+      neighborhood: result.neighborhood,
+      address: result.address,
       discoveryQuery: prompt,
     });
     setSavingIds((prev) => {

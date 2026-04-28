@@ -2060,15 +2060,20 @@ export interface HelpMeFindResultPayload {
   ageMin: number | null;
   ageMax: number | null;
   registrationEndDate: string | null;
+  /** Short location label (e.g. "Park Slope"); null when LLM didn't surface one. */
+  neighborhood: string | null;
+  /** Street address verified from search results; null otherwise. */
+  address: string | null;
   /** The original prompt text the user typed; persisted for "find more like this" later. */
   discoveryQuery: string;
 }
 
 /**
- * Save a Help-me-find suggestion into the user's catalog. Creates the
- * activities row (origin='llm') and a user_activities row (source='llm'),
- * skipping organization linkage in v1 (the LLM's organizationName is
- * dropped — adding org lookup/create is a follow-up).
+ * Save a Help-me-find suggestion into the user's catalog. Mirrors the
+ * manual-entry path in submitActivity: lookup-or-create an organizations
+ * row (case-insensitive, source='user'), insert the activity with that
+ * FK, and persist any address/neighborhood the LLM surfaced into
+ * activity_locations so the saved card can render org name and location.
  */
 export async function saveHelpMeFindResult(
   payload: HelpMeFindResultPayload,
@@ -2076,6 +2081,30 @@ export async function saveHelpMeFindResult(
   const supabase = (await createClient()) as any;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
+
+  let orgId: string | null = null;
+  if (payload.organizationName) {
+    const { data: existingOrg } = await supabase
+      .from("organizations")
+      .select("id")
+      .ilike("name", payload.organizationName)
+      .eq("source", "user")
+      .maybeSingle();
+    if (existingOrg) {
+      orgId = existingOrg.id;
+    } else {
+      const { data: newOrg, error: orgErr } = await supabase
+        .from("organizations")
+        .insert({ name: payload.organizationName, source: "user" })
+        .select("id")
+        .single();
+      if (orgErr || !newOrg) {
+        console.error("saveHelpMeFindResult: organizations insert failed", orgErr);
+        return { error: orgErr?.message ?? "Could not save organization" };
+      }
+      orgId = newOrg.id;
+    }
+  }
 
   const slug = payload.name
     .toLowerCase()
@@ -2086,6 +2115,7 @@ export async function saveHelpMeFindResult(
   const { data: activityRow, error: activityErr } = await supabase
     .from("activities")
     .insert({
+      organization_id: orgId,
       name: payload.name,
       slug: `${slug}-${Date.now().toString(36)}`,
       registration_url: payload.url ?? null,
@@ -2102,6 +2132,25 @@ export async function saveHelpMeFindResult(
   if (activityErr || !activityRow) {
     console.error("saveHelpMeFindResult: activities insert failed", activityErr);
     return { error: activityErr?.message ?? "Could not save activity" };
+  }
+
+  // Persist address/neighborhood when the LLM surfaced either, so the saved
+  // card has something to render and link to Google Maps. `location` is
+  // NOT NULL geography — POINT(0 0) is the project-wide sentinel for
+  // unverified coordinates; the scraper backfills real coords later.
+  if (payload.address || payload.neighborhood) {
+    const { error: locErr } = await supabase
+      .from("activity_locations")
+      .insert({
+        activity_id: activityRow.id,
+        address: payload.address ?? "",
+        location_name: payload.neighborhood ?? null,
+        location: "POINT(0 0)",
+      });
+    if (locErr) {
+      console.error("saveHelpMeFindResult: activity_locations insert failed", locErr);
+      // Non-fatal — the activity is already saved; just no map link.
+    }
   }
 
   // Pick a palette color the user hasn't used yet for this activity row.

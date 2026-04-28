@@ -36,6 +36,7 @@ const ResultSchema = z.object({
   ageMax: z.number().nullable(),
   registrationEndDate: z.string().nullable(), // YYYY-MM-DD or null
   neighborhood: z.string().nullable(),
+  address: z.string().nullable(),
   distanceMiles: z.number().nullable(),
 });
 
@@ -142,7 +143,7 @@ function buildSystemPrompt(context: ContextPayload | null): string {
   const lines: string[] = [
     "You help busy parents find kids' activities (camps, classes, lessons, sports).",
     "",
-    "Given a description of what they're looking for, USE THE web_search TOOL to find 3 to 5 specific real-world activities currently being offered. Verify URLs and program details against the live web before returning them — do NOT rely on training data alone.",
+    "Given a description of what they're looking for, USE THE web_search TOOL to find 4 to 6 specific real-world activities currently being offered. Verify URLs and program details against the live web before returning them — do NOT rely on training data alone.",
     "",
     "Search strategy:",
     "- Start with one targeted query that combines the parent's description with their location (e.g., 'art camps Park Slope Brooklyn summer 2026').",
@@ -160,9 +161,10 @@ function buildSystemPrompt(context: ContextPayload | null): string {
     "- ageMin / ageMax: integer years; null when not known",
     "- registrationEndDate: YYYY-MM-DD if a search result confirms it; null otherwise",
     "- neighborhood: short location label (e.g. 'Park Slope'); null when not relevant",
+    "- address: street address (e.g. '123 5th Ave, Brooklyn NY 11215') ONLY when verified from a search result; null otherwise — never guess",
     "- distanceMiles: rough distance from the user's location, when computable; null otherwise",
     "",
-    "BE CONSERVATIVE. If your searches don't surface 3 confident matches, return fewer. Never fabricate URLs — return null instead.",
+    "BE CONSERVATIVE. If your searches don't surface 4 confident matches, return fewer. Never fabricate URLs or addresses — return null instead.",
   ];
 
   if (context?.address) {
