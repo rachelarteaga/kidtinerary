@@ -188,6 +188,7 @@ export function CatalogClient({ activities, kids, shareCampsDefault, address }: 
           open={true}
           catalogActivity={activeActivity}
           onClose={() => setActiveActivity(null)}
+          onChanged={() => router.refresh()}
         />
       )}
 
