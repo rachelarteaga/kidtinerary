@@ -28,7 +28,7 @@ export function CatalogEmptyState({ onAdd, onHelpMeFind }: Props) {
           className="inline-flex items-center gap-1.5 font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-hero text-ink border border-ink hover:brightness-95"
         >
           <SparkleIcon size={11} fill="#151515" />
-          Help me find
+          Find me something!
         </button>
       </div>
     </div>
