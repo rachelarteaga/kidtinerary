@@ -44,4 +44,10 @@
     page-break-after: auto;
     break-after: auto;
   }
+  /* Suppress Next.js dev indicators in print */
+  nextjs-portal,
+  [data-nextjs-toast],
+  [data-nextjs-dialog-overlay] {
+    display: none !important;
+  }
 }

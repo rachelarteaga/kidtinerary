@@ -4,7 +4,7 @@
 
 **Goal:** Ship a 10-page portrait PDF (`public/kidtinerary-deck.pdf`) telling the Kidtinerary story — value prop, bets, current state, future ideas — hosted at `https://kidtinerary-sable.vercel.app/kidtinerary-deck.pdf`.
 
-**Architecture:** Next.js App Router page at `app/deck/page.tsx` (uses existing globals.css palette + Outfit/Figtree fonts; root nav suppressed on `/deck`). Each "page" of the deck is a fixed-size section with CSS `page-break-after: always` so a headless Chrome print-to-PDF produces a clean 10-page document. Screenshots captured from prod via Playwright MCP using a dummy account ("Sam Rivera" with kids Nico + Luca), saved to `public/deck/screenshots/*.png`.
+**Architecture:** Next.js App Router page at `app/deck/page.tsx` (uses existing globals.css palette + Outfit/Figtree fonts; root nav suppressed on `/deck`). Each "page" of the deck is a fixed-size section with CSS `page-break-after: always` so a headless Chrome print-to-PDF produces a clean 10-page document. Screenshots captured from prod via Playwright MCP using a dummy account ("Kid Test" with kids Nico + Luca), saved to `public/deck/screenshots/*.png`.
 
 **Tech Stack:** Next.js 16 (App Router), Tailwind v4, Outfit + Figtree (already loaded in `layout.tsx`), Playwright MCP for screenshots, system Chrome `--headless --print-to-pdf` for PDF generation.
 
@@ -103,7 +103,7 @@ These steps are **collaborative**. Rachel performs the human steps; you (the eng
 Tell Rachel exactly:
 1. Open https://kidtinerary-sable.vercel.app in an incognito window.
 2. Sign up with these credentials (she controls the email):
-   - Name: **Sam Rivera**
+   - Name: **Kid Test**
    - Email: a throwaway she controls (e.g., `kidtinerary-demo@<her-domain>` or a fresh Gmail). She types the password herself.
 3. Verify the email if prompted.
 4. **Stop after the email is verified — don't go through onboarding yet.** We'll capture the onboarding screen for the deck.
@@ -901,7 +901,7 @@ This task uses the **Playwright MCP server** that's already loaded into the sess
 
 - [ ] **Step 1: Confirm Rachel finished seeding (Phase 2)**
 
-Don't start until Rachel has confirmed Sam Rivera, Nico, Luca, the activities, and the planner placements all exist on prod.
+Don't start until Rachel has confirmed Kid Test, Nico, Luca, the activities, and the planner placements all exist on prod.
 
 - [ ] **Step 2: Open prod and have Rachel sign in**
 
@@ -1110,7 +1110,7 @@ Rachel needs a single hosted PDF to share with friends and other interested part
 ## What's in it
 - **Spec + plan**: docs/superpowers/specs/2026-05-05-shareable-deck-design.md, docs/superpowers/plans/2026-05-05-shareable-deck.md
 - **Deck route**: src/app/deck/{layout,page}.tsx + deck.css; nav suppressed on /deck via src/components/layout/nav.tsx
-- **Screenshots**: public/deck/screenshots/{planner,catalog,kids,schedule}.png — captured from prod against a dummy account (Sam Rivera, kids Nico + Luca)
+- **Screenshots**: public/deck/screenshots/{planner,catalog,kids,schedule}.png — captured from prod against a dummy account (Kid Test, kids Nico + Luca)
 - **PDF**: public/kidtinerary-deck.pdf — 10 pages, generated via scripts/build-deck.sh
 
 ## Test plan

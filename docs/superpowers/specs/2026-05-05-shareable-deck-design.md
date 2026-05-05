@@ -62,7 +62,7 @@ Target ~25–40 words total per page. The screenshot does most of the talking.
 
 Rachel does **not** want her real account exposed in a sharable doc. Approach:
 
-1. **Create one fake account on prod** via the existing signup flow. Email: a throwaway Rachel controls. Realistic-but-fake parent name (e.g., "Sam Rivera").
+1. **Create one fake account on prod** via the existing signup flow. Email: a throwaway Rachel controls. Realistic-but-fake parent name (e.g., "Kid Test").
 2. **Seed dummy data through the UI** (or via a one-off script that targets that user's `auth.uid()` only — to be decided in the plan):
    - 2 kids: **Nico** and **Luca** (Rachel's chosen names; everything else dummy — birthdays, photos, etc.).
    - 1 planner with 4–6 weeks filled across statuses (considering, waitlisted, registered).

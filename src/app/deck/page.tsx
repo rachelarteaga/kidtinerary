@@ -153,14 +153,14 @@ function ScreenshotPage(props: {
 }) {
   return (
     <section className="deck-page">
-      <div className="flex-1 flex flex-col p-12">
+      <div className="flex-1 flex flex-col p-12 overflow-hidden">
         <span className="font-display text-sm tracking-[0.2em] uppercase text-ink-2">
           {props.eyebrow}
         </span>
-        <h2 className="mt-3 font-display font-bold text-[40px] leading-[1.05] max-w-[680px]">
+        <h2 className="mt-2 font-display font-bold text-[36px] leading-[1.05] max-w-[680px]">
           {props.title}
         </h2>
-        <div className="mt-8 flex-1 flex items-center justify-center min-h-0">
+        <div className="mt-5 flex-1 flex items-center justify-center min-h-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={props.imgSrc}
@@ -168,7 +168,7 @@ function ScreenshotPage(props: {
             className="max-w-full max-h-full object-contain rounded-xl shadow-[0_12px_40px_-12px_rgba(0,0,0,0.25)] border border-ink-3/30"
           />
         </div>
-        <p className="mt-6 text-ink-2 text-base leading-relaxed max-w-[680px]">
+        <p className="mt-4 text-ink-2 text-[14px] leading-relaxed max-w-[680px]">
           {props.caption}
         </p>
       </div>
@@ -180,35 +180,122 @@ function Page5Planner() {
   return (
     <ScreenshotPage
       eyebrow="Current state · Planner"
-      title="Drag from the rail. Drop on a week. Done."
-      caption={"Every kid’s year on one grid. Statuses (considering, waitlisted, registered) are colored, conflicts surface automatically, and the share button puts a read-only link in your hand."}
-      imgSrc="/deck/screenshots/planner.svg"
-      imgAlt="Kidtinerary planner showing weeks across two kids with mixed activity statuses"
+      title="Every kid&rsquo;s year on one grid."
+      caption={"Drag activities from the rail onto weeks. Statuses (considering, waitlisted, registered) are colored, time-of-day is set per activity, conflicts surface automatically, and overnight camps and vacation blocks live alongside class schedules."}
+      imgSrc="/deck/screenshots/schedule.png"
+      imgAlt="Kidtinerary planner showing weeks across two kids with mixed activity statuses, time-of-day blocks, and overnight camps"
     />
   );
 }
 
 function Page6Catalog() {
+  const rows = [
+    { name: "Coding Camp", org: "Galileo Learning", status: "Registered", color: "var(--color-camp-periwinkle)" },
+    { name: "Soccer Shots", org: "Soccer Shots Bay Area", status: "Registered", color: "var(--color-camp-mint)" },
+    { name: "Catalina Sea Camp", org: "Catalina Island Camps", status: "Registered", color: "var(--color-camp-rose)" },
+    { name: "Robotics After-School", org: "Code Ninjas", status: "Waitlisted", color: "var(--color-camp-rose)" },
+    { name: "Sharon Art Studio Weekday Class", org: "Sharon Art Studio", status: "Considering", color: "var(--color-camp-mint)" },
+    { name: "Discovery Summer Camp", org: "Bay Area Discovery Museum", status: "Registered", color: "var(--color-camp-periwinkle)" },
+  ];
+  const statusBg = (s: string) =>
+    s === "Registered" ? "var(--color-status-registered)" :
+    s === "Waitlisted" ? "var(--color-status-waitlisted)" :
+    "var(--color-status-considering)";
   return (
-    <ScreenshotPage
-      eyebrow="Current state · Catalog"
-      title="A personal master library, plus an AI scout."
-      caption={"The Catalog holds every activity you’ve ever considered. ‘Help me find’ runs an LLM-powered web search, returns real options, and drops them straight into your library."}
-      imgSrc="/deck/screenshots/catalog.svg"
-      imgAlt="Kidtinerary catalog with activity rows and a help-me-find drawer"
-    />
+    <section className="deck-page">
+      <div className="flex-1 flex flex-col p-12">
+        <span className="font-display text-sm tracking-[0.2em] uppercase text-ink-2">
+          Current state &middot; Catalog
+        </span>
+        <h2 className="mt-3 font-display font-bold text-[40px] leading-[1.05] max-w-[680px]">
+          A personal master library, plus an AI scout.
+        </h2>
+        <div className="mt-8 rounded-2xl border border-ink-3/40 bg-base/30 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-ink-3/40 bg-surface">
+            <span className="font-display font-semibold">My catalog</span>
+            <div className="flex gap-2">
+              <span className="font-sans text-[11px] uppercase tracking-widest font-extrabold text-ink-inverse bg-ink rounded-full px-3 py-1.5">+ Add activity</span>
+              <span className="font-sans text-[11px] uppercase tracking-widest font-extrabold text-ink border border-ink rounded-full px-3 py-1.5">Help me find</span>
+            </div>
+          </div>
+          {rows.map((r, i) => (
+            <div key={r.name} className={`flex items-center justify-between px-5 py-3 ${i < rows.length - 1 ? "border-b border-ink-3/30" : ""}`}>
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ background: r.color }} />
+                <div className="min-w-0">
+                  <p className="font-display font-semibold text-[15px] truncate">{r.name}</p>
+                  <p className="text-ink-2 text-[12px] truncate">{r.org}</p>
+                </div>
+              </div>
+              <span
+                className="font-sans text-[10px] uppercase tracking-widest font-extrabold rounded-full px-2.5 py-1 shrink-0"
+                style={{ background: statusBg(r.status), color: "var(--color-ink)" }}
+              >
+                {r.status}
+              </span>
+            </div>
+          ))}
+        </div>
+        <p className="mt-6 text-ink-2 text-base leading-relaxed max-w-[680px]">
+          Every camp, class, and lesson you&rsquo;ve ever considered &mdash; in one library you keep year over year. <strong className="text-ink font-semibold">Help me find</strong> runs an LLM-powered web search, returns real options, and drops them straight into your catalog.
+        </p>
+      </div>
+    </section>
   );
 }
 
 function Page7Onboarding() {
+  const interests = ["Sports", "Arts", "STEM", "Nature", "Music", "Theater", "Academic", "Swimming", "Cooking"];
   return (
-    <ScreenshotPage
-      eyebrow="Current state · Kids & onboarding"
-      title="Sign up, add the kids, start placing weeks."
-      caption={"Onboarding asks for the smallest viable picture of each kid — name, age, the kinds of things they do — and lands you straight on an empty planner ready to fill."}
-      imgSrc="/deck/screenshots/kids.svg"
-      imgAlt="Onboarding screen for adding a kid"
-    />
+    <section className="deck-page">
+      <div className="flex-1 flex flex-col p-12">
+        <span className="font-display text-sm tracking-[0.2em] uppercase text-ink-2">
+          Current state &middot; Kids &amp; onboarding
+        </span>
+        <h2 className="mt-3 font-display font-bold text-[40px] leading-[1.05] max-w-[680px]">
+          The smallest viable picture of each kid.
+        </h2>
+        <div className="mt-8 grid grid-cols-2 gap-5">
+          {[
+            { initial: "N", name: "Nico", age: "7 yrs", picks: ["Sports", "STEM", "Nature"] },
+            { initial: "L", name: "Luca", age: "5 yrs", picks: ["Music", "Arts", "Cooking"] },
+          ].map((k) => (
+            <div key={k.name} className="rounded-2xl border border-ink-3/40 bg-surface p-5">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-ink text-ink-inverse font-display font-bold text-base">
+                  {k.initial}
+                </span>
+                <div>
+                  <p className="font-display font-bold text-xl leading-tight">{k.name}</p>
+                  <p className="text-ink-2 text-sm">{k.age}</p>
+                </div>
+              </div>
+              <p className="mt-5 font-sans text-[10px] uppercase tracking-widest font-extrabold text-ink-2">Loves</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {k.picks.map((p) => (
+                  <span key={p} className="font-sans text-[11px] uppercase tracking-wider font-bold text-ink border border-ink-3 rounded-full px-3 py-1">
+                    {p}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-6">
+          <p className="font-sans text-[10px] uppercase tracking-widest font-extrabold text-ink-2">All categories</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {interests.map((p) => (
+              <span key={p} className="font-sans text-[11px] uppercase tracking-wider font-semibold text-ink-2 border border-ink-3/60 rounded-full px-3 py-1">
+                {p}
+              </span>
+            ))}
+          </div>
+        </div>
+        <p className="mt-7 text-ink-2 text-base leading-relaxed max-w-[680px]">
+          Onboarding asks for name, age, and the kinds of things each kid loves &mdash; nothing more &mdash; and lands you on an empty planner ready to fill.
+        </p>
+      </div>
+    </section>
   );
 }
 
@@ -217,8 +304,8 @@ function Page8Schedule() {
     <ScreenshotPage
       eyebrow="Current state · Sharing"
       title="A read-only link anyone can open."
-      caption={"Public schedule pages turn a planner into something you can text to a co-parent, a grandparent, or a babysitter. No account needed to view."}
-      imgSrc="/deck/screenshots/schedule.svg"
+      caption={"One tap turns a planner into a public, anon-friendly URL: text it to a co-parent, a grandparent, or a babysitter. The recipient sees the same grid in view-only mode &mdash; no account required, revocable any time."}
+      imgSrc="/deck/screenshots/schedule.png"
       imgAlt="Public schedule view shown to an anonymous viewer"
     />
   );
