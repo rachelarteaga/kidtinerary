@@ -1,0 +1,53 @@
+.deck-root {
+  --deck-page-w: 8.5in;
+  --deck-page-h: 11in;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #e7e7eb;
+  min-height: 100vh;
+  padding: 2rem 0;
+  gap: 0.75rem;
+}
+
+.deck-page {
+  width: var(--deck-page-w);
+  height: var(--deck-page-h);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 6px 24px -8px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+}
+
+@media print {
+  @page {
+    size: 8.5in 11in;
+    margin: 0;
+  }
+  html, body {
+    background: #ffffff !important;
+  }
+  .deck-root {
+    background: #ffffff;
+    padding: 0;
+    gap: 0;
+  }
+  .deck-page {
+    box-shadow: none;
+    page-break-after: always;
+    break-after: page;
+  }
+  .deck-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+  /* Suppress Next.js dev indicators in print */
+  nextjs-portal,
+  [data-nextjs-toast],
+  [data-nextjs-dialog-overlay] {
+    display: none !important;
+  }
+}
