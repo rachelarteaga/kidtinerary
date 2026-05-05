@@ -17,8 +17,8 @@ export function Nav() {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Hide nav on auth and onboarding pages
-  const hideOn = ["/auth", "/onboarding"];
+  // Hide nav on auth, onboarding, and deck pages
+  const hideOn = ["/auth", "/onboarding", "/deck"];
   const shouldHide = hideOn.some((p) => pathname.startsWith(p));
 
   useEffect(() => {
