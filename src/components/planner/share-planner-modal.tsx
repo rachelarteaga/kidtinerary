@@ -47,7 +47,6 @@ interface KidOption {
 }
 
 interface Props {
-  open: boolean;
   onClose: () => void;
   plannerId: string;
   plannerName: string;
@@ -62,10 +61,14 @@ interface Props {
   isShared: boolean;
   isUnsharing: boolean;
   onStopSharing: () => void;
+  /** kid_ids on the active share, or null when not shared. Seeds the
+   * "Which kids?" checkboxes so re-opening preserves the live state. */
+  existingShareKidIds: string[] | null;
+  existingShareIncludeCost: boolean | null;
+  existingShareIncludePersonalBlockDetails: boolean | null;
 }
 
 export function SharePlannerModal({
-  open,
   onClose,
   plannerId,
   plannerName,
@@ -80,17 +83,29 @@ export function SharePlannerModal({
   isShared,
   isUnsharing,
   onStopSharing,
+  existingShareKidIds,
+  existingShareIncludeCost,
+  existingShareIncludePersonalBlockDetails,
 }: Props) {
-  const [selected, setSelected] = useState<Set<string>>(
-    () => new Set(kids.map((k) => k.id))
+  // Seed from existing share when present so re-opens preserve the live
+  // state. Otherwise default to "share all kids on this planner".
+  // Kids removed from the planner since the share was created don't appear
+  // in the modal at all (the join filters them out), so the intersection
+  // here protects against stale kid_ids leaking into the next save.
+  const [selected, setSelected] = useState<Set<string>>(() => {
+    const onPlanner = new Set(kids.map((k) => k.id));
+    if (existingShareKidIds && existingShareKidIds.length > 0) {
+      return new Set(existingShareKidIds.filter((id) => onPlanner.has(id)));
+    }
+    return onPlanner;
+  });
+  const [includeCost, setIncludeCost] = useState(existingShareIncludeCost ?? false);
+  const [includeBlocks, setIncludeBlocks] = useState(
+    existingShareIncludePersonalBlockDetails ?? false
   );
-  const [includeCost, setIncludeCost] = useState(false);
-  const [includeBlocks, setIncludeBlocks] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const hiddenViewRef = useRef<HTMLDivElement>(null);
-
-  if (!open) return null;
 
   const none = selected.size === 0;
 

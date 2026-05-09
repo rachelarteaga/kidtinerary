@@ -1216,6 +1216,27 @@ export async function addKidToPlanner(
     return { error: "Failed to add kid to planner" };
   }
 
+  // Mirror the new kid into any active share for this planner. Without
+  // this, a share created before the kid was added would silently exclude
+  // them — share modal defaults to "all kids on the planner" but the
+  // shared_schedules.kid_ids snapshot stays frozen to the original set.
+  // Failure here is non-fatal: the kid is on the planner either way, and
+  // the owner can re-open the share modal to refresh.
+  const { data: share } = await supabase
+    .from("shared_schedules")
+    .select("id, kid_ids")
+    .eq("user_id", user.id)
+    .eq("planner_id", plannerId)
+    .eq("scope", "planner")
+    .maybeSingle();
+  if (share && Array.isArray(share.kid_ids) && !share.kid_ids.includes(childId)) {
+    await supabase
+      .from("shared_schedules")
+      .update({ kid_ids: [...share.kid_ids, childId] })
+      .eq("id", share.id)
+      .eq("user_id", user.id);
+  }
+
   revalidatePath("/planner");
   return {};
 }
