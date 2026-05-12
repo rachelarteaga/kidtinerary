@@ -7,6 +7,7 @@ import { CatalogRow } from "@/components/catalog/catalog-row";
 import { CatalogEmptyState } from "@/components/catalog/empty-state";
 import { ActivityDetailDrawer } from "@/components/planner/activity-detail-drawer";
 import { AddActivityModal } from "@/components/planner/add-activity-modal";
+import { ScrapeConfirmDrawer } from "@/components/planner/scrape-confirm-drawer";
 import { KidFilter } from "@/components/catalog/kid-filter";
 import { SourceFilter } from "@/components/catalog/source-filter";
 import { SeasonFilter } from "@/components/catalog/season-filter";
@@ -34,6 +35,11 @@ export function CatalogClient({ activities, kids, shareCampsDefault, address }: 
   const [activeActivity, setActiveActivity] = useState<UserActivityWithDetails | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [helpMeFindOpen, setHelpMeFindOpen] = useState(false);
+  const [scrapeDrawer, setScrapeDrawer] = useState<{
+    jobId: string;
+    userCampId: string | null;
+    url: string;
+  } | null>(null);
   const [pendingRemove, setPendingRemove] = useState<UserActivityWithDetails | null>(null);
   const [removeError, setRemoveError] = useState<string | null>(null);
   const [isRemoving, startRemoveTransition] = useTransition();
@@ -137,7 +143,7 @@ export function CatalogClient({ activities, kids, shareCampsDefault, address }: 
             className="inline-flex items-center gap-1.5 font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-hero text-ink border border-ink hover:brightness-95"
           >
             <SparkleIcon size={11} fill="#151515" />
-            Help me find
+            Find me something!
           </button>
         </div>
       </div>
@@ -196,10 +202,26 @@ export function CatalogClient({ activities, kids, shareCampsDefault, address }: 
         open={addOpen}
         onClose={() => setAddOpen(false)}
         shareCampsDefault={shareCampsDefault}
-        onSubmitted={() => {
+        onSubmitted={(result) => {
           setAddOpen(false);
+          if (result.url && result.jobId) {
+            setScrapeDrawer({
+              jobId: result.jobId,
+              userCampId: result.userCampId ?? null,
+              url: result.url,
+            });
+          }
           router.refresh();
         }}
+      />
+
+      <ScrapeConfirmDrawer
+        open={scrapeDrawer !== null}
+        jobId={scrapeDrawer?.jobId ?? null}
+        userCampId={scrapeDrawer?.userCampId ?? null}
+        inputUrl={scrapeDrawer?.url ?? ""}
+        scopeLabel={null}
+        onClose={() => setScrapeDrawer(null)}
       />
 
       <HelpMeFindPanel
