@@ -38,12 +38,18 @@ export default async function PlannerPage({ searchParams }: PageProps) {
     if (!planner) redirect("/account/planners?new=1");
   }
 
-  // Count active shares for this planner
-  const { count: sharesActiveCount } = await supabase
+  // Existing planner share, if any. Used to seed the share modal's "Which
+  // kids?" / include-cost / include-blocks fields from the live share rather
+  // than from defaults — otherwise re-opening the modal silently drops any
+  // prior settings.
+  const { data: existingShare } = await supabase
     .from("shared_schedules")
-    .select("id", { count: "exact", head: true })
+    .select("id, kid_ids, include_cost, include_personal_block_details")
     .eq("planner_id", planner.id)
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .eq("scope", "planner")
+    .maybeSingle();
+  const sharesActiveCount = existingShare ? 1 : 0;
 
   // Kids on THIS planner (may be empty — user can add via the header).
   const children = await fetchPlannerKids(planner.id, user.id);
@@ -75,8 +81,13 @@ export default async function PlannerPage({ searchParams }: PageProps) {
       blocks={blocks}
       shareCampsDefault={profile?.share_camps_default ?? true}
       planner={planner}
-      sharesActiveCount={sharesActiveCount ?? 0}
+      sharesActiveCount={sharesActiveCount}
       ownerDisplayName={ownerDisplayName}
+      existingShareKidIds={existingShare?.kid_ids ?? null}
+      existingShareIncludeCost={existingShare?.include_cost ?? null}
+      existingShareIncludePersonalBlockDetails={
+        existingShare?.include_personal_block_details ?? null
+      }
     />
   );
 }

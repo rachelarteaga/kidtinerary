@@ -15,7 +15,6 @@ const kids = [
 ];
 
 const baseProps = {
-  open: true as const,
   plannerId: "p1",
   plannerName: "Summer 2026",
   plannerStart: "2026-06-15",
@@ -30,6 +29,9 @@ const baseProps = {
   isShared: false,
   isUnsharing: false,
   onStopSharing: () => {},
+  existingShareKidIds: null,
+  existingShareIncludeCost: null,
+  existingShareIncludePersonalBlockDetails: null,
 };
 
 describe("SharePlannerModal", () => {
@@ -70,5 +72,61 @@ describe("SharePlannerModal", () => {
   it("relabels the link button when already shared", () => {
     render(<SharePlannerModal {...baseProps} isShared />);
     expect(screen.getByRole("button", { name: /copy live link/i })).toBeInTheDocument();
+  });
+
+  it("seeds checkboxes from an existing share's kid_ids", () => {
+    render(
+      <SharePlannerModal
+        {...baseProps}
+        isShared
+        existingShareKidIds={["k1"]}
+      />
+    );
+    expect(screen.getByLabelText(/maya/i)).toBeChecked();
+    expect(screen.getByLabelText(/jonah/i)).not.toBeChecked();
+  });
+
+  it("checks newly-added kids by default when share kid_ids is a subset", () => {
+    // Simulates the bug from observed issues / schedule.md: a kid was on the
+    // planner before share creation but accidentally never made it into
+    // kid_ids. On the next open, the modal should NOT keep that kid
+    // unchecked just because they're not in kid_ids — but with no existing
+    // share, defaulting to all kids is correct. Here we simulate the
+    // explicit-restore path.
+    render(
+      <SharePlannerModal
+        {...baseProps}
+        existingShareKidIds={null}
+      />
+    );
+    expect(screen.getByLabelText(/maya/i)).toBeChecked();
+    expect(screen.getByLabelText(/jonah/i)).toBeChecked();
+  });
+
+  it("seeds Include opt-ins from the existing share's settings", () => {
+    render(
+      <SharePlannerModal
+        {...baseProps}
+        isShared
+        existingShareIncludeCost
+        existingShareIncludePersonalBlockDetails
+      />
+    );
+    expect(screen.getByLabelText(/cost paid/i)).toBeChecked();
+    expect(screen.getByLabelText(/non-activity block details/i)).toBeChecked();
+  });
+
+  it("ignores orphan kid_ids that no longer match a kid on the planner", () => {
+    render(
+      <SharePlannerModal
+        {...baseProps}
+        isShared
+        existingShareKidIds={["k1", "removed-kid"]}
+      />
+    );
+    // Only Maya is checked; the orphan id is silently ignored, so Jonah
+    // is unchecked (preserving the owner's prior intent to share only k1).
+    expect(screen.getByLabelText(/maya/i)).toBeChecked();
+    expect(screen.getByLabelText(/jonah/i)).not.toBeChecked();
   });
 });

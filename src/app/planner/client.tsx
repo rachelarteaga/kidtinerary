@@ -64,9 +64,12 @@ interface Props {
   planner: PlannerRow;
   sharesActiveCount: number;
   ownerDisplayName: string | null;
+  existingShareKidIds: string[] | null;
+  existingShareIncludeCost: boolean | null;
+  existingShareIncludePersonalBlockDetails: boolean | null;
 }
 
-export function PlannerClient({ kids, allUserKids, entries, userActivities, blocks, shareCampsDefault, planner, sharesActiveCount, ownerDisplayName }: Props) {
+export function PlannerClient({ kids, allUserKids, entries, userActivities, blocks, shareCampsDefault, planner, sharesActiveCount, ownerDisplayName, existingShareKidIds, existingShareIncludeCost, existingShareIncludePersonalBlockDetails }: Props) {
   const router = useRouter();
   const { toast } = useToast();
   const isShared = sharesActiveCount > 0;
@@ -762,44 +765,53 @@ export function PlannerClient({ kids, allUserKids, entries, userActivities, bloc
           scopeLabel={scrapeDrawer?.scopeLabel ?? null}
           onClose={() => setScrapeDrawer(null)}
         />
-        <SharePlannerModal
-          open={shareOpen}
-          onClose={() => setShareOpen(false)}
-          plannerId={planner.id}
-          plannerName={planner.name}
-          plannerStart={planner.start_date}
-          plannerEnd={planner.end_date}
-          ownerDisplayName={ownerDisplayName}
-          isShared={isShared}
-          isUnsharing={isUnsharing}
-          onStopSharing={async () => {
-            await handleStopSharing();
-            setShareOpen(false);
-          }}
-          kids={kids.map((k, i) => ({
-            id: k.id,
-            name: k.name,
-            avatar_url: k.avatar_url,
-            index: i,
-          }))}
-          sharedKids={kids.map((k) => ({
-            id: k.id,
-            name: k.name,
-            birth_date: k.birth_date,
-            avatar_url: k.avatar_url,
-            color: k.color,
-          }))}
-          sharedEntries={entries as unknown as SharedEntryRow[]}
-          sharedBlocks={blocks.map((b) => ({
-            id: b.id,
-            type: b.type,
-            title: b.title,
-            start_date: b.start_date,
-            end_date: b.end_date,
-            kid_ids: b.child_ids,
-          }))}
-          colorByActivityId={colorByActivityIdRecord}
-        />
+        {/* Conditionally rendered so it re-mounts on each open. The modal's
+            initial-checked state derives from the current `kids` prop, so
+            re-mounting is what guarantees newly-added kids show up checked
+            (otherwise React would carry the stale `selected` Set across opens
+            and silently leave new kids unchecked — the bug in PR #43). */}
+        {shareOpen && (
+          <SharePlannerModal
+            onClose={() => setShareOpen(false)}
+            plannerId={planner.id}
+            plannerName={planner.name}
+            plannerStart={planner.start_date}
+            plannerEnd={planner.end_date}
+            ownerDisplayName={ownerDisplayName}
+            isShared={isShared}
+            isUnsharing={isUnsharing}
+            onStopSharing={async () => {
+              await handleStopSharing();
+              setShareOpen(false);
+            }}
+            kids={kids.map((k, i) => ({
+              id: k.id,
+              name: k.name,
+              avatar_url: k.avatar_url,
+              index: i,
+            }))}
+            sharedKids={kids.map((k) => ({
+              id: k.id,
+              name: k.name,
+              birth_date: k.birth_date,
+              avatar_url: k.avatar_url,
+              color: k.color,
+            }))}
+            sharedEntries={entries as unknown as SharedEntryRow[]}
+            sharedBlocks={blocks.map((b) => ({
+              id: b.id,
+              type: b.type,
+              title: b.title,
+              start_date: b.start_date,
+              end_date: b.end_date,
+              kid_ids: b.child_ids,
+            }))}
+            colorByActivityId={colorByActivityIdRecord}
+            existingShareKidIds={existingShareKidIds}
+            existingShareIncludeCost={existingShareIncludeCost}
+            existingShareIncludePersonalBlockDetails={existingShareIncludePersonalBlockDetails}
+          />
+        )}
 
         {deleteConfirmOpen && (
           <DeletePlannerConfirm
