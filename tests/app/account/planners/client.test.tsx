@@ -10,10 +10,12 @@ vi.mock("@/lib/actions", () => ({
   updatePlannerName: vi.fn(),
   createPlannerShare: vi.fn(),
   revokePlannerShareByPlanner: vi.fn(),
+  unsaveSharedPlanner: vi.fn(),
 }));
 vi.mock("@/components/ui/toast", () => ({ useToast: () => ({ toast: vi.fn() }) }));
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 const kids = [
@@ -40,7 +42,14 @@ function makeSummary(overrides: Partial<PlannerSummary> = {}): PlannerSummary {
 
 describe("MyPlannersClient", () => {
   it("renders empty state when there are no planners", () => {
-    render(<MyPlannersClient initialPlanners={[]} allKids={kids} />);
+    render(
+      <MyPlannersClient
+        initialPlanners={[]}
+        initialSavedShares={[]}
+        saveCountByShareId={{}}
+        allKids={kids}
+      />,
+    );
     expect(screen.getByText(/don't have any planners yet/i)).toBeInTheDocument();
   });
 
@@ -48,6 +57,8 @@ describe("MyPlannersClient", () => {
     render(
       <MyPlannersClient
         initialPlanners={[makeSummary(), makeSummary({ id: "p2", name: "School year", kidCount: 1 })]}
+        initialSavedShares={[]}
+        saveCountByShareId={{}}
         allKids={kids}
       />,
     );
@@ -64,6 +75,8 @@ describe("MyPlannersClient", () => {
           makeSummary({ id: "p1", name: "A", shareToken: null }),
           makeSummary({ id: "p2", name: "B", shareToken: "tok-abc", shareId: "s1", shareKidIds: ["k1"] }),
         ]}
+        initialSavedShares={[]}
+        saveCountByShareId={{}}
         allKids={kids}
       />,
     );
@@ -79,14 +92,62 @@ describe("MyPlannersClient", () => {
   });
 
   it("opens the delete confirm modal when Delete is clicked", () => {
-    render(<MyPlannersClient initialPlanners={[makeSummary()]} allKids={kids} />);
+    render(
+      <MyPlannersClient
+        initialPlanners={[makeSummary()]}
+        initialSavedShares={[]}
+        saveCountByShareId={{}}
+        allKids={kids}
+      />,
+    );
     fireEvent.click(screen.getByRole("button", { name: /^delete$/i }));
     expect(screen.getByText(/delete "summer 2026"\?/i)).toBeInTheDocument();
   });
 
   it("opens the new planner modal from the header button", () => {
-    render(<MyPlannersClient initialPlanners={[makeSummary()]} allKids={kids} />);
+    render(
+      <MyPlannersClient
+        initialPlanners={[makeSummary()]}
+        initialSavedShares={[]}
+        saveCountByShareId={{}}
+        allKids={kids}
+      />,
+    );
     fireEvent.click(screen.getByRole("button", { name: /\+ new planner/i }));
     expect(screen.getByRole("heading", { name: /^new planner$/i })).toBeInTheDocument();
+  });
+
+  it("renders the shared-with-me empty state when no saved shares", () => {
+    render(
+      <MyPlannersClient
+        initialPlanners={[]}
+        initialSavedShares={[]}
+        saveCountByShareId={{}}
+        allKids={kids}
+      />,
+    );
+    expect(
+      screen.getByText(/when someone shares a planner with you and you save it/i),
+    ).toBeInTheDocument();
+  });
+
+  it("renders 'N saved' pill on an owned planner with active share + recipients", () => {
+    render(
+      <MyPlannersClient
+        initialPlanners={[
+          makeSummary({
+            id: "p1",
+            name: "Shared one",
+            shareToken: "tok-xyz",
+            shareId: "share-1",
+            shareKidIds: ["k1"],
+          }),
+        ]}
+        initialSavedShares={[]}
+        saveCountByShareId={{ "share-1": 3 }}
+        allKids={kids}
+      />,
+    );
+    expect(screen.getByText(/3 saved/i)).toBeInTheDocument();
   });
 });
