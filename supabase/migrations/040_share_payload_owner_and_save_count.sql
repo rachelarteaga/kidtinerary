@@ -1,4 +1,6 @@
 -- 040_share_payload_owner_and_save_count.sql
+-- Re-declares get_shared_planner_by_token (see 029 for the resolver rationale,
+-- RLS-bypass posture, and filtering invariants).
 -- Adds share_id, owner_id, and save_count to the planner payload so the viewer
 -- can render the right CTA (Save / Saved / "this is your planner") and the
 -- owner can see "N saved" on their card.
@@ -193,5 +195,7 @@ revoke execute on function get_shared_planner_by_token(text) from public;
 grant execute on function get_shared_planner_by_token(text) to anon, authenticated;
 
 comment on function get_shared_planner_by_token(text) is
-  '040: now also returns share_id, owner_id, and save_count so the viewer '
-  'can render Save/Saved/owner CTAs and the owner can see usage.';
+  'Public resolver for /schedule/[token]. Returns the planner payload visible '
+  'to the share, or null if the token is not found. SECURITY DEFINER bypasses '
+  'owner-only RLS on planners/kids/entries/blocks/user_camps. '
+  '040: also returns share_id, owner_id, and save_count for viewer CTA and owner usage.';
