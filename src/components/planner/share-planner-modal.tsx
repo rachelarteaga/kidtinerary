@@ -324,6 +324,7 @@ export function SharePlannerModal({
         <div ref={hiddenViewRef} className="image-capture-root">
           <SharedPlannerView
             token="image-preview"
+            shareId="image-preview"
             plannerName={plannerName}
             plannerStart={plannerStart}
             plannerEnd={plannerEnd}
@@ -338,6 +339,12 @@ export function SharePlannerModal({
             }}
             colorByActivityId={colorByActivityId}
             forceViewMode="detail"
+            viewerState={{
+              isAuthenticated: false,
+              isOwner: true,
+              isSaved: false,
+              saveCount: 0,
+            }}
           />
         </div>
       </div>

@@ -7,6 +7,9 @@ import { SharedActivityDetailPanel } from "./shared-activity-detail-panel";
 import { CellTimelineGrid, type TimelineEntry } from "./cell-timeline-grid";
 import { BlockIcon } from "./block-icon";
 import { ConsideringChips, type ConsideringChip } from "./considering-chips";
+import { SaveShareCTA } from "./save-share-cta";
+import { AnonSaveBanner } from "./anon-save-banner";
+import { DrainPendingSaves } from "./drain-pending-saves";
 import { applyShareFilters } from "@/lib/share/apply-filters";
 import { generateWeeks, getWeekKey, formatWeekLabelCompact } from "@/lib/format";
 import type { DayOfWeek, PlannerBlockType, PlannerEntryStatus, SessionPart } from "@/lib/supabase/types";
@@ -62,6 +65,7 @@ export interface BlockRow {
 
 interface Props {
   token: string;
+  shareId: string;
   plannerName: string;
   plannerStart: string;
   plannerEnd: string;
@@ -72,6 +76,12 @@ interface Props {
   filters: { kidIds: string[]; includeCost: boolean; includePersonalBlockDetails: boolean };
   colorByActivityId: Record<string, string>;
   forceViewMode?: "detail" | "simple";
+  viewerState: {
+    isAuthenticated: boolean;
+    isOwner: boolean;
+    isSaved: boolean;
+    saveCount: number;
+  };
 }
 
 function ageYears(birthDate: string): number {
@@ -81,6 +91,7 @@ function ageYears(birthDate: string): number {
 
 export function SharedPlannerView({
   token,
+  shareId,
   plannerName,
   plannerStart,
   plannerEnd,
@@ -91,6 +102,7 @@ export function SharedPlannerView({
   filters,
   colorByActivityId,
   forceViewMode,
+  viewerState,
 }: Props) {
   // Apply owner's share filters (kid filter, cost mask, personal-block title mask).
   // Project raw rows into the minimal shape applyShareFilters needs, then reuse the
@@ -230,7 +242,10 @@ export function SharedPlannerView({
   const useNarrowLayout = narrow && visibleKids.length > 1;
 
   return (
-    <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <>
+      {!viewerState.isAuthenticated && !forceViewMode && <AnonSaveBanner token={token} />}
+      {viewerState.isAuthenticated && !forceViewMode && <DrainPendingSaves />}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       <header className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between sm:flex-wrap gap-3 sm:gap-4">
         <div className="min-w-0">
           <p className="font-sans text-[10px] uppercase tracking-widest text-ink-2 font-semibold">Shared · view-only</p>
@@ -246,28 +261,45 @@ export function SharedPlannerView({
             {visibleKids.length} kid{visibleKids.length === 1 ? "" : "s"}
           </p>
         </div>
-        {!forceViewMode && (
-          <div className="self-start inline-flex rounded-full border border-ink bg-surface overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setMode("detail")}
-              className={`font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 transition-colors ${
-                viewMode === "detail" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
-              }`}
+        <div className="self-start flex flex-wrap items-center gap-3">
+          {viewerState.isAuthenticated && !viewerState.isOwner && (
+            <SaveShareCTA
+              shareId={shareId}
+              plannerName={plannerName}
+              initialIsSaved={viewerState.isSaved}
+            />
+          )}
+          {viewerState.isOwner && viewerState.saveCount > 0 && (
+            <span
+              className="font-sans text-[11px] uppercase tracking-widest text-ink-2"
+              aria-label={`${viewerState.saveCount} people saved this planner`}
             >
-              Detail
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("simple")}
-              className={`font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 transition-colors ${
-                viewMode === "simple" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
-              }`}
-            >
-              Simple
-            </button>
-          </div>
-        )}
+              {viewerState.saveCount} saved
+            </span>
+          )}
+          {!forceViewMode && (
+            <div className="inline-flex rounded-full border border-ink bg-surface overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setMode("detail")}
+                className={`font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 transition-colors ${
+                  viewMode === "detail" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
+                }`}
+              >
+                Detail
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("simple")}
+                className={`font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 transition-colors ${
+                  viewMode === "simple" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
+                }`}
+              >
+                Simple
+              </button>
+            </div>
+          )}
+        </div>
       </header>
 
       {visibleKids.length === 0 ? (
@@ -362,7 +394,8 @@ export function SharedPlannerView({
         onClose={() => setOpenActivityEntryId(null)}
         camp={openActivity ?? { org: "", name: "", location: "", url: null, about: "" }}
       />
-    </main>
+      </main>
+    </>
   );
 }
 

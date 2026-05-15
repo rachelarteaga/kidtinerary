@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
-import type { PlannerSummary } from "@/lib/queries";
+import type { PlannerSummary, SavedShareSummary } from "@/lib/queries";
+import { SharedWithMeCard } from "./shared-with-me-card";
 import {
   createPlanner,
   deletePlanner,
@@ -16,6 +17,8 @@ import {
 
 interface Props {
   initialPlanners: PlannerSummary[];
+  initialSavedShares: SavedShareSummary[];
+  saveCountByShareId: Record<string, number>;
   allKids: { id: string; name: string }[];
 }
 
@@ -50,11 +53,18 @@ function formatLastEdited(iso: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function MyPlannersClient({ initialPlanners, allKids }: Props) {
+export function MyPlannersClient({
+  initialPlanners,
+  initialSavedShares,
+  saveCountByShareId,
+  allKids,
+}: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const [planners, setPlanners] = useState(initialPlanners);
+  const [savedShares] = useState(initialSavedShares);
+  const [mobileTab, setMobileTab] = useState<"mine" | "shared">("mine");
   // Keep local state in sync with server data whenever router.refresh() delivers
   // fresh initialPlanners (e.g., after createPlannerShare / duplicatePlanner).
   // Without this, toggling share off + on again leaves the client stuck at the
@@ -140,7 +150,7 @@ export function MyPlannersClient({ initialPlanners, allKids }: Props) {
   }
 
   return (
-    <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="flex items-start justify-between gap-4 mb-2">
         <h1 className="font-display font-extrabold text-3xl sm:text-4xl text-ink tracking-tight">My planners</h1>
         <button
@@ -155,29 +165,84 @@ export function MyPlannersClient({ initialPlanners, allKids }: Props) {
         Manage every planner you own — open, duplicate, delete, or share.
       </p>
 
-      {planners.length === 0 ? (
-        <div className="rounded-lg border border-ink-3 bg-surface p-6">
-          <p className="font-sans text-sm text-ink-2">
-            You don&apos;t have any planners yet.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {planners.map((p) => (
-            <PlannerRow
-              key={p.id}
-              planner={p}
-              onRename={(name) => handleRename(p.id, name)}
-              onToggleOn={() => setShareDrawer(p)}
-              onToggleOff={() => handleToggleOff(p)}
-              onEditSettings={() => setShareDrawer(p)}
-              onCopyLink={() => p.shareToken && copyLink(p.shareToken)}
-              onDuplicate={() => handleDuplicate(p)}
-              onDelete={() => setDeleteConfirm(p)}
-            />
-          ))}
-        </div>
-      )}
+      {/* Mobile tabs */}
+      <div className="md:hidden mb-4 flex gap-2">
+        <button
+          type="button"
+          onClick={() => setMobileTab("mine")}
+          className={`flex-1 font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 rounded-full border ${
+            mobileTab === "mine"
+              ? "bg-ink text-ink-inverse border-ink"
+              : "bg-transparent text-ink border-ink-3"
+          }`}
+        >
+          My planners
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab("shared")}
+          className={`flex-1 font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 rounded-full border ${
+            mobileTab === "shared"
+              ? "bg-ink text-ink-inverse border-ink"
+              : "bg-transparent text-ink border-ink-3"
+          }`}
+        >
+          Shared with me {savedShares.length > 0 ? `(${savedShares.length})` : null}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Owned planners */}
+        <section className={mobileTab === "mine" ? "block" : "hidden md:block"}>
+          <h2 className="hidden md:block font-display font-extrabold text-lg text-ink mb-3 uppercase tracking-widest">
+            My planners
+          </h2>
+          {planners.length === 0 ? (
+            <div className="rounded-lg border border-ink-3 bg-surface p-6">
+              <p className="font-sans text-sm text-ink-2">
+                You don&apos;t have any planners yet.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {planners.map((p) => (
+                <PlannerRow
+                  key={p.id}
+                  planner={p}
+                  saveCount={p.shareId ? saveCountByShareId[p.shareId] ?? 0 : 0}
+                  onRename={(name) => handleRename(p.id, name)}
+                  onToggleOn={() => setShareDrawer(p)}
+                  onToggleOff={() => handleToggleOff(p)}
+                  onEditSettings={() => setShareDrawer(p)}
+                  onCopyLink={() => p.shareToken && copyLink(p.shareToken)}
+                  onDuplicate={() => handleDuplicate(p)}
+                  onDelete={() => setDeleteConfirm(p)}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Shared with me */}
+        <section className={mobileTab === "shared" ? "block" : "hidden md:block"}>
+          <h2 className="hidden md:block font-display font-extrabold text-lg text-ink mb-3 uppercase tracking-widest">
+            Shared with me
+          </h2>
+          {savedShares.length === 0 ? (
+            <div className="rounded-lg border border-ink-3 bg-surface p-6">
+              <p className="font-sans text-sm text-ink-2">
+                When someone shares a planner with you and you save it, it appears here.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {savedShares.map((s) => (
+                <SharedWithMeCard key={s.savedShareId} share={s} />
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
 
       {shareDrawer && (
         <ShareSettingsDrawer
@@ -215,6 +280,7 @@ export function MyPlannersClient({ initialPlanners, allKids }: Props) {
 
 function PlannerRow({
   planner,
+  saveCount,
   onRename,
   onToggleOn,
   onToggleOff,
@@ -224,6 +290,7 @@ function PlannerRow({
   onDelete,
 }: {
   planner: PlannerSummary;
+  saveCount: number;
   onRename: (name: string) => void;
   onToggleOn: () => void;
   onToggleOff: () => void;
@@ -293,6 +360,11 @@ function PlannerRow({
           {isShared ? (
             <>
               <ShareStatusBadge />
+              {saveCount > 0 && (
+                <span className="font-sans text-[11px] uppercase tracking-widest text-ink-2 ml-2">
+                  {saveCount} saved
+                </span>
+              )}
               <button
                 type="button"
                 onClick={onCopyLink}

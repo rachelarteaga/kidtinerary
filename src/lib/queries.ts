@@ -425,6 +425,9 @@ export type SharedByTokenResult =
   | {
       type: "planner";
       token: string;
+      shareId: string;
+      ownerId: string;
+      saveCount: number;
       plannerId: string;
       plannerName: string;
       plannerStart: string; // YYYY-MM-DD
@@ -847,6 +850,93 @@ export async function fetchUserPlanners(userId: string): Promise<PlannerSummary[
       shareKidIds: share?.kid_ids ?? [],
       shareIncludeCost: share?.include_cost ?? false,
       shareIncludePersonalBlockDetails: share?.include_personal_block_details ?? false,
+    };
+  });
+}
+
+export interface SavedShareSummary {
+  /** saved_shares.id (for unsave) */
+  savedShareId: string;
+  /** shared_schedules.id; null only if the share has been revoked → tombstone */
+  shareId: string;
+  /** Token to open the live planner; null if revoked */
+  token: string | null;
+  /** Snapshot at save time; used as display name on tombstones */
+  plannerNameAtSave: string;
+  /** Live planner name (null when revoked) */
+  plannerName: string | null;
+  /** Live planner date range (null when revoked) */
+  plannerStart: string | null;
+  plannerEnd: string | null;
+  /** Display name of the share owner (null when revoked or profile missing) */
+  ownerDisplayName: string | null;
+  /** ISO timestamp the recipient saved the share */
+  savedAt: string;
+  /** True when the underlying share row no longer exists */
+  isTombstone: boolean;
+}
+
+/**
+ * Returns all saved shares for the given user. Live shares join through to
+ * shared_schedules + planners; revoked shares come back as tombstones with
+ * the snapshotted planner name and no token.
+ */
+export async function fetchSavedShares(userId: string): Promise<SavedShareSummary[]> {
+  const supabase = (await createClient()) as any;
+
+  const { data: savedRows, error: savedErr } = await supabase
+    .from("saved_shares")
+    .select("id, share_id, planner_name_at_save, saved_at")
+    .eq("user_id", userId)
+    .order("saved_at", { ascending: false });
+
+  if (savedErr || !savedRows || savedRows.length === 0) {
+    if (savedErr) console.error("fetchSavedShares saved_shares error:", savedErr);
+    return [];
+  }
+
+  const shareIds = (savedRows as { share_id: string }[]).map((r) => r.share_id);
+
+  // shared_schedules.select RLS is owner-only, so we cannot read directly as
+  // the recipient. Resolve via a SECURITY DEFINER RPC that returns the
+  // public-safe fields for the given share ids. See migration 042.
+  const { data: liveRows, error: liveErr } = await supabase.rpc(
+    "get_saved_shares_live",
+    { p_share_ids: shareIds },
+  );
+  if (liveErr) {
+    console.error("fetchSavedShares live error:", liveErr);
+  }
+
+  const liveByShareId = new Map<string, {
+    token: string;
+    planner_name: string;
+    planner_start: string;
+    planner_end: string;
+    owner_display_name: string | null;
+  }>();
+  for (const row of (liveRows ?? []) as any[]) {
+    liveByShareId.set(row.share_id, row);
+  }
+
+  return (savedRows as {
+    id: string;
+    share_id: string;
+    planner_name_at_save: string;
+    saved_at: string;
+  }[]).map((row) => {
+    const live = liveByShareId.get(row.share_id);
+    return {
+      savedShareId: row.id,
+      shareId: row.share_id,
+      token: live?.token ?? null,
+      plannerNameAtSave: row.planner_name_at_save,
+      plannerName: live?.planner_name ?? null,
+      plannerStart: live?.planner_start ?? null,
+      plannerEnd: live?.planner_end ?? null,
+      ownerDisplayName: live?.owner_display_name ?? null,
+      savedAt: row.saved_at,
+      isTombstone: !live,
     };
   });
 }
