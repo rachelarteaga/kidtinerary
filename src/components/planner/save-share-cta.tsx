@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   saveSharedPlanner,
@@ -18,6 +18,11 @@ export function SaveShareCTA({ shareId, plannerName, initialIsSaved }: Props) {
   const router = useRouter();
   const { toast } = useToast();
   const [isSaved, setIsSaved] = useState(initialIsSaved);
+  // Keep local state in sync with refreshed props after router.refresh()
+  // (e.g., DrainPendingSaves auto-saves the current share post-signup).
+  useEffect(() => {
+    setIsSaved(initialIsSaved);
+  }, [initialIsSaved]);
   const [, startTransition] = useTransition();
 
   function handleSave() {

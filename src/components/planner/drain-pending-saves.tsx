@@ -32,9 +32,18 @@ export function DrainPendingSaves() {
           "success",
         );
         router.refresh();
+      } else if (r.skipped > 0) {
+        // Tokens drained from localStorage but nothing could be saved (e.g., shares
+        // revoked between stash and signup, or all tokens were the user's own).
+        toast(
+          "These planners are no longer being shared.",
+          "info",
+        );
       }
     })();
-  }, [router, toast]);
+    // ran.current ensures this effect runs only once per mount; refs not in deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return null;
 }
