@@ -25,19 +25,23 @@ create index saved_shares_share_id_idx
 alter table saved_shares enable row level security;
 
 -- Owner of the saved_shares row (the recipient who saved) can read/insert/delete.
-create policy "saved_shares owner select"
+-- Naming matches the "Users <verb> own <thing>" convention used across the
+-- migration history.
+create policy "Users read own saved_shares"
   on saved_shares for select using (auth.uid() = user_id);
 
-create policy "saved_shares owner insert"
+create policy "Users insert own saved_shares"
   on saved_shares for insert with check (auth.uid() = user_id);
 
-create policy "saved_shares owner delete"
+create policy "Users delete own saved_shares"
   on saved_shares for delete using (auth.uid() = user_id);
 
 -- SECURITY DEFINER counter so the share's *owner* (NOT the saved_shares row
 -- owner) can read total save counts for their own shares. RLS on saved_shares
--- would otherwise block that read.
-create or replace function get_save_counts_for_share_owner(p_user_id uuid)
+-- would otherwise block that read. Uses auth.uid() directly (no parameter)
+-- so a signed-in user can only read counts for shares they themselves own —
+-- matches the auth pattern from 038_help_me_find_usage.sql.
+create or replace function get_save_counts_for_share_owner()
 returns table (share_id uuid, save_count bigint)
 language sql
 stable
@@ -45,18 +49,19 @@ security definer
 set search_path = public
 as $$
   select ss.id as share_id,
-         coalesce(count(sv.id), 0) as save_count
+         count(sv.id) as save_count
   from shared_schedules ss
   left join saved_shares sv on sv.share_id = ss.id
-  where ss.user_id = p_user_id
+  where ss.user_id = auth.uid()
     and ss.scope = 'planner'
   group by ss.id
 $$;
 
-revoke execute on function get_save_counts_for_share_owner(uuid) from public;
-grant execute on function get_save_counts_for_share_owner(uuid) to authenticated;
+revoke execute on function get_save_counts_for_share_owner() from public;
+grant execute on function get_save_counts_for_share_owner() to authenticated;
 
-comment on function get_save_counts_for_share_owner(uuid) is
-  'Returns per-share save counts for shares owned by p_user_id. SECURITY '
+comment on function get_save_counts_for_share_owner() is
+  'Returns per-share save counts for shares owned by the caller. SECURITY '
   'DEFINER bypasses recipient-owner RLS on saved_shares so the share owner '
-  'can see "N saved" on their My Planners cards.';
+  'can see "N saved" on their My Planners cards. Filters by auth.uid() so '
+  'callers can only read counts for shares they themselves own.';
