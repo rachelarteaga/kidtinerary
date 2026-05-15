@@ -7,6 +7,7 @@ import { SharedActivityDetailPanel } from "./shared-activity-detail-panel";
 import { CellTimelineGrid, type TimelineEntry } from "./cell-timeline-grid";
 import { BlockIcon } from "./block-icon";
 import { ConsideringChips, type ConsideringChip } from "./considering-chips";
+import { SaveShareCTA } from "./save-share-cta";
 import { applyShareFilters } from "@/lib/share/apply-filters";
 import { generateWeeks, getWeekKey, formatWeekLabelCompact } from "@/lib/format";
 import type { DayOfWeek, PlannerBlockType, PlannerEntryStatus, SessionPart } from "@/lib/supabase/types";
@@ -255,28 +256,45 @@ export function SharedPlannerView({
             {visibleKids.length} kid{visibleKids.length === 1 ? "" : "s"}
           </p>
         </div>
-        {!forceViewMode && (
-          <div className="self-start inline-flex rounded-full border border-ink bg-surface overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setMode("detail")}
-              className={`font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 transition-colors ${
-                viewMode === "detail" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
-              }`}
+        <div className="self-start flex flex-wrap items-center gap-3">
+          {viewerState.isAuthenticated && !viewerState.isOwner && (
+            <SaveShareCTA
+              shareId={shareId}
+              plannerName={plannerName}
+              initialIsSaved={viewerState.isSaved}
+            />
+          )}
+          {viewerState.isOwner && viewerState.saveCount > 0 && (
+            <span
+              className="font-sans text-[11px] uppercase tracking-widest text-ink-2"
+              aria-label={`${viewerState.saveCount} people saved this planner`}
             >
-              Detail
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("simple")}
-              className={`font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 transition-colors ${
-                viewMode === "simple" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
-              }`}
-            >
-              Simple
-            </button>
-          </div>
-        )}
+              {viewerState.saveCount} saved
+            </span>
+          )}
+          {!forceViewMode && (
+            <div className="inline-flex rounded-full border border-ink bg-surface overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setMode("detail")}
+                className={`font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 transition-colors ${
+                  viewMode === "detail" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
+                }`}
+              >
+                Detail
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("simple")}
+                className={`font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 transition-colors ${
+                  viewMode === "simple" ? "bg-ink text-ink-inverse" : "text-ink-2 hover:text-ink"
+                }`}
+              >
+                Simple
+              </button>
+            </div>
+          )}
+        </div>
       </header>
 
       {visibleKids.length === 0 ? (
