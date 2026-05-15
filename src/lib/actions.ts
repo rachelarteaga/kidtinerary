@@ -1775,6 +1775,93 @@ export async function revokeShare(shareId: string): Promise<{ error?: string }> 
   return {};
 }
 
+/**
+ * Save a planner-scope share to the current user's "Planners Shared with Me"
+ * list. Idempotent. share_id is stable across token rotations.
+ * plannerNameAtSave is snapshotted onto the row so we can render a tombstone
+ * if the owner later revokes the share. The caller (the viewer page) gets
+ * both values from the public get_shared_planner_by_token payload.
+ */
+export async function saveSharedPlanner(input: {
+  shareId: string;
+  plannerNameAtSave: string;
+}): Promise<{ error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase.rpc("save_shared_planner", {
+    p_share_id: input.shareId,
+    p_planner_name_at_save: input.plannerNameAtSave,
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath("/account/planners");
+  return {};
+}
+
+export async function unsaveSharedPlanner(shareId: string): Promise<{ error?: string }> {
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("saved_shares")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("share_id", shareId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/account/planners");
+  return {};
+}
+
+/**
+ * Drain pending tokens stashed in localStorage by the anonymous "Sign up to
+ * save" banner. Resolves each token via the public RPC and forwards to
+ * save_shared_planner. Tokens with no matching share, or that the caller
+ * owns, are silently skipped (the RPC is also no-op for self-shares, but we
+ * short-circuit here too to avoid a round-trip).
+ */
+export async function drainPendingShareSaves(tokens: string[]): Promise<{
+  saved: number;
+  skipped: number;
+}> {
+  if (!tokens.length) return { saved: 0, skipped: 0 };
+
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { saved: 0, skipped: tokens.length };
+
+  let saved = 0;
+  let skipped = 0;
+
+  for (const token of tokens) {
+    const { data } = await supabase.rpc("get_shared_planner_by_token", { p_token: token });
+    if (!data || data.type !== "planner") {
+      skipped += 1;
+      continue;
+    }
+    if (data.owner_id === user.id) {
+      skipped += 1;
+      continue;
+    }
+    const { error } = await supabase.rpc("save_shared_planner", {
+      p_share_id: data.share_id,
+      p_planner_name_at_save: data.planner?.name ?? "Untitled planner",
+    });
+    if (error) {
+      skipped += 1;
+    } else {
+      saved += 1;
+    }
+  }
+
+  if (saved > 0) revalidatePath("/account/planners");
+  return { saved, skipped };
+}
+
 // ---------------------------------------------------------------------------
 // Planner CRUD (My Planners catalog)
 // ---------------------------------------------------------------------------
