@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { fetchSharedPlannerByToken } from "@/lib/queries";
+import { createClient } from "@/lib/supabase/server";
 import { SharedPlannerView } from "@/components/planner/shared-planner-view";
 
 export const dynamic = "force-dynamic";
@@ -20,10 +21,27 @@ export default async function SharedSchedulePage({ params }: PageProps) {
     redirect(`/camps/${result.campId}?share=${result.token}`);
   }
 
-  // type === "planner"
+  // Identify the viewer (if any) and whether they've already saved this share.
+  const supabase = (await createClient()) as any;
+  const { data: { user } } = await supabase.auth.getUser();
+
+  let isSaved = false;
+  if (user) {
+    const { data } = await supabase
+      .from("saved_shares")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("share_id", result.shareId)
+      .maybeSingle();
+    isSaved = !!data;
+  }
+
+  const isOwner = !!user && user.id === result.ownerId;
+
   return (
     <SharedPlannerView
       token={result.token}
+      shareId={result.shareId}
       plannerName={result.plannerName}
       plannerStart={result.plannerStart}
       plannerEnd={result.plannerEnd}
@@ -37,6 +55,12 @@ export default async function SharedSchedulePage({ params }: PageProps) {
         includePersonalBlockDetails: result.includePersonalBlockDetails,
       }}
       colorByActivityId={result.colorByActivityId}
+      viewerState={{
+        isAuthenticated: !!user,
+        isOwner,
+        isSaved,
+        saveCount: result.saveCount,
+      }}
     />
   );
 }

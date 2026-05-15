@@ -62,6 +62,7 @@ export interface BlockRow {
 
 interface Props {
   token: string;
+  shareId: string;
   plannerName: string;
   plannerStart: string;
   plannerEnd: string;
@@ -72,6 +73,12 @@ interface Props {
   filters: { kidIds: string[]; includeCost: boolean; includePersonalBlockDetails: boolean };
   colorByActivityId: Record<string, string>;
   forceViewMode?: "detail" | "simple";
+  viewerState: {
+    isAuthenticated: boolean;
+    isOwner: boolean;
+    isSaved: boolean;
+    saveCount: number;
+  };
 }
 
 function ageYears(birthDate: string): number {
@@ -81,6 +88,7 @@ function ageYears(birthDate: string): number {
 
 export function SharedPlannerView({
   token,
+  shareId,
   plannerName,
   plannerStart,
   plannerEnd,
@@ -91,6 +99,7 @@ export function SharedPlannerView({
   filters,
   colorByActivityId,
   forceViewMode,
+  viewerState,
 }: Props) {
   // Apply owner's share filters (kid filter, cost mask, personal-block title mask).
   // Project raw rows into the minimal shape applyShareFilters needs, then reuse the
