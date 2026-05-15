@@ -425,6 +425,9 @@ export type SharedByTokenResult =
   | {
       type: "planner";
       token: string;
+      shareId: string;
+      ownerId: string;
+      saveCount: number;
       plannerId: string;
       plannerName: string;
       plannerStart: string; // YYYY-MM-DD

@@ -18,6 +18,11 @@ export function mapSharedPlannerRpcPayload(data: any): SharedByTokenResult {
   return {
     type: "planner",
     token: data.token,
+    shareId: data.share_id,
+    ownerId: data.owner_id,
+    saveCount: typeof data.save_count === "number"
+      ? data.save_count
+      : Number(data.save_count ?? 0),
     plannerId: data.planner_id,
     plannerName: data.planner.name,
     plannerStart: data.planner.start_date,
