@@ -9,6 +9,7 @@ import { BlockIcon } from "./block-icon";
 import { ConsideringChips, type ConsideringChip } from "./considering-chips";
 import { SaveShareCTA } from "./save-share-cta";
 import { AnonSaveBanner } from "./anon-save-banner";
+import { DrainPendingSaves } from "./drain-pending-saves";
 import { applyShareFilters } from "@/lib/share/apply-filters";
 import { generateWeeks, getWeekKey, formatWeekLabelCompact } from "@/lib/format";
 import type { DayOfWeek, PlannerBlockType, PlannerEntryStatus, SessionPart } from "@/lib/supabase/types";
@@ -243,6 +244,7 @@ export function SharedPlannerView({
   return (
     <>
       {!viewerState.isAuthenticated && !forceViewMode && <AnonSaveBanner token={token} />}
+      {viewerState.isAuthenticated && !forceViewMode && <DrainPendingSaves />}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       <header className="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between sm:flex-wrap gap-3 sm:gap-4">
         <div className="min-w-0">
