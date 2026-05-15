@@ -42,3 +42,9 @@ $$;
 
 revoke execute on function save_shared_planner(uuid, text) from public;
 grant execute on function save_shared_planner(uuid, text) to authenticated;
+
+comment on function save_shared_planner(uuid, text) is
+  'Insert-or-update the calling user''s saved_shares row for the given share. '
+  'Idempotent; silent no-op if the caller owns the share. SECURITY DEFINER so '
+  'it can read shared_schedules.user_id (owner-only RLS) to perform the '
+  'self-save check without granting the recipient SELECT on shared_schedules.';

@@ -1822,7 +1822,9 @@ export async function unsaveSharedPlanner(shareId: string): Promise<{ error?: st
  * save" banner. Resolves each token via the public RPC and forwards to
  * save_shared_planner. Tokens with no matching share, or that the caller
  * owns, are silently skipped (the RPC is also no-op for self-shares, but we
- * short-circuit here too to avoid a round-trip).
+ * short-circuit here too to avoid a round-trip). Already-saved tokens count
+ * toward `saved` (the RPC's `on conflict do update` makes re-saves a normal
+ * success); the user-visible effect is just a slightly inflated toast count.
  */
 export async function drainPendingShareSaves(tokens: string[]): Promise<{
   saved: number;
