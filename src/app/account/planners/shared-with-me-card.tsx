@@ -73,9 +73,9 @@ export function SharedWithMeCard({ share, onRemoved }: Props) {
       >
         {share.plannerName}
       </Link>
-      <p className="font-sans text-sm text-ink-2 mt-1">
-        Shared by{" "}
-        <span className="text-ink font-semibold">
+      <p className="font-sans text-sm text-ink mt-1 flex items-center gap-1.5 flex-wrap">
+        <span>Shared by</span>
+        <span className="inline-block bg-camp-periwinkle text-ink font-semibold px-2 py-0.5 rounded-full text-xs">
           {share.ownerDisplayName ?? "a friend"}
         </span>
       </p>
