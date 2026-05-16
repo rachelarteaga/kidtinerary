@@ -1,4 +1,4 @@
-import { validateProfileName } from "./actions-profile-name-validation";
+import { validateProfileName } from "@/lib/actions-profile-name-validation";
 
 export interface ProfileInput {
   firstName: string;
