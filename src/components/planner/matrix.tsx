@@ -11,6 +11,7 @@ import { formatWeekLabelCompact, getWeekKey } from "@/lib/format";
 import type { PlannerBlockType } from "@/lib/supabase/types";
 import type { TimelineEntry } from "./cell-timeline-grid";
 import type { ConsideringChip } from "./considering-chips";
+import type { FriendOverlap } from "@/lib/overlap";
 
 interface Child {
   id: string;
@@ -26,6 +27,9 @@ export interface WeekCell {
   timelineEntries: TimelineEntry[];
   legendRows: CellLegendRow[];
   consideringChips: ConsideringChip[];
+  /** Friend-kid overlaps to render in the cell's top-right corner.
+   *  Null when no friend has a matching activity+week. */
+  overlaps: FriendOverlap[] | null;
 }
 
 export interface WeekRow {
@@ -188,6 +192,7 @@ export function PlannerMatrix({
                     timelineEntries={focusedCell?.timelineEntries ?? []}
                     legendRows={focusedCell?.legendRows ?? []}
                     consideringChips={focusedCell?.consideringChips ?? []}
+                    overlaps={focusedCell?.overlaps ?? undefined}
                     onEntryClick={onEntryClick}
                     onAddClick={(cid, ws) => onAddActivityClick(cid, ws)}
                   />
@@ -285,6 +290,7 @@ export function PlannerMatrix({
                   timelineEntries={cell?.timelineEntries ?? []}
                   legendRows={cell?.legendRows ?? []}
                   consideringChips={cell?.consideringChips ?? []}
+                  overlaps={cell?.overlaps ?? undefined}
                   onEntryClick={onEntryClick}
                   onAddClick={(cid, ws) => onAddActivityClick(cid, ws)}
                 />

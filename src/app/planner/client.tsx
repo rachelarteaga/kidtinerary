@@ -37,7 +37,7 @@ import {
 import { generateWeeks, getWeekKey, formatWeekRange } from "@/lib/format";
 import { extrasTotalCents } from "@/lib/extras-calc";
 import type { PlannerEntryRow, UserActivityWithDetails, PlannerBlockWithKids } from "@/lib/queries";
-import type { OverlapMap, FriendOverlap } from "@/lib/overlap";
+import type { OverlapMap } from "@/lib/overlap";
 import { overlapKey } from "@/lib/overlap";
 import type { PlannerEntryStatus, PlannerRow } from "@/lib/supabase/types";
 
