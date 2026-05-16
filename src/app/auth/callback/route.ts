@@ -19,6 +19,7 @@ export async function GET(request: Request) {
 
   if (code) {
     // TODO: remove cast when types are generated
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = (await createClient()) as any;
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
