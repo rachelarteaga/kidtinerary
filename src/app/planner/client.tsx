@@ -660,12 +660,6 @@ export function PlannerClient({ kids, allUserKids, entries, userActivities, bloc
                     blocks={rangePickerBlocks}
                     onChanged={() => router.refresh()}
                   />
-                  <button
-                    onClick={() => setEntryModal({ childId: null, weekStart: null, tab: "activity" })}
-                    className="hidden sm:inline-flex font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse hover:bg-[#333] border border-ink items-center justify-center"
-                  >
-                    + Add
-                  </button>
                 </div>
               </header>
 
