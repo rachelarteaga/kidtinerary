@@ -9,6 +9,9 @@ import {
   fetchUserPlannerIds,
   fetchPlannerKids,
 } from "@/lib/queries";
+import { fetchSavedShares, fetchSharedPlannerByToken } from "@/lib/queries";
+import { computeFriendOverlaps, type FriendPlannerForOverlap, type UserPlannerEntry } from "@/lib/overlap";
+import { getWeekKey } from "@/lib/format";
 import { PlannerClient } from "./client";
 
 export const dynamic = "force-dynamic";
@@ -72,6 +75,61 @@ export default async function PlannerPage({ searchParams }: PageProps) {
 
   const ownerDisplayName = (user.user_metadata?.full_name as string | undefined) ?? null;
 
+  // Phase 2 overlap: fetch each saved friend's planner payload to compute
+  // cell-level matches (same activity, same week as the user's own entries).
+  // Pure derivation — no schema involved. Tombstoned saves are skipped
+  // (token === null means the share was revoked).
+  const savedShares = await fetchSavedShares(user.id);
+  const friendPayloads = await Promise.all(
+    savedShares
+      .filter((s) => !s.isTombstone && s.token)
+      .map(async (s) => {
+        const result = await fetchSharedPlannerByToken(s.token!);
+        if (result.type !== "planner") return null;
+        const planner: FriendPlannerForOverlap = {
+          shareId: result.shareId,
+          shareToken: result.token,
+          ownerName: result.ownerDisplayName,
+          kids: result.kids.map((k) => ({
+            id: k.id,
+            name: k.name,
+            color: k.color,
+          })),
+          entries: result.entries.map((e) => ({
+            child_id: e.child_id,
+            activity_id: e.session.activity.id,
+            week_key: getWeekKey(new Date(e.session.starts_at + "T00:00:00")),
+          })),
+        };
+        return planner;
+      }),
+  );
+  const friendPlanners = friendPayloads.filter(
+    (p): p is FriendPlannerForOverlap => p !== null,
+  );
+
+  // Project the user's own entries down to the minimal shape the matcher
+  // needs, then compute the overlap map keyed by `${kidId}::${weekKey}`.
+  const userEntriesForOverlap: UserPlannerEntry[] = allEntries.map((e) => ({
+    child_id: e.child_id,
+    activity_id: e.session.activity.id,
+    week_key: getWeekKey(new Date(e.session.starts_at + "T00:00:00")),
+  }));
+  const overlapMap = computeFriendOverlaps(userEntriesForOverlap, friendPlanners);
+
+  // Pass the saved-shares list to the client as well — the new "Friends'
+  // Plans" tab in the rail renders this passively (owner name + kids + remove).
+  const friendsForRail = savedShares.map((s) => ({
+    savedShareId: s.savedShareId,
+    shareId: s.shareId,
+    token: s.token,
+    isTombstone: s.isTombstone,
+    plannerName: s.plannerName ?? s.plannerNameAtSave,
+    ownerDisplayName: s.ownerDisplayName,
+    kids: friendPlanners
+      .find((p) => p.shareId === s.shareId)?.kids ?? [],
+  }));
+
   return (
     <PlannerClient
       kids={children}
@@ -88,6 +146,8 @@ export default async function PlannerPage({ searchParams }: PageProps) {
       existingShareIncludePersonalBlockDetails={
         existingShare?.include_personal_block_details ?? null
       }
+      overlapMap={overlapMap}
+      friendsForRail={friendsForRail}
     />
   );
 }
