@@ -72,8 +72,9 @@ export function SaveShareCTA({ shareId, plannerName, initialIsSaved }: Props) {
     <button
       type="button"
       onClick={handleSave}
-      className="font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-ink text-ink-inverse border border-ink hover:bg-[#333]"
+      className="inline-flex items-center gap-1.5 font-sans font-bold text-[11px] uppercase tracking-widest px-4 py-2 rounded-full bg-hero text-ink border border-ink hover:brightness-95"
     >
+      <span aria-hidden="true">+</span>
       Save to my planners
     </button>
   );
