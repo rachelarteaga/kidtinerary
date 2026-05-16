@@ -37,7 +37,8 @@ import {
 import { generateWeeks, getWeekKey, formatWeekRange } from "@/lib/format";
 import { extrasTotalCents } from "@/lib/extras-calc";
 import type { PlannerEntryRow, UserActivityWithDetails, PlannerBlockWithKids } from "@/lib/queries";
-import type { OverlapMap } from "@/lib/overlap";
+import type { OverlapMap, FriendOverlap } from "@/lib/overlap";
+import { overlapKey } from "@/lib/overlap";
 import type { PlannerEntryStatus, PlannerRow } from "@/lib/supabase/types";
 
 // Module-level constants so the references stay stable across renders.
@@ -362,7 +363,9 @@ export function PlannerClient({ kids, allUserKids, entries, userActivities, bloc
           isOvernight: e.session_part === "overnight",
         }));
 
-      return { childId: kid.id, timelineEntries, legendRows, consideringChips };
+      const overlapsForCell = overlapMap[overlapKey(kid.id, weekKey)] ?? null;
+
+      return { childId: kid.id, timelineEntries, legendRows, consideringChips, overlaps: overlapsForCell };
     });
 
     const weekEnd = new Date(weekStart);
