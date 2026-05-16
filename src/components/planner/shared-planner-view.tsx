@@ -252,9 +252,9 @@ export function SharedPlannerView({
           <h1 className="font-display font-extrabold text-2xl sm:text-3xl mt-1">
             {plannerName}
           </h1>
-          <p className="font-sans text-ink font-medium text-sm sm:text-base mt-1 flex items-center gap-1.5 flex-wrap">
+          <p className="font-sans text-black font-medium text-sm sm:text-base mt-1 flex items-center gap-1.5 flex-wrap">
             <span>Shared by</span>
-            <span className="inline-block bg-camp-periwinkle text-ink font-semibold px-2.5 py-0.5 rounded-full text-sm">
+            <span className="inline-block bg-[#dfecf5] text-ink font-semibold px-2.5 py-0.5 rounded-full text-sm">
               {ownerDisplayName ?? "a friend"}
             </span>
           </p>
