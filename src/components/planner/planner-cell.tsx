@@ -5,6 +5,8 @@ import { ConsideringChips, type ConsideringChip } from "./considering-chips";
 import { CellDropZones } from "./cell-drop-zones";
 import type { DayOfWeek, PlannerEntryStatus } from "@/lib/supabase/types";
 import type { ScheduleSlot } from "@/lib/schedule";
+import { OverlapBadgeStack } from "./overlap-badge-stack";
+import type { FriendOverlap } from "@/lib/overlap";
 
 export interface CellLegendRow {
   entryId: string;
@@ -48,6 +50,9 @@ interface Props {
   consideringChips: ConsideringChip[];
   onEntryClick: (entryId: string) => void;
   onAddClick: (childId: string, weekStart: string) => void;
+  /** Friend-kid overlaps to render in the cell's top-right corner. Optional;
+   *  callers that don't have overlap data simply omit this. */
+  overlaps?: FriendOverlap[];
 }
 
 export function PlannerCell({
@@ -64,6 +69,7 @@ export function PlannerCell({
   consideringChips,
   onEntryClick,
   onAddClick,
+  overlaps,
 }: Props) {
   const hasContent = timelineEntries.length > 0 || consideringChips.length > 0;
 
@@ -143,6 +149,9 @@ export function PlannerCell({
   return (
     <div className="relative h-full" data-cell-id={`${childId}-${weekStart}`}>
       <div className={`h-full ${isDraggingActivity ? "opacity-40 pointer-events-none" : ""}`}>{content}</div>
+      {overlaps && overlaps.length > 0 && !isDraggingActivity && (
+        <OverlapBadgeStack overlaps={overlaps} />
+      )}
       {isDraggingActivity && (
         <div className="absolute inset-0">
           <CellDropZones
