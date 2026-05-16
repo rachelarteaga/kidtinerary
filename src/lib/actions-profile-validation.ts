@@ -1,5 +1,8 @@
+import { validateProfileName } from "./actions-profile-name-validation";
+
 export interface ProfileInput {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   address: string;
   phone: string;
 }
@@ -11,8 +14,11 @@ export interface ValidationResult {
 const PHONE_REGEX = /^[+]?[0-9()\-\s]{7,20}$/;
 
 export function validateProfileInput(input: ProfileInput): ValidationResult {
-  const name = input.fullName.trim();
-  if (!name) return { error: "Name is required." };
+  const nameResult = validateProfileName({
+    firstName: input.firstName,
+    lastName: input.lastName,
+  });
+  if (nameResult.error) return nameResult;
 
   const phone = input.phone.trim();
   if (phone && !PHONE_REGEX.test(phone)) {
