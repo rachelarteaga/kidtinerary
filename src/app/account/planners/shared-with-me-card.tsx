@@ -21,9 +21,13 @@ function formatDateRange(startDate: string, endDate: string): string {
 
 interface Props {
   share: SavedShareSummary;
+  /** Called after a successful unsave so the parent can drop this card from
+   * its local list immediately, without waiting on router.refresh() to deliver
+   * fresh server data. */
+  onRemoved?: (shareId: string) => void;
 }
 
-export function SharedWithMeCard({ share }: Props) {
+export function SharedWithMeCard({ share, onRemoved }: Props) {
   const router = useRouter();
   const { toast } = useToast();
   const [, startTransition] = useTransition();
@@ -35,6 +39,7 @@ export function SharedWithMeCard({ share }: Props) {
         toast(r.error, "error");
         return;
       }
+      onRemoved?.(share.shareId);
       toast("Removed from your planners.", "success");
       router.refresh();
     });
