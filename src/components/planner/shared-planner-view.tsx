@@ -252,11 +252,12 @@ export function SharedPlannerView({
           <h1 className="font-display font-extrabold text-2xl sm:text-3xl mt-1">
             {plannerName}
           </h1>
-          {ownerDisplayName && (
-            <p className="font-sans text-ink-2 font-medium text-sm sm:text-base mt-1">
-              {ownerDisplayName}&apos;s planner
-            </p>
-          )}
+          <p className="font-sans text-ink-2 font-medium text-sm sm:text-base mt-1">
+            Shared by{" "}
+            <span className="text-ink font-semibold">
+              {ownerDisplayName ?? "a friend"}
+            </span>
+          </p>
           <p className="text-ink-2 text-sm mt-1">
             {visibleKids.length} kid{visibleKids.length === 1 ? "" : "s"}
           </p>
