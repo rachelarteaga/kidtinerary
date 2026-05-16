@@ -21,9 +21,13 @@ function formatDateRange(startDate: string, endDate: string): string {
 
 interface Props {
   share: SavedShareSummary;
+  /** Called after a successful unsave so the parent can drop this card from
+   * its local list immediately, without waiting on router.refresh() to deliver
+   * fresh server data. */
+  onRemoved?: (shareId: string) => void;
 }
 
-export function SharedWithMeCard({ share }: Props) {
+export function SharedWithMeCard({ share, onRemoved }: Props) {
   const router = useRouter();
   const { toast } = useToast();
   const [, startTransition] = useTransition();
@@ -35,6 +39,7 @@ export function SharedWithMeCard({ share }: Props) {
         toast(r.error, "error");
         return;
       }
+      onRemoved?.(share.shareId);
       toast("Removed from your planners.", "success");
       router.refresh();
     });
@@ -68,12 +73,17 @@ export function SharedWithMeCard({ share }: Props) {
       >
         {share.plannerName}
       </Link>
-      <p className="font-sans text-xs text-ink-2 mt-1">
-        {share.plannerStart && share.plannerEnd
-          ? formatDateRange(share.plannerStart, share.plannerEnd)
-          : null}
-        {share.ownerDisplayName ? ` · Shared by ${share.ownerDisplayName}` : null}
+      <p className="font-sans text-sm text-ink-2 mt-1">
+        Shared by{" "}
+        <span className="text-ink font-semibold">
+          {share.ownerDisplayName ?? "a friend"}
+        </span>
       </p>
+      {share.plannerStart && share.plannerEnd && (
+        <p className="font-sans text-xs text-ink-2 mt-0.5">
+          {formatDateRange(share.plannerStart, share.plannerEnd)}
+        </p>
+      )}
       <div className="mt-3 pt-3 border-t border-ink-3 flex items-center justify-between gap-2">
         <span className="font-sans text-[11px] uppercase tracking-widest text-ink-2">
           Read-only

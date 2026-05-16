@@ -63,15 +63,22 @@ export function MyPlannersClient({
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const [planners, setPlanners] = useState(initialPlanners);
-  const [savedShares] = useState(initialSavedShares);
+  const [savedShares, setSavedShares] = useState(initialSavedShares);
   const [mobileTab, setMobileTab] = useState<"mine" | "shared">("mine");
   // Keep local state in sync with server data whenever router.refresh() delivers
-  // fresh initialPlanners (e.g., after createPlannerShare / duplicatePlanner).
-  // Without this, toggling share off + on again leaves the client stuck at the
-  // stale "off" state even though the server wrote a new share row.
+  // fresh initialPlanners / initialSavedShares (e.g., after createPlannerShare /
+  // duplicatePlanner / unsaveSharedPlanner). Without this, the client stays
+  // stuck at stale state even when the server wrote a fresh row.
   useEffect(() => {
     setPlanners(initialPlanners);
   }, [initialPlanners]);
+  useEffect(() => {
+    setSavedShares(initialSavedShares);
+  }, [initialSavedShares]);
+
+  function handleRemoveSavedShare(shareId: string) {
+    setSavedShares((prev) => prev.filter((s) => s.shareId !== shareId));
+  }
   const [, startTransition] = useTransition();
   const [shareDrawer, setShareDrawer] = useState<PlannerSummary | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<PlannerSummary | null>(null);
@@ -237,7 +244,11 @@ export function MyPlannersClient({
           ) : (
             <div className="space-y-3">
               {savedShares.map((s) => (
-                <SharedWithMeCard key={s.savedShareId} share={s} />
+                <SharedWithMeCard
+                  key={s.savedShareId}
+                  share={s}
+                  onRemoved={handleRemoveSavedShare}
+                />
               ))}
             </div>
           )}
