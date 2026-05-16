@@ -37,6 +37,7 @@ import {
 import { generateWeeks, getWeekKey, formatWeekRange } from "@/lib/format";
 import { extrasTotalCents } from "@/lib/extras-calc";
 import type { PlannerEntryRow, UserActivityWithDetails, PlannerBlockWithKids } from "@/lib/queries";
+import type { OverlapMap } from "@/lib/overlap";
 import type { PlannerEntryStatus, PlannerRow } from "@/lib/supabase/types";
 
 // Module-level constants so the references stay stable across renders.
@@ -67,9 +68,19 @@ interface Props {
   existingShareKidIds: string[] | null;
   existingShareIncludeCost: boolean | null;
   existingShareIncludePersonalBlockDetails: boolean | null;
+  overlapMap: OverlapMap;
+  friendsForRail: {
+    savedShareId: string;
+    shareId: string;
+    token: string | null;
+    isTombstone: boolean;
+    plannerName: string;
+    ownerDisplayName: string | null;
+    kids: { id: string; name: string; color: string }[];
+  }[];
 }
 
-export function PlannerClient({ kids, allUserKids, entries, userActivities, blocks, shareCampsDefault, planner, sharesActiveCount, ownerDisplayName, existingShareKidIds, existingShareIncludeCost, existingShareIncludePersonalBlockDetails }: Props) {
+export function PlannerClient({ kids, allUserKids, entries, userActivities, blocks, shareCampsDefault, planner, sharesActiveCount, ownerDisplayName, existingShareKidIds, existingShareIncludeCost, existingShareIncludePersonalBlockDetails, overlapMap, friendsForRail }: Props) {
   const router = useRouter();
   const { toast } = useToast();
   const isShared = sharesActiveCount > 0;
