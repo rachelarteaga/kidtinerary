@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useTransition, useMemo } from "react";
-import { useDraggable } from "@dnd-kit/core";
+import { useEffect, useState, useTransition } from "react";
 import { removeActivityFromShortlist } from "@/lib/actions";
+import { MyActivitiesContent } from "./my-activities-content";
 import type { UserActivityWithDetails } from "@/lib/queries";
 
 interface Props {
@@ -19,6 +19,10 @@ interface Props {
    * successful placement / from the banner). */
   mobileOpen?: boolean;
   onMobileOpenChange?: (open: boolean) => void;
+  /** When true, skip rendering the desktop `<aside>` chrome so that a parent
+   * (e.g., PlannerRail) can provide its own tabbed desktop rail while still
+   * delegating the mobile bottom-sheet path here. */
+  mobileOnly?: boolean;
 }
 
 export function MyActivitiesRail({
@@ -29,7 +33,11 @@ export function MyActivitiesRail({
   onActivityPlacementTap,
   mobileOpen = false,
   onMobileOpenChange,
+  mobileOnly = false,
 }: Props) {
+  // Mobile sheet still owns its own pendingRemove state because the mobile
+  // markup is in this file (TapToPlaceActivityItem). Desktop's pendingRemove
+  // lives inside <MyActivitiesContent>.
   const [pendingRemove, setPendingRemove] = useState<{
     userCampId: string;
     name: string;
@@ -59,39 +67,6 @@ export function MyActivitiesRail({
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [mobileOpen, onMobileOpenChange]);
-
-  const railContent = (
-    <>
-      <h2 className="font-display font-extrabold text-lg text-ink tracking-tight mb-3 flex-shrink-0">My activities</h2>
-
-      <button
-        onClick={onAddClick}
-        className="w-full mb-3 rounded-lg border border-dashed border-ink-3 text-ink-2 hover:border-ink hover:text-ink transition-colors font-sans text-[11px] uppercase tracking-wide py-2 flex-shrink-0"
-      >
-        + Add activity
-      </button>
-
-      <div className="space-y-2">
-        {activities.length === 0 && (
-          <p className="text-sm text-ink-3 italic">Nothing yet — add one above.</p>
-        )}
-        {activities.map((c) => (
-          <DraggableActivityItem
-            key={c.id}
-            activity={c}
-            onClick={() => onChipClick(c)}
-            onRemoveClick={() =>
-              setPendingRemove({
-                userCampId: c.id,
-                name: c.activity.name,
-                entryCount: c.plannerEntryCount,
-              })
-            }
-          />
-        ))}
-      </div>
-    </>
-  );
 
   const mobileContent = (
     <div className="space-y-2 pb-2">
@@ -124,9 +99,16 @@ export function MyActivitiesRail({
   return (
     <>
       {/* Desktop: inline side rail */}
-      <aside className="hidden md:flex md:flex-col w-80 shrink-0 md:h-full md:overflow-y-auto bg-[#dfecf5] md:border-r md:border-ink px-6 sm:px-8 lg:px-10 pt-[22px] pb-4">
-        {railContent}
-      </aside>
+      {!mobileOnly && (
+        <aside className="hidden md:flex md:flex-col w-80 shrink-0 md:h-full md:overflow-y-auto bg-[#dfecf5] md:border-r md:border-ink px-6 sm:px-8 lg:px-10 pt-[22px] pb-4">
+          <MyActivitiesContent
+            activities={activities}
+            onChipClick={onChipClick}
+            onAddClick={onAddClick}
+            onChanged={onChanged}
+          />
+        </aside>
+      )}
 
       {/* Mobile: bottom sheet */}
       <div className="md:hidden">
@@ -240,82 +222,6 @@ export function MyActivitiesRail({
         </div>
       )}
     </>
-  );
-}
-
-function DraggableActivityItem({
-  activity,
-  onClick,
-  onRemoveClick,
-}: {
-  activity: UserActivityWithDetails;
-  onClick: () => void;
-  onRemoveClick: () => void;
-}) {
-  const data = useMemo(
-    () => ({
-      type: "activity" as const,
-      userCampId: activity.id,
-      activityId: activity.activity.id,
-      name: activity.activity.name,
-      color: activity.color,
-    }),
-    [activity.id, activity.activity.id, activity.activity.name, activity.color]
-  );
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: `activity-${activity.id}`,
-    data,
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      onClick={onClick}
-      className={`group relative rounded-lg border bg-white p-2.5 cursor-pointer select-none transition-all border-ink-3 ${isDragging ? "opacity-60 ring-2 ring-hero-light/40" : "hover:border-ink"}`}
-    >
-      <div className="flex items-start gap-1.5">
-        <button
-          {...listeners}
-          {...attributes}
-          type="button"
-          aria-label={`Drag ${activity.activity.name}`}
-          onClick={(e) => e.stopPropagation()}
-          className="text-ink-3 hover:text-ink cursor-grab active:cursor-grabbing flex-shrink-0 leading-none self-center text-[13px] -ml-1"
-        >
-          ⋮⋮
-        </button>
-        <div className="flex-1 min-w-0 pr-5">
-          <div className="flex items-start gap-1.5">
-            <span className="w-2 h-2 mt-1.5 rounded-full flex-shrink-0" style={{ background: activity.color }} />
-            <div className="font-medium text-sm text-ink break-words">{activity.activity.name}</div>
-          </div>
-          {activity.activity.organization?.name &&
-            activity.activity.organization.name !== activity.activity.name &&
-            activity.activity.organization.name !== "User-submitted" && (
-              <div className="mt-0.5 pl-3.5 font-sans text-[11px] text-ink-2 break-words">
-                {activity.activity.organization.name}
-              </div>
-            )}
-          <div className="mt-1 pl-3.5 flex items-center gap-2 font-sans text-[10px] uppercase tracking-wide text-ink-2">
-            {activity.plannerEntryCount > 0 && <span>{activity.plannerEntryCount}x</span>}
-            {activity.activity.verified && <span className="text-[#5fc39c]">verified</span>}
-          </div>
-        </div>
-      </div>
-      <button
-        type="button"
-        aria-label={`Remove ${activity.activity.name}`}
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          onRemoveClick();
-        }}
-        className="absolute top-0.5 right-0.5 w-8 h-8 flex items-center justify-center rounded-full text-ink-3 hover:text-[#ef8c8f] hover:bg-[#fdebec] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-sm"
-      >
-        ✕
-      </button>
-    </div>
   );
 }
 
