@@ -29,60 +29,70 @@ export function PlannerRail(props: Props) {
     <>
       {/* Desktop: tabbed rail. MyActivitiesRail is rendered below in
           mobileOnly mode so its desktop <aside> doesn't duplicate this one. */}
-      <aside className="hidden md:flex md:flex-col w-80 shrink-0 md:h-full md:overflow-y-auto bg-[#dfecf5] md:border-r md:border-ink px-6 sm:px-8 lg:px-10 pt-[22px] pb-4">
-        <div
-          role="tablist"
-          aria-label="Planner sidebar"
-          className="flex border-b border-ink mb-3 flex-shrink-0"
-        >
-          <button
-            role="tab"
-            type="button"
-            aria-selected={tab === "activities"}
-            aria-controls="panel-activities"
-            onClick={() => setTab("activities")}
-            className={`flex-1 font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 rounded-t-lg transition-colors ${
-              tab === "activities"
-                ? "bg-surface text-ink border border-b-0 border-ink -mb-px relative z-10"
-                : "bg-transparent text-ink-2 hover:text-ink hover:bg-ink/5"
-            }`}
+      <aside className="hidden md:flex md:flex-col w-96 shrink-0 md:h-full md:overflow-y-auto md:border-r md:border-ink bg-surface">
+        {/* White tab header — fixed at top, doesn't scroll */}
+        <div className="bg-surface px-6 sm:px-8 lg:px-10 pt-[14px] flex-shrink-0">
+          <div
+            role="tablist"
+            aria-label="Planner sidebar"
+            className="flex gap-1.5 border-b-[1.5px] border-ink"
           >
-            My activities
-          </button>
-          <button
-            role="tab"
-            type="button"
-            aria-selected={tab === "friends"}
-            aria-controls="panel-friends"
-            onClick={() => setTab("friends")}
-            className={`flex-1 font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 rounded-t-lg transition-colors ${
-              tab === "friends"
-                ? "bg-surface text-ink border border-b-0 border-ink -mb-px relative z-10"
-                : "bg-transparent text-ink-2 hover:text-ink hover:bg-ink/5"
-            }`}
-          >
-            Friends&apos; plans
-            {props.friends.length > 0 ? ` (${props.friends.length})` : null}
-          </button>
+            <button
+              role="tab"
+              type="button"
+              aria-selected={tab === "activities"}
+              aria-controls="panel-activities"
+              onClick={() => setTab("activities")}
+              className={`flex-1 px-2.5 py-2 font-sans font-bold text-[10px] uppercase tracking-widest whitespace-nowrap rounded-t-lg border-l-[1.5px] border-r-[1.5px] border-t-[1.5px] transition-colors ${
+                tab === "activities"
+                  ? "bg-[#ebecee] border-ink text-ink -mb-[1.5px] relative z-10"
+                  : "bg-[#f5f5f6] border-ink-3 text-[#999] hover:text-ink"
+              }`}
+            >
+              My activities
+            </button>
+            <button
+              role="tab"
+              type="button"
+              aria-selected={tab === "friends"}
+              aria-controls="panel-friends"
+              onClick={() => setTab("friends")}
+              className={`flex-1 px-2.5 py-2 font-sans font-bold text-[10px] uppercase tracking-widest whitespace-nowrap rounded-t-lg border-l-[1.5px] border-r-[1.5px] border-t-[1.5px] transition-colors ${
+                tab === "friends"
+                  ? "bg-[#dfecf5] border-ink text-ink -mb-[1.5px] relative z-10"
+                  : "bg-[#f1f6fa] border-ink-3 text-[#999] hover:text-ink"
+              }`}
+            >
+              Friends&apos; plans
+              {props.friends.length > 0 ? ` (${props.friends.length})` : null}
+            </button>
+          </div>
         </div>
 
-        {tab === "activities" ? (
-          <div role="tabpanel" id="panel-activities">
-            <MyActivitiesContent
-              activities={props.activities}
-              onChipClick={props.onChipClick}
-              onAddClick={props.onAddClick}
-              onChanged={props.onChanged}
-            />
-          </div>
-        ) : (
-          <div role="tabpanel" id="panel-friends">
-            <FriendsPlansPanel
-              friends={props.friends}
-              onRemoved={props.onFriendRemoved}
-            />
-          </div>
-        )}
+        {/* Content area — color shifts with active tab; scrolls independently */}
+        <div
+          className={`flex-1 overflow-y-auto px-6 sm:px-8 lg:px-10 pt-4 pb-4 transition-colors ${
+            tab === "activities" ? "bg-[#ebecee]" : "bg-[#dfecf5]"
+          }`}
+        >
+          {tab === "activities" ? (
+            <div role="tabpanel" id="panel-activities">
+              <MyActivitiesContent
+                activities={props.activities}
+                onChipClick={props.onChipClick}
+                onAddClick={props.onAddClick}
+                onChanged={props.onChanged}
+              />
+            </div>
+          ) : (
+            <div role="tabpanel" id="panel-friends">
+              <FriendsPlansPanel
+                friends={props.friends}
+                onRemoved={props.onFriendRemoved}
+              />
+            </div>
+          )}
+        </div>
       </aside>
 
       {/* Mobile: delegate to MyActivitiesRail's bottom-sheet path. Pass
