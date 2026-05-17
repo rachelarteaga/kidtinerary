@@ -19,6 +19,10 @@ interface Props {
    * successful placement / from the banner). */
   mobileOpen?: boolean;
   onMobileOpenChange?: (open: boolean) => void;
+  /** When true, skip rendering the desktop `<aside>` chrome so that a parent
+   * (e.g., PlannerRail) can provide its own tabbed desktop rail while still
+   * delegating the mobile bottom-sheet path here. */
+  mobileOnly?: boolean;
 }
 
 export function MyActivitiesRail({
@@ -29,6 +33,7 @@ export function MyActivitiesRail({
   onActivityPlacementTap,
   mobileOpen = false,
   onMobileOpenChange,
+  mobileOnly = false,
 }: Props) {
   // Mobile sheet still owns its own pendingRemove state because the mobile
   // markup is in this file (TapToPlaceActivityItem). Desktop's pendingRemove
@@ -94,14 +99,16 @@ export function MyActivitiesRail({
   return (
     <>
       {/* Desktop: inline side rail */}
-      <aside className="hidden md:flex md:flex-col w-80 shrink-0 md:h-full md:overflow-y-auto bg-[#dfecf5] md:border-r md:border-ink px-6 sm:px-8 lg:px-10 pt-[22px] pb-4">
-        <MyActivitiesContent
-          activities={activities}
-          onChipClick={onChipClick}
-          onAddClick={onAddClick}
-          onChanged={onChanged}
-        />
-      </aside>
+      {!mobileOnly && (
+        <aside className="hidden md:flex md:flex-col w-80 shrink-0 md:h-full md:overflow-y-auto bg-[#dfecf5] md:border-r md:border-ink px-6 sm:px-8 lg:px-10 pt-[22px] pb-4">
+          <MyActivitiesContent
+            activities={activities}
+            onChipClick={onChipClick}
+            onAddClick={onAddClick}
+            onChanged={onChanged}
+          />
+        </aside>
+      )}
 
       {/* Mobile: bottom sheet */}
       <div className="md:hidden">

@@ -14,7 +14,7 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { PlannerMatrix, type WeekRow } from "@/components/planner/matrix";
-import { MyActivitiesRail } from "@/components/planner/my-activities-rail";
+import { PlannerRail } from "@/components/planner/planner-rail";
 import { AddEntryModal } from "@/components/planner/add-entry-modal";
 import { ActivityDetailDrawer } from "@/components/planner/activity-detail-drawer";
 import { BlockDetailDrawer } from "@/components/planner/block-detail-drawer";
@@ -585,7 +585,7 @@ export function PlannerClient({ kids, allUserKids, entries, userActivities, bloc
           </div>
         )}
         <div className="flex flex-col md:flex-row flex-1 min-h-0">
-          <MyActivitiesRail
+          <PlannerRail
             activities={userActivities}
             onChipClick={(c) => setQuickViewActivityId(c.id)}
             onAddClick={() => setEntryModal({ childId: null, weekStart: null, tab: "activity" })}
@@ -593,6 +593,14 @@ export function PlannerClient({ kids, allUserKids, entries, userActivities, bloc
             onActivityPlacementTap={handleActivityPlacementTap}
             mobileOpen={mobileActivitiesOpen}
             onMobileOpenChange={setMobileActivitiesOpen}
+            friends={friendsForRail}
+            onFriendRemoved={() => {
+              // The friends list comes from server props (friendsForRail).
+              // FriendsPlansPanel calls router.refresh() after a successful
+              // unsave, so the next render will reflect the removal.
+              // Optimistic local removal would smooth the transition — see
+              // /account/planners/client.tsx for the pattern. Skipping for V1.
+            }}
           />
 
           <div className="flex-1 min-w-0 flex flex-col md:h-full md:overflow-hidden">
