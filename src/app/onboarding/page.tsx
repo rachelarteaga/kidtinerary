@@ -1,26 +1,61 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { geocodeAddress } from "@/lib/geocode";
+import { NameStep } from "@/components/onboarding/name-step";
 import { AddressStep } from "@/components/onboarding/address-step";
 import { ChildStep, type KidDraft } from "@/components/onboarding/child-step";
 import { InterestsStep } from "@/components/onboarding/interests-step";
 import type { Category } from "@/lib/constants";
 
-type Step = "address" | "child" | "interests";
+type Step = "name" | "address" | "child" | "interests";
 
 export const dynamic = "force-dynamic";
 
 export default function OnboardingPage() {
-  const [step, setStep] = useState<Step>("address");
+  const [step, setStep] = useState<Step>("name");
+  const [initialFirst, setInitialFirst] = useState("");
+  const [initialLast, setInitialLast] = useState("");
+  const [nameLoaded, setNameLoaded] = useState(false);
   const [address, setAddress] = useState("");
   const [kids, setKids] = useState<KidDraft[]>([]);
   const [interestsByKid, setInterestsByKid] = useState<Category[][]>([]);
   const [interestsIndex, setInterestsIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  // Pre-fill name from profile (seeded by OAuth callback in Task 5).
+  useEffect(() => {
+    let cancelled = false;
+    async function loadName() {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const supabase = createClient() as any;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/auth/login");
+        return;
+      }
+      const { data } = await supabase
+        .from("profiles")
+        .select("first_name, last_name")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      setInitialFirst((data?.first_name as string | null) ?? "");
+      setInitialLast((data?.last_name as string | null) ?? "");
+      setNameLoaded(true);
+    }
+    loadName();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
+  function handleNameComplete() {
+    setStep("address");
+  }
 
   function handleAddressComplete(addr: string) {
     setAddress(addr);
@@ -89,14 +124,16 @@ export default function OnboardingPage() {
     router.push("/planner");
   }
 
-  const stepNumber = step === "address" ? 1 : step === "child" ? 2 : 3;
+  const stepNumber =
+    step === "name" ? 1 : step === "address" ? 2 : step === "child" ? 3 : 4;
+
   const currentKid = step === "interests" ? kids[interestsIndex] : null;
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="flex gap-2 mb-8">
-          {[1, 2, 3].map((n) => (
+          {[1, 2, 3, 4].map((n) => (
             <div
               key={n}
               className={`h-1 flex-1 rounded-full transition-colors ${
@@ -106,6 +143,13 @@ export default function OnboardingPage() {
           ))}
         </div>
 
+        {step === "name" && nameLoaded && (
+          <NameStep
+            defaultFirst={initialFirst}
+            defaultLast={initialLast}
+            onComplete={handleNameComplete}
+          />
+        )}
         {step === "address" && (
           <AddressStep onComplete={handleAddressComplete} />
         )}

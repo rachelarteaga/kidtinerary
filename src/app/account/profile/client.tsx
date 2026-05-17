@@ -4,7 +4,8 @@ import { EditProfileForm } from "@/components/account/edit-profile-form";
 
 interface Props {
   initial: {
-    fullName: string;
+    firstName: string;
+    lastName: string;
     email: string;
     address: string;
     phone: string;

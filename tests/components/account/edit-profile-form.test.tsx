@@ -11,7 +11,8 @@ vi.mock("@/lib/supabase/client", () => ({
 
 describe("EditProfileForm", () => {
   const initial = {
-    fullName: "Rachel",
+    firstName: "Rachel",
+    lastName: "Ressner",
     email: "rachel@example.com",
     address: "123 Main St",
     phone: "+15555551234",
@@ -20,6 +21,7 @@ describe("EditProfileForm", () => {
   it("prefills name, address, and phone; shows email read-only", () => {
     render(<EditProfileForm initial={initial} />);
     expect(screen.getByDisplayValue("Rachel")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Ressner")).toBeInTheDocument();
     expect(screen.getByDisplayValue("123 Main St")).toBeInTheDocument();
     expect(screen.getByDisplayValue("+15555551234")).toBeInTheDocument();
 
