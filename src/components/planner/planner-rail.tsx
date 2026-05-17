@@ -30,12 +30,15 @@ export function PlannerRail(props: Props) {
       {/* Desktop: tabbed rail. MyActivitiesRail is rendered below in
           mobileOnly mode so its desktop <aside> doesn't duplicate this one. */}
       <aside className="hidden md:flex md:flex-col w-96 shrink-0 md:h-full md:overflow-y-auto md:border-r md:border-ink bg-surface">
-        {/* White tab header — fixed at top, doesn't scroll */}
-        <div className="bg-surface px-6 sm:px-8 lg:px-10 pt-[14px] flex-shrink-0">
+        {/* White tab header — fixed at top, doesn't scroll.
+            border-b lives here (no horizontal padding) so the divider line
+            extends to the rail's left + right edges. Inner tablist holds
+            the horizontal padding for the tab buttons themselves. */}
+        <div className="bg-surface pt-[14px] flex-shrink-0 border-b-[1.5px] border-ink">
           <div
             role="tablist"
             aria-label="Planner sidebar"
-            className="flex gap-1.5 border-b-[1.5px] border-ink"
+            className="flex gap-1.5 px-6 sm:px-8 lg:px-10"
           >
             <button
               role="tab"
