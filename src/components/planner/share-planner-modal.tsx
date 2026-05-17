@@ -3,9 +3,10 @@
 import { useRef, useState, useTransition } from "react";
 import { KidAvatar } from "./kid-avatar";
 import { SharedPlannerView, type KidRow as SharedKidRow, type EntryRow as SharedEntryRow, type BlockRow as SharedBlockRow } from "./shared-planner-view";
-import { createPlannerShare } from "@/lib/actions";
+import { createPlannerShare, fetchOwnNameStatus } from "@/lib/actions";
 import { sharePlannerImage, buildShareFilename } from "@/lib/share/render-image";
 import { useToast } from "@/components/ui/toast";
+import { NameRequiredPrompt } from "@/components/auth/name-required-prompt";
 
 function CameraIcon({ size = 18 }: { size?: number }) {
   return (
@@ -106,6 +107,9 @@ export function SharePlannerModal({
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const hiddenViewRef = useRef<HTMLDivElement>(null);
+  const [pendingNamePrompt, setPendingNamePrompt] = useState<
+    null | { resume: () => void; first: string; last: string }
+  >(null);
 
   const none = selected.size === 0;
 
@@ -139,21 +143,37 @@ export function SharePlannerModal({
 
   function handleLink() {
     startTransition(async () => {
-      const result = await createPlannerShare({
-        plannerId,
-        kidIds: Array.from(selected),
-        includeCost,
-        includePersonalBlockDetails: includeBlocks,
-      });
-      if (result.error || !result.token) {
-        toast(result.error ?? "Could not create share link.", "error");
+      const status = await fetchOwnNameStatus();
+      if (status.missing) {
+        setPendingNamePrompt({
+          resume: () => {
+            setPendingNamePrompt(null);
+            startTransition(actuallyCreateLink);
+          },
+          first: status.firstName,
+          last: status.lastName,
+        });
         return;
       }
-      const url = `${window.location.origin}/schedule/${result.token}`;
-      await navigator.clipboard.writeText(url);
-      toast("Link copied to clipboard.", "success");
-      onClose();
+      await actuallyCreateLink();
     });
+  }
+
+  async function actuallyCreateLink() {
+    const result = await createPlannerShare({
+      plannerId,
+      kidIds: Array.from(selected),
+      includeCost,
+      includePersonalBlockDetails: includeBlocks,
+    });
+    if (result.error || !result.token) {
+      toast(result.error ?? "Could not create share link.", "error");
+      return;
+    }
+    const url = `${window.location.origin}/schedule/${result.token}`;
+    await navigator.clipboard.writeText(url);
+    toast("Link copied to clipboard.", "success");
+    onClose();
   }
 
   return (
@@ -348,6 +368,16 @@ export function SharePlannerModal({
           />
         </div>
       </div>
+
+      {pendingNamePrompt && (
+        <NameRequiredPrompt
+          defaultFirst={pendingNamePrompt.first}
+          defaultLast={pendingNamePrompt.last}
+          reason="Recipients of your share link will see your name on the planner. Add it now to continue."
+          onComplete={pendingNamePrompt.resume}
+          onCancel={() => setPendingNamePrompt(null)}
+        />
+      )}
     </>
   );
 }
