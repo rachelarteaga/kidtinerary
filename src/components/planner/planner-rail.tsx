@@ -33,7 +33,7 @@ export function PlannerRail(props: Props) {
         <div
           role="tablist"
           aria-label="Planner sidebar"
-          className="flex gap-1 mb-3 flex-shrink-0"
+          className="flex border-b border-ink mb-3 flex-shrink-0"
         >
           <button
             role="tab"
@@ -41,10 +41,10 @@ export function PlannerRail(props: Props) {
             aria-selected={tab === "activities"}
             aria-controls="panel-activities"
             onClick={() => setTab("activities")}
-            className={`flex-1 font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 rounded-full border ${
+            className={`flex-1 font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 rounded-t-lg transition-colors ${
               tab === "activities"
-                ? "bg-ink text-ink-inverse border-ink"
-                : "bg-transparent text-ink border-ink-3"
+                ? "bg-surface text-ink border border-b-0 border-ink -mb-px relative z-10"
+                : "bg-transparent text-ink-2 hover:text-ink hover:bg-ink/5"
             }`}
           >
             My activities
@@ -55,10 +55,10 @@ export function PlannerRail(props: Props) {
             aria-selected={tab === "friends"}
             aria-controls="panel-friends"
             onClick={() => setTab("friends")}
-            className={`flex-1 font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 rounded-full border ${
+            className={`flex-1 font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 rounded-t-lg transition-colors ${
               tab === "friends"
-                ? "bg-ink text-ink-inverse border-ink"
-                : "bg-transparent text-ink border-ink-3"
+                ? "bg-surface text-ink border border-b-0 border-ink -mb-px relative z-10"
+                : "bg-transparent text-ink-2 hover:text-ink hover:bg-ink/5"
             }`}
           >
             Friends&apos; plans

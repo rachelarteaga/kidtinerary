@@ -174,15 +174,15 @@ export function MyPlannersClient({
         Manage every planner you own — open, duplicate, delete, or share.
       </p>
 
-      {/* Mobile tabs */}
-      <div className="md:hidden mb-4 flex gap-2">
+      {/* Mobile tabs — browser-style */}
+      <div className="md:hidden mb-4 flex border-b border-ink">
         <button
           type="button"
           onClick={() => setMobileTab("mine")}
-          className={`flex-1 font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 rounded-full border ${
+          className={`flex-1 font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 rounded-t-lg transition-colors ${
             mobileTab === "mine"
-              ? "bg-ink text-ink-inverse border-ink"
-              : "bg-transparent text-ink border-ink-3"
+              ? "bg-surface text-ink border border-b-0 border-ink -mb-px relative z-10"
+              : "bg-transparent text-ink-2 hover:text-ink hover:bg-ink/5"
           }`}
         >
           My planners
@@ -190,10 +190,10 @@ export function MyPlannersClient({
         <button
           type="button"
           onClick={() => setMobileTab("shared")}
-          className={`flex-1 font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 rounded-full border ${
+          className={`flex-1 font-sans font-bold text-[11px] uppercase tracking-widest px-3 py-2 rounded-t-lg transition-colors ${
             mobileTab === "shared"
-              ? "bg-ink text-ink-inverse border-ink"
-              : "bg-transparent text-ink border-ink-3"
+              ? "bg-surface text-ink border border-b-0 border-ink -mb-px relative z-10"
+              : "bg-transparent text-ink-2 hover:text-ink hover:bg-ink/5"
           }`}
         >
           Shared with me {savedShares.length > 0 ? `(${savedShares.length})` : null}
