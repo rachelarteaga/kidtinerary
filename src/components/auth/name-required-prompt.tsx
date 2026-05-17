@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { updateProfileName } from "@/lib/actions";
 import { validateProfileName } from "@/lib/actions-profile-name-validation";
 import { useToast } from "@/components/ui/toast";
@@ -24,6 +24,16 @@ export function NameRequiredPrompt({ defaultFirst = "", defaultLast = "", reason
   const [lastName, setLastName] = useState(defaultLast);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+
+  // Match the codebase's modal convention (see activity-preview-modal,
+  // anchored-popover, status-picker-popover): Escape closes without saving.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onCancel();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onCancel]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
