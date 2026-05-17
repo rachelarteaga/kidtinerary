@@ -13,7 +13,9 @@ import {
   updatePlannerName,
   createPlannerShare,
   revokePlannerShareByPlanner,
+  fetchOwnNameStatus,
 } from "@/lib/actions";
+import { NameRequiredPrompt } from "@/components/auth/name-required-prompt";
 
 interface Props {
   initialPlanners: PlannerSummary[];
@@ -594,6 +596,9 @@ function ShareSettingsDrawer({
   const [includeBlocks, setIncludeBlocks] = useState(planner.shareIncludePersonalBlockDetails);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const [pendingNamePrompt, setPendingNamePrompt] = useState<
+    null | { resume: () => void; first: string; last: string }
+  >(null);
 
   function toggleKid(id: string) {
     setSelected((prev) => {
@@ -610,24 +615,41 @@ function ShareSettingsDrawer({
       return;
     }
     startTransition(async () => {
-      const result = await createPlannerShare({
-        plannerId: planner.id,
-        kidIds: Array.from(selected),
-        includeCost,
-        includePersonalBlockDetails: includeBlocks,
-      });
-      if (result.error || !result.token) {
-        toast(result.error ?? "Could not save share settings.", "error");
+      const status = await fetchOwnNameStatus();
+      if (status.missing) {
+        setPendingNamePrompt({
+          resume: () => {
+            setPendingNamePrompt(null);
+            startTransition(actuallySaveShare);
+          },
+          first: status.firstName,
+          last: status.lastName,
+        });
         return;
       }
-      toast(planner.shareToken ? "Share settings updated." : "Planner shared.", "success");
-      onSaved();
+      await actuallySaveShare();
     });
+  }
+
+  async function actuallySaveShare() {
+    const result = await createPlannerShare({
+      plannerId: planner.id,
+      kidIds: Array.from(selected),
+      includeCost,
+      includePersonalBlockDetails: includeBlocks,
+    });
+    if (result.error || !result.token) {
+      toast(result.error ?? "Could not save share settings.", "error");
+      return;
+    }
+    toast(planner.shareToken ? "Share settings updated." : "Planner shared.", "success");
+    onSaved();
   }
 
   const title = planner.shareToken ? "Edit share settings" : `Share "${planner.name}"`;
 
   return (
+    <>
     <div
       role="dialog"
       aria-modal="true"
@@ -720,6 +742,16 @@ function ShareSettingsDrawer({
         </footer>
       </div>
     </div>
+    {pendingNamePrompt && (
+      <NameRequiredPrompt
+        defaultFirst={pendingNamePrompt.first}
+        defaultLast={pendingNamePrompt.last}
+        reason="Recipients of your share link will see your name on the planner. Add it now to continue."
+        onComplete={pendingNamePrompt.resume}
+        onCancel={() => setPendingNamePrompt(null)}
+      />
+    )}
+    </>
   );
 }
 

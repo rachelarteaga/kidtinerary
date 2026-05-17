@@ -9,14 +9,16 @@ import { formatUsPhone } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
 
 interface Initial {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   address: string;
   phone: string;
 }
 
 export function EditProfileForm({ initial }: { initial: Initial }) {
-  const [fullName, setFullName] = useState(initial.fullName);
+  const [firstName, setFirstName] = useState(initial.firstName);
+  const [lastName, setLastName] = useState(initial.lastName);
   const [address, setAddress] = useState(initial.address);
   const [phone, setPhone] = useState(formatUsPhone(initial.phone));
   const [isPending, startTransition] = useTransition();
@@ -26,7 +28,7 @@ export function EditProfileForm({ initial }: { initial: Initial }) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     startTransition(async () => {
-      const result = await updateProfile({ fullName, address, phone });
+      const result = await updateProfile({ firstName, lastName, address, phone });
       if (result.error) {
         toast(result.error, "error");
         return;
@@ -42,15 +44,28 @@ export function EditProfileForm({ initial }: { initial: Initial }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <label className="block">
-        <span className="font-sans text-[10px] uppercase tracking-wide text-ink-2">Name</span>
-        <input
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-ink-3 px-3 py-2 bg-surface"
-          required
-        />
-      </label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <label className="block">
+          <span className="font-sans text-[10px] uppercase tracking-wide text-ink-2">First name</span>
+          <input
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-ink-3 px-3 py-2 bg-surface"
+            required
+            autoComplete="given-name"
+          />
+        </label>
+        <label className="block">
+          <span className="font-sans text-[10px] uppercase tracking-wide text-ink-2">Last name</span>
+          <input
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-ink-3 px-3 py-2 bg-surface"
+            required
+            autoComplete="family-name"
+          />
+        </label>
+      </div>
 
       <label className="block">
         <span className="font-sans text-[10px] uppercase tracking-wide text-ink-2">Email</span>
