@@ -13,6 +13,12 @@ import { geocodeAddress } from "@/lib/geocode";
 import { validateProfileInput } from "@/lib/actions-profile-validation";
 import { validateProfileName } from "@/lib/actions-profile-name-validation";
 import { generateShareToken } from "@/lib/share-token";
+import {
+  computeOrgFingerprint,
+  computeActivityFingerprint,
+  buildOrgCanonicalLabel,
+  normalizeRegion,
+} from "@/lib/canonical";
 
 /**
  * Find-or-create a placeholder activity_location for an activity.
@@ -583,23 +589,77 @@ export async function submitActivity(
   if (input.activityId) {
     activityId = input.activityId;
   } else {
+    // Region is required for new submissions (validation enforces this) so
+    // we can compute the canonical fingerprint. URL-only submissions defer
+    // org + name to the scraper; their fingerprint stays null until the
+    // scrape completes and a follow-up resolver pass fills it in.
+    const regionStr = normalizeRegion(input.region);
+
     let orgId: string | null = null;
+    let orgFingerprint: string = "";
     let activityName: string;
 
     if (input.orgName && input.campName) {
-      const { data: existingOrg } = await supabase
-        .from("organizations")
-        .select("id")
-        .ilike("name", input.orgName)
-        .eq("source", "user")
-        .maybeSingle();
+      const orgFp = computeOrgFingerprint({
+        name: input.orgName,
+        region: input.region,
+      });
+      const orgLabel = buildOrgCanonicalLabel({
+        name: input.orgName,
+        region: input.region,
+      });
 
-      if (existingOrg) {
-        orgId = existingOrg.id;
+      // Match existing org first by canonical_fingerprint (the new path),
+      // then fall back to ilike-on-name within source='user' for legacy rows
+      // that pre-date the canonical pipeline. Pre-PR-6 backfill, many orgs
+      // have null canonical_fingerprint; we accept the ilike fallback during
+      // the rollout window.
+      let existingOrgId: string | null = null;
+      if (orgFp) {
+        const { data: byFp } = await supabase
+          .from("organizations")
+          .select("id")
+          .eq("canonical_fingerprint", orgFp)
+          .eq("source", "user")
+          .maybeSingle();
+        if (byFp) existingOrgId = byFp.id;
+      }
+      if (!existingOrgId) {
+        const { data: byName } = await supabase
+          .from("organizations")
+          .select("id, canonical_fingerprint")
+          .ilike("name", input.orgName)
+          .eq("source", "user")
+          .maybeSingle();
+        if (byName) {
+          existingOrgId = byName.id;
+          // Silently backfill the canonical fields if the legacy row has none.
+          if (!byName.canonical_fingerprint && orgFp) {
+            await supabase
+              .from("organizations")
+              .update({
+                canonical_fingerprint: orgFp,
+                region: regionStr,
+                canonical_label: orgLabel,
+              })
+              .eq("id", existingOrgId);
+          }
+        }
+      }
+
+      if (existingOrgId) {
+        orgId = existingOrgId;
+        orgFingerprint = orgFp;
       } else {
         const { data: newOrg, error: orgErr } = await supabase
           .from("organizations")
-          .insert({ name: input.orgName, source: "user" })
+          .insert({
+            name: input.orgName,
+            source: "user",
+            canonical_fingerprint: orgFp || null,
+            region: regionStr || null,
+            canonical_label: orgLabel || null,
+          })
           .select("id")
           .single();
         if (orgErr || !newOrg) {
@@ -607,15 +667,30 @@ export async function submitActivity(
           return { error: "Failed to create organization" };
         }
         orgId = newOrg.id;
+        orgFingerprint = orgFp;
       }
       activityName = input.campName;
     } else {
+      // URL-only path. Org + program name will be filled in by the scraper.
+      // Fingerprint stays null on this row until the scraper completes and
+      // the resolver layer picks it up (PR 4).
       activityName = "New activity";
     }
 
     const slug =
       activityName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 80)
       + "-" + Date.now().toString(36);
+
+    // Activity fingerprint is two-level: derived from the org's fingerprint
+    // plus the normalized program name. If we have neither (URL-only path),
+    // leave both fingerprint and region null and let the resolver fill them
+    // in later.
+    const activityFingerprint = orgFingerprint && input.campName
+      ? computeActivityFingerprint({
+          orgFingerprint,
+          programName: input.campName,
+        })
+      : "";
 
     const { data: stub, error: stubErr } = await supabase
       .from("activities")
@@ -626,9 +701,13 @@ export async function submitActivity(
         is_active: true,
         verified: false,
         source: "user",
-        shared: input.shared,
+        shared: input.shared, // legacy field; dropped in PR 8
         registration_url: input.url ?? null,
         categories: [],
+        canonical_fingerprint: activityFingerprint || null,
+        region: regionStr || null,
+        private: input.private === true,
+        canonical_resolved_at: activityFingerprint ? new Date().toISOString() : null,
       })
       .select("id")
       .single();

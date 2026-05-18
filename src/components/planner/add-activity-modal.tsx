@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { submitActivity } from "@/lib/actions";
+import { US_STATES } from "@/lib/canonical/us-states";
 
 interface ActivityHit {
   id: string;
@@ -22,7 +23,13 @@ interface Props {
   plannerId?: string;
   /** Optional — omit when adding from /catalog. Without it, no planner_entry is created. */
   scope?: { childId: string | null; weekStart: string | null };
+  /** @deprecated Carried for prop-signature compatibility while the
+   *  "share with directory" concept is being removed. No longer used. */
   shareCampsDefault: boolean;
+  /** Pre-fill the city field from the user's profile when available. */
+  defaultCity?: string | null;
+  /** Pre-fill the state field from the user's profile when available. */
+  defaultState?: string | null;
   onSubmitted: (result: {
     jobId?: string;
     userCampId?: string;
@@ -32,13 +39,26 @@ interface Props {
   embedded?: boolean;
 }
 
-export function AddActivityModal({ open, onClose, plannerId, scope, shareCampsDefault, onSubmitted, embedded = false }: Props) {
+export function AddActivityModal({
+  open,
+  onClose,
+  plannerId,
+  scope,
+  defaultCity,
+  defaultState,
+  onSubmitted,
+  embedded = false,
+}: Props) {
   const [orgName, setOrgName] = useState("");
   const [activityName, setActivityName] = useState("");
   const [url, setUrl] = useState("");
-  const [consent, setConsent] = useState(shareCampsDefault);
+  const [city, setCity] = useState("");
+  const [stateCode, setStateCode] = useState("");
+  const [online, setOnline] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(false);
   const [orgHits, setOrgHits] = useState<OrgHit[]>([]);
   const [activityHits, setActivityHits] = useState<ActivityHit[]>([]);
+  const [recentCities, setRecentCities] = useState<string[]>([]);
   const [pickedActivityId, setPickedActivityId] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -49,14 +69,22 @@ export function AddActivityModal({ open, onClose, plannerId, scope, shareCampsDe
       setOrgName("");
       setActivityName("");
       setUrl("");
-      setConsent(shareCampsDefault);
+      setCity(defaultCity ?? "");
+      setStateCode(defaultState ?? "");
+      setOnline(false);
+      setIsPrivate(false);
       setOrgHits([]);
       setActivityHits([]);
       setPickedActivityId(undefined);
       setError(null);
+      // Pull recent cities so the datalist has typeahead options on open.
+      fetch("/api/cities/recent", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : { cities: [] }))
+        .then((d) => setRecentCities(Array.isArray(d.cities) ? d.cities : []))
+        .catch(() => {});
       setTimeout(() => urlRef.current?.focus(), 50);
     }
-  }, [open, shareCampsDefault]);
+  }, [open, defaultCity, defaultState]);
 
   useEffect(() => {
     if (orgName.trim().length < 2) { setOrgHits([]); return; }
@@ -81,12 +109,16 @@ export function AddActivityModal({ open, onClose, plannerId, scope, shareCampsDe
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const region = online
+      ? ({ online: true } as const)
+      : ({ city: city.trim(), state: stateCode.trim() } as const);
     const payload = {
       activityId: pickedActivityId,
       orgName: orgName.trim() || undefined,
       campName: activityName.trim() || undefined,
       url: url.trim() || undefined,
-      shared: consent,
+      region,
+      private: isPrivate,
     };
     startTransition(async () => {
       const result = await submitActivity(payload, {
@@ -122,19 +154,68 @@ export function AddActivityModal({ open, onClose, plannerId, scope, shareCampsDe
     setOrgHits([]);
   }
 
-  const canSubmit =
+  // Picking an existing activity from autocomplete short-circuits the region
+  // requirement — the existing row already has its own fingerprint/region.
+  const regionOk = !!pickedActivityId || online || (!!city.trim() && !!stateCode.trim());
+  const inputOk =
     !!pickedActivityId ||
     !!url.trim() ||
     (!!orgName.trim() && !!activityName.trim());
+  const canSubmit = regionOk && inputOk;
 
   const body = (
     <>
       <h2 className="font-display font-extrabold text-2xl mb-1">Add an activity</h2>
       <p className="font-sans text-[10px] uppercase tracking-widest text-ink-2 mb-4">
-        Drop a URL and we&apos;ll fill in the rest — or type it in manually
+        Tell us where it&apos;s held, then drop a URL or fill in the details
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Region: city + state OR online toggle. Required for new submissions. */}
+        <div>
+          <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2 block mb-1">
+            Where is it held?
+          </label>
+          <div className="flex gap-2">
+            <input
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="Westport"
+              disabled={online || !!pickedActivityId}
+              list="recent-cities"
+              className="flex-1 bg-surface border border-ink rounded-lg px-4 py-2.5 text-ink focus:outline-none focus:border-ink disabled:opacity-50"
+              autoComplete="off"
+            />
+            <select
+              value={stateCode}
+              onChange={(e) => setStateCode(e.target.value)}
+              disabled={online || !!pickedActivityId}
+              className="bg-surface border border-ink rounded-lg px-3 py-2.5 text-ink focus:outline-none focus:border-ink disabled:opacity-50"
+            >
+              <option value="">State</option>
+              {US_STATES.map((s) => (
+                <option key={s.code} value={s.code}>
+                  {s.code}
+                </option>
+              ))}
+            </select>
+          </div>
+          <datalist id="recent-cities">
+            {recentCities.map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
+          <label className="flex items-center gap-2 cursor-pointer mt-2">
+            <input
+              type="checkbox"
+              checked={online}
+              onChange={(e) => setOnline(e.target.checked)}
+              disabled={!!pickedActivityId}
+            />
+            <span className="text-sm text-ink">This activity is online</span>
+          </label>
+        </div>
+
         <div>
           <label className="font-sans text-[10px] uppercase tracking-widest text-ink-2 block mb-1">URL</label>
           <input
@@ -214,12 +295,12 @@ export function AddActivityModal({ open, onClose, plannerId, scope, shareCampsDe
         <label className="flex items-start gap-2 cursor-pointer">
           <input
             type="checkbox"
-            checked={consent}
-            onChange={(e) => setConsent(e.target.checked)}
+            checked={isPrivate}
+            onChange={(e) => setIsPrivate(e.target.checked)}
             className="mt-0.5"
           />
           <span className="text-sm text-ink">
-            Share this activity with Kidtinerary&apos;s directory so other parents can find it. We&apos;ll verify the details before publishing.
+            Keep this one private. Won&apos;t appear in any catalog or be matched against other parents&apos; activities.
           </span>
         </label>
 
