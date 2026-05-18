@@ -372,6 +372,8 @@ export interface PlannerEntryRow {
       categories: string[];
       registration_url: string | null;
       description: string | null;
+      canonical_fingerprint: string | null;
+      region: string | null;
       organization: { id: string; name: string } | null;
       price_options: {
         id: string;
@@ -401,6 +403,7 @@ export async function fetchPlannerEntries(
         id, starts_at, ends_at, time_slot, hours_start, hours_end, is_sold_out,
         activity:activities!inner(
           id, name, slug, verified, categories, registration_url, description,
+          canonical_fingerprint, region,
           organization:organizations(id, name),
           price_options(id, label, price_cents, price_unit),
           activity_locations(id, address, location_name)
@@ -469,6 +472,8 @@ export type SharedByTokenResult =
             categories: string[];
             registration_url: string | null;
             description: string | null;
+            canonical_fingerprint: string | null;
+            region: string | null;
             organization: { id: string; name: string } | null;
             activity_locations: { id: string; address: string; location_name: string | null }[];
           };
