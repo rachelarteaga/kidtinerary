@@ -98,6 +98,7 @@ export default async function PlannerPage({ searchParams }: PageProps) {
           entries: result.entries.map((e) => ({
             child_id: e.child_id,
             activity_id: e.session.activity.id,
+            canonical_fingerprint: e.session.activity.canonical_fingerprint,
             week_key: getWeekKey(new Date(e.session.starts_at + "T00:00:00")),
           })),
         };
@@ -113,6 +114,7 @@ export default async function PlannerPage({ searchParams }: PageProps) {
   const userEntriesForOverlap: UserPlannerEntry[] = allEntries.map((e) => ({
     child_id: e.child_id,
     activity_id: e.session.activity.id,
+    canonical_fingerprint: e.session.activity.canonical_fingerprint,
     week_key: getWeekKey(new Date(e.session.starts_at + "T00:00:00")),
   }));
   const overlapMap = computeFriendOverlaps(userEntriesForOverlap, friendPlanners);

@@ -21,18 +21,31 @@ export interface FriendPlannerForOverlap {
   shareToken: string;
   ownerName: string | null;
   kids: { id: string; name: string; color: string }[];
-  /** Entries flattened to {child_id, activity_id, week_key}. The caller is
-   *  responsible for projecting the raw entries into this minimal shape using
-   *  the same getWeekKey() the user-planner code already uses. */
-  entries: { child_id: string; activity_id: string; week_key: string }[];
+  /** Entries flattened to {child_id, activity_id, canonical_fingerprint?, week_key}.
+   *  The caller projects the raw entries into this minimal shape using the same
+   *  getWeekKey() the user-planner code already uses. canonical_fingerprint is
+   *  the new primary match key (PR 3); activity_id is the rollout fallback for
+   *  rows that haven't been fingerprinted yet (pre-backfill). */
+  entries: {
+    child_id: string;
+    activity_id: string;
+    canonical_fingerprint: string | null;
+    week_key: string;
+  }[];
 }
 
 /** One of YOUR planner entries (your kid, your activity, your week). */
 export interface UserPlannerEntry {
   /** Your kid's id — used as the FIRST key in the output map. */
   child_id: string;
-  /** The activity to match on. */
+  /** The activity to match on. Used as the fallback key when canonical
+   *  fingerprint is null on either side. */
   activity_id: string;
+  /** Server-derived join key. When both sides have it, two activities with
+   *  the same fingerprint match even if their activity_ids differ — this is
+   *  how the Rachel/Lions Park bug gets fixed. Null until PR 2's pipeline has
+   *  run on the row or PR 6's backfill has filled it in. */
+  canonical_fingerprint: string | null;
   /** Week-key string from getWeekKey(). Used as the SECOND key. */
   week_key: string;
 }
@@ -53,37 +66,64 @@ export function overlapKey(userKidId: string, weekKey: string): string {
 /** Pure overlap matcher. For each of YOUR planner cells (kid + week +
  *  activity), find all friend-kids enrolled in the SAME activity the SAME
  *  week. Returns a map keyed by `${userKidId}::${weekKey}` → list of friend
- *  overlaps, sorted by ownerName then kidName for stable rendering. */
+ *  overlaps, sorted by ownerName then kidName for stable rendering.
+ *
+ *  Two-tier matching: canonical_fingerprint is the primary key (groups
+ *  rows that refer to the same real-world activity across users), with
+ *  activity_id as the rollout fallback for rows that haven't been
+ *  fingerprinted yet. The fallback gets retired in PR 8 after backfill. */
 export function computeFriendOverlaps(
   userEntries: UserPlannerEntry[],
   friendPlanners: FriendPlannerForOverlap[],
 ): OverlapMap {
-  // Build a (activity_id, week_key) → friend overlaps[] index so we can do
-  // one pass over user entries.
-  const friendIndex = new Map<string, FriendOverlap[]>();
+  // Build two indices in one pass: one keyed on canonical_fingerprint (the
+  // new path) and one on activity_id (the rollout fallback). A friend entry
+  // is registered in BOTH so a user entry can find it via whichever key the
+  // user side has. We dedup by (shareId, kidName, child_id) when inserting
+  // a user entry's matches so a row that hits both indices isn't counted
+  // twice.
+  const fpIndex = new Map<string, FriendOverlap[]>();
+  const idIndex = new Map<string, FriendOverlap[]>();
   for (const fp of friendPlanners) {
     const kidById = new Map(fp.kids.map((k) => [k.id, k]));
     for (const e of fp.entries) {
       const kid = kidById.get(e.child_id);
       if (!kid) continue;
-      const k = `${e.activity_id}${KEY_SEP}${e.week_key}`;
-      const list = friendIndex.get(k) ?? [];
-      list.push({
+      const overlap: FriendOverlap = {
         shareId: fp.shareId,
         shareToken: fp.shareToken,
         ownerName: fp.ownerName,
         kidName: kid.name,
         kidColor: kid.color,
-      });
-      friendIndex.set(k, list);
+      };
+      if (e.canonical_fingerprint) {
+        const k = `${e.canonical_fingerprint}${KEY_SEP}${e.week_key}`;
+        const list = fpIndex.get(k) ?? [];
+        list.push(overlap);
+        fpIndex.set(k, list);
+      }
+      const idKey = `${e.activity_id}${KEY_SEP}${e.week_key}`;
+      const idList = idIndex.get(idKey) ?? [];
+      idList.push(overlap);
+      idIndex.set(idKey, idList);
     }
   }
 
   const out: OverlapMap = {};
   for (const ue of userEntries) {
-    const indexKey = `${ue.activity_id}${KEY_SEP}${ue.week_key}`;
-    const matches = friendIndex.get(indexKey);
-    if (!matches || matches.length === 0) continue;
+    // Look up via canonical_fingerprint first; only fall back to activity_id
+    // when the user side has no fingerprint yet (pre-backfill row).
+    const matches: FriendOverlap[] = [];
+    if (ue.canonical_fingerprint) {
+      const fpKey = `${ue.canonical_fingerprint}${KEY_SEP}${ue.week_key}`;
+      const found = fpIndex.get(fpKey);
+      if (found) matches.push(...found);
+    } else {
+      const idKey = `${ue.activity_id}${KEY_SEP}${ue.week_key}`;
+      const found = idIndex.get(idKey);
+      if (found) matches.push(...found);
+    }
+    if (matches.length === 0) continue;
     const cellKey = overlapKey(ue.child_id, ue.week_key);
     const existing = out[cellKey] ?? [];
     // De-dupe by (shareId, kidName) in case the user has the same activity
